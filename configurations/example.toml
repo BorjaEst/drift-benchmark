@@ -35,6 +35,12 @@
     noise          = 0.05
 
 [[data.datasets]]
+    name       = "california_housing"
+    type       = "builtin"
+    test_size  = 0.3
+    preprocess = { scaling = true, scaling_method = "standard", handle_missing = true }
+
+[[data.datasets]]
     name          = "real_weather"
     type          = "file"
     path          = "datasets/weather.csv"
@@ -42,27 +48,29 @@
     drift_column  = "date"
     train_size    = 0.3
 
+
 [detectors]
 # List of detectors to evaluate
 [[detectors.algorithms]]
-    name       = "DDM"
-    library    = "skmultiflow"
-    parameters = { warning_level = 2.0, drift_level = 3.0 }
+    name       = "KSDrift"
+    library    = "alibi_detect_adapter"
+    parameters = { p_val_threshold = 0.05, alternative = "two-sided" }
 
 [[detectors.algorithms]]
-    name       = "ADWIN"
-    library    = "skmultiflow"
-    parameters = { delta = 0.002 }
+    name       = "MMDDrift"
+    library    = "alibi_detect_adapter"
+    parameters = { p_val_threshold = 0.05, kernel = "rbf", backend = "numpy", n_permutations = 100 }
 
 [[detectors.algorithms]]
-    name       = "KSWIN"
-    library    = "skmultiflow"
-    parameters = { alpha = 0.005, window_size = 100 }
+    name       = "ChiSquareDrift"
+    library    = "alibi_detect_adapter"
+    parameters = { p_val_threshold = 0.05 }
 
 [[detectors.algorithms]]
-    name       = "PageHinkley"
-    library    = "skmultiflow"
-    parameters = { min_instances = 30, delta = 0.005, threshold = 50 }
+    name       = "FeatureDrift"
+    library    = "evidently_adapter"
+    parameters = { column_name = "feature_1", significance_level = 0.01 }
+
 
 [metrics]
     # Evaluation metrics
