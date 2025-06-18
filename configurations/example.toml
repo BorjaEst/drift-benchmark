@@ -43,7 +43,6 @@
 [[data.datasets]]
     name          = "real_weather"
     type          = "file"
-    path          = "datasets/weather.csv"
     target_column = "RainTomorrow"
     drift_column  = "date"
     train_size    = 0.3
@@ -84,7 +83,6 @@
 
 [output]
     save_results  = true
-    results_dir   = "results/example_benchmark"
     visualization = true
     plots         = ["roc_curve", "delay_distribution", "performance_comparison"]
     export_format = ["csv", "json"]

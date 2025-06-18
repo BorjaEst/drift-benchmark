@@ -53,9 +53,7 @@ class DatasetModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., description="Name of the dataset")
-    type: Literal["synthetic", "builtin", "file"] = Field(
-        ..., description="Type of dataset (synthetic, builtin, or from file)"
-    )
+    type: Literal["synthetic", "builtin", "file"] = Field(..., description="Type of dataset")
 
     # Fields for synthetic datasets
     n_samples: Optional[int] = Field(None, description="Number of samples for synthetic data")
@@ -67,7 +65,6 @@ class DatasetModel(BaseModel):
     noise: Optional[float] = Field(None, description="Noise level for synthetic data")
 
     # Fields for file datasets
-    path: Optional[str] = Field(None, description="Path to dataset file")
     target_column: Optional[str] = Field(None, description="Name of target column")
     drift_column: Optional[str] = Field(None, description="Column used to split data for drift analysis")
 
@@ -120,10 +117,9 @@ class OutputModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     save_results: bool = Field(True, description="Whether to save benchmark results")
-    results_dir: str = Field("results", description="Directory to save results")
     visualization: bool = Field(True, description="Whether to generate visualizations")
     plots: List[str] = Field(default_factory=list, description="Types of plots to generate")
-    export_format: List[Literal["csv", "json", "pickle"]] = Field(
+    export_format: List[Literal["csv", "json"]] = Field(
         default_factory=lambda: ["csv"], description="Formats to export results"
     )
     log_level: Literal["debug", "info", "warning", "error"] = Field("info", description="Logging level")
