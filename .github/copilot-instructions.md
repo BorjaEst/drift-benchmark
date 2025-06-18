@@ -44,13 +44,17 @@ drift-benchmark/
 ### Settings Module
 
 This module contains configuration settings for the benchmark, including paths to data, directories, detector implementations and other global settings.
+Settings are defined using pydantic v2 models for type safety and validation.
 
 ### Benchmark Module
 
 This module contains the main functionality. It handles the execution of experiments, the evaluation of results, and the computation of performance metrics.
 benchmarks.py is the main entry point for running benchmarks
-configuration.py handles loading and validating benchmark configurations.
+configuration.py defines configuration models using pydantic v2 for running benchmarks, including datasets, detectors, and parameters.
+configuration.py also provides utilities for loading and validating benchmark configurations from TOML files.
 metrics.py provides functions to compute evaluation metrics for drift detection results.
+metrics.py includes functions to compute evaluation metrics for drift detection results, such as precision, recall, F1-score, and area under the ROC curve (AUC-ROC).
+metrics.py is based on dataclasses for structured data handling and validation.
 
 ### Data Module
 
