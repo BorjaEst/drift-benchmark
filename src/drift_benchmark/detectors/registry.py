@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Type
 
 from drift_benchmark.detectors.base import BaseDetector
-from drift_benchmark.settings import get_components_dir
+from drift_benchmark.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ def discover_and_register_detectors(components_dir: Optional[str] = None) -> int
         Number of detectors registered
     """
     if components_dir is None:
-        components_dir = get_components_dir()
+        components_dir = settings.get_absolute_components_dir()
 
     # Ensure components directory exists
     components_path = Path(components_dir)

@@ -16,7 +16,7 @@ from drift_benchmark.detectors import (
     list_available_detectors,
     register_detector,
 )
-from drift_benchmark.settings import update_settings
+from drift_benchmark.settings import settings
 
 # Load version from file
 try:
@@ -52,19 +52,21 @@ def setup(
         Dictionary with setup information
     """
     # Update settings if provided
-    settings_update = {}
+    if any([components_dir, configurations_dir, datasets_dir, results_dir]):
+        # Create a dictionary of provided settings
+        setting_updates = {}
+        if components_dir:
+            setting_updates["components_dir"] = components_dir
+        if configurations_dir:
+            setting_updates["configurations_dir"] = configurations_dir
+        if datasets_dir:
+            setting_updates["datasets_dir"] = datasets_dir
+        if results_dir:
+            setting_updates["results_dir"] = results_dir
 
-    if components_dir:
-        settings_update["components_dir"] = components_dir
-    if configurations_dir:
-        settings_update["configurations_dir"] = configurations_dir
-    if datasets_dir:
-        settings_update["datasets_dir"] = datasets_dir
-    if results_dir:
-        settings_update["results_dir"] = results_dir
-
-    if settings_update:
-        update_settings(settings_update)
+        # Update settings with provided values
+        for key, value in setting_updates.items():
+            setattr(settings, key, value)
 
     # Discover and register detectors
     detector_count = discover_and_register_detectors()

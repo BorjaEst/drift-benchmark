@@ -20,7 +20,6 @@ from drift_benchmark.benchmark.configuration import BenchmarkConfig, load_config
 from drift_benchmark.benchmark.metrics import BenchmarkResult, DetectorPrediction, DriftEvaluationResult, time_execution
 from drift_benchmark.data import load_dataset
 from drift_benchmark.detectors import BaseDetector, get_detector_class
-from drift_benchmark.settings import Settings
 
 
 class BenchmarkRunner:
@@ -36,7 +35,6 @@ class BenchmarkRunner:
         self,
         config_file: Optional[Union[str, Path]] = None,
         config: Optional[BenchmarkConfig] = None,
-        settings: Optional[Settings] = None,
     ):
         """
         Initialize the benchmark runner.
@@ -44,13 +42,11 @@ class BenchmarkRunner:
         Args:
             config_file: Path to the configuration file (TOML format)
             config: BenchmarkConfig object (alternative to config_file)
-            settings: Optional settings to override defaults
 
         Raises:
             ValueError: If neither config_file nor config is provided
         """
         self.logger = logging.getLogger(__name__)
-        self.settings = settings or Settings()
 
         # Load configuration
         if config_file is not None:
@@ -147,8 +143,12 @@ class BenchmarkRunner:
             # Load and prepare dataset
             dataset_start_time = time.time()
             try:
-                X_ref, X_test, y_ref, y_test, drift_labels = load_dataset(dataset_config.dict(), self.settings)
-                dataset_params = dataset_config.dict()
+                # Convert dataset config to dict if using pydantic v2 model
+                dataset_params = (
+                    dataset_config.model_dump() if hasattr(dataset_config, "model_dump") else dataset_config.dict()
+                )
+
+                X_ref, X_test, y_ref, y_test, drift_labels = load_dataset(dataset_params)
 
                 self.logger.debug(
                     f"Dataset loaded: {dataset_name} - " f"Reference shape: {X_ref.shape}, Test shape: {X_test.shape}"

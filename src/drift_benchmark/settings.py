@@ -2,104 +2,99 @@
 Configuration settings for drift-benchmark.
 
 This module contains configuration settings, including paths to data,
-directories, and other global settings.
+directories, and other global settings using Pydantic v2 models.
 """
 
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import ClassVar, Optional
 
-# Default directories (relative to current working directory)
-DEFAULT_COMPONENTS_DIR = "components"
-DEFAULT_CONFIGURATIONS_DIR = "configurations"
-DEFAULT_DATASETS_DIR = "datasets"
-DEFAULT_RESULTS_DIR = "results"
-
-# Global settings dictionary
-_SETTINGS: Dict[str, str] = {
-    "components_dir": DEFAULT_COMPONENTS_DIR,
-    "configurations_dir": DEFAULT_CONFIGURATIONS_DIR,
-    "datasets_dir": DEFAULT_DATASETS_DIR,
-    "results_dir": DEFAULT_RESULTS_DIR,
-}
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-def get_components_dir() -> str:
+class Settings(BaseModel):
     """
-    Get the path to the components directory.
+    Settings model for drift-benchmark configuration.
 
-    Returns:
-        Path to the components directory
+    Attributes:
+        components_dir: Directory containing detector implementations
+        configurations_dir: Directory containing benchmark configurations
+        datasets_dir: Directory containing benchmark datasets
+        results_dir: Directory for benchmark results
     """
-    return _SETTINGS["components_dir"]
+
+    model_config = ConfigDict(validate_assignment=True, frozen=False, extra="ignore")
+
+    # Default directories (relative to current working directory)
+    _DEFAULT_COMPONENTS_DIR: ClassVar[str] = "components"
+    _DEFAULT_CONFIGURATIONS_DIR: ClassVar[str] = "configurations"
+    _DEFAULT_DATASETS_DIR: ClassVar[str] = "datasets"
+    _DEFAULT_RESULTS_DIR: ClassVar[str] = "results"
+
+    components_dir: str = Field(
+        default=_DEFAULT_COMPONENTS_DIR,
+        description="Directory containing detector implementations",
+    )
+    configurations_dir: str = Field(
+        default=_DEFAULT_CONFIGURATIONS_DIR,
+        description="Directory containing benchmark configurations",
+    )
+    datasets_dir: str = Field(
+        default=_DEFAULT_DATASETS_DIR,
+        description="Directory containing benchmark datasets",
+    )
+    results_dir: str = Field(
+        default=_DEFAULT_RESULTS_DIR,
+        description="Directory for benchmark results",
+    )
+
+    @field_validator("*")
+    @classmethod
+    def ensure_directory_exists(cls, directory_path: str) -> str:
+        """
+        Ensure a directory exists, creating it if necessary.
+
+        Args:
+            directory_path: Path to directory
+
+        Returns:
+            Path to the directory
+        """
+        abs_path = cls.get_absolute_path(directory_path)
+        os.makedirs(abs_path, exist_ok=True)
+        return directory_path
+
+    @classmethod
+    def get_absolute_path(cls, relative_path: str) -> str:
+        """
+        Convert a relative path to an absolute path.
+
+        Args:
+            relative_path: Relative path
+
+        Returns:
+            Absolute path
+        """
+        if os.path.isabs(relative_path):
+            return relative_path
+        return os.path.abspath(relative_path)
+
+    def get_absolute_components_dir(self) -> str:
+        """Get the absolute path to the components directory."""
+        return self.get_absolute_path(self.components_dir)
+
+    def get_absolute_configurations_dir(self) -> str:
+        """Get the absolute path to the configurations directory."""
+        return self.get_absolute_path(self.configurations_dir)
+
+    def get_absolute_datasets_dir(self) -> str:
+        """Get the absolute path to the datasets directory."""
+        return self.get_absolute_path(self.datasets_dir)
+
+    def get_absolute_results_dir(self) -> str:
+        """Get the absolute path to the results directory."""
+        return self.get_absolute_path(self.results_dir)
 
 
-def get_configurations_dir() -> str:
-    """
-    Get the path to the configurations directory.
-
-    Returns:
-        Path to the configurations directory
-    """
-    return _SETTINGS["configurations_dir"]
-
-
-def get_datasets_dir() -> str:
-    """
-    Get the path to the datasets directory.
-
-    Returns:
-        Path to the datasets directory
-    """
-    return _SETTINGS["datasets_dir"]
-
-
-def get_results_dir() -> str:
-    """
-    Get the path to the results directory.
-
-    Returns:
-        Path to the results directory
-    """
-    return _SETTINGS["results_dir"]
-
-
-def update_settings(settings: Dict[str, str]) -> None:
-    """
-    Update global settings.
-
-    Args:
-        settings: Dictionary with settings to update
-    """
-    _SETTINGS.update(settings)
-
-
-def get_absolute_path(relative_path: str) -> str:
-    """
-    Convert a relative path to an absolute path.
-
-    Args:
-        relative_path: Relative path
-
-    Returns:
-        Absolute path
-    """
-    if os.path.isabs(relative_path):
-        return relative_path
-
-    return os.path.abspath(relative_path)
-
-
-def ensure_directory_exists(directory_path: str) -> str:
-    """
-    Ensure a directory exists, creating it if necessary.
-
-    Args:
-        directory_path: Path to directory
-
-    Returns:
-        Absolute path to the directory
-    """
-    abs_path = get_absolute_path(directory_path)
-    os.makedirs(abs_path, exist_ok=True)
-    return abs_path
+# Create a global settings instance
+settings = Settings()
