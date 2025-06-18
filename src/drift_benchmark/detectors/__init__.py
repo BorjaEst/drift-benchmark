@@ -1,43 +1,30 @@
-from typing import Dict, List, Type
+"""
+Drift detection algorithms and interfaces.
 
-from drift_benchmark.detectors.base import BaseDetector
+This package provides a common interface for drift detection algorithms
+and implementations of various drift detectors.
+"""
 
-# Registry to store all available detectors
-_DETECTOR_REGISTRY = {}
+from drift_benchmark.detectors.base import BaseDetector, DummyDetector, ThresholdDetector
+from drift_benchmark.detectors.registry import (
+    clear_registry,
+    discover_and_register_detectors,
+    get_detector,
+    initialize_detector,
+    list_available_detectors,
+    register_detector,
+)
 
-
-def register_detector(name: str, detector_class: Type[BaseDetector]):
-    """Register a detector implementation.
-
-    Args:
-        name: Unique name for the detector
-        detector_class: The detector class
-    """
-    if name in _DETECTOR_REGISTRY:
-        raise ValueError(f"Detector with name '{name}' already registered")
-
-    _DETECTOR_REGISTRY[name] = detector_class
-
-
-def get_detector(name: str) -> Type[BaseDetector]:
-    """Get a detector by name.
-
-    Args:
-        name: Name of the detector
-
-    Returns:
-        The detector class
-    """
-    if name not in _DETECTOR_REGISTRY:
-        raise ValueError(f"Detector '{name}' not found in registry")
-
-    return _DETECTOR_REGISTRY[name]
-
-
-def list_available_detectors() -> List[str]:
-    """List all registered detectors.
-
-    Returns:
-        List of detector names
-    """
-    return list(_DETECTOR_REGISTRY.keys())
+__all__ = [
+    # Base detector classes
+    "BaseDetector",
+    "DummyDetector",
+    "ThresholdDetector",
+    # Registry functions
+    "register_detector",
+    "get_detector",
+    "initialize_detector",
+    "list_available_detectors",
+    "discover_and_register_detectors",
+    "clear_registry",
+]
