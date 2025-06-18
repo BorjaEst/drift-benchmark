@@ -1,61 +1,68 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+    requires      = ["setuptools>=61.0", "wheel"]
+    build-backend = "setuptools.build_meta"
 
 
 [project]
-requires-python = "~=3.10"
-name = "drift-benchmark"
-description = "Benchmarking framework for data drift detection methods in ML pipelines"
-authors = [{ name = "Borja Esteban", email = "boressan@outlook.com" }]
-license = { text = "GNU General Public License v3.0" }
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Programming Language :: Python :: 3.10",
-    "Topic :: Scientific/Engineering :: Machine Learning",
-    "Topic :: Scientific/Engineering :: Drift Detection",
-]
-keywords = ["data quality", "data distribution drift", "ML pipelines"]
-dynamic = ["version", "readme", "dependencies", "optional-dependencies"]
+    requires-python = "~=3.10"
+    name = "drift-benchmark"
+    description = "Benchmarking framework for data drift detection methods in ML pipelines"
+    authors = [{ name = "Borja Esteban", email = "boressan@outlook.com" }]
+    license = { text = "GNU General Public License v3.0" }
+    classifiers = [
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Programming Language :: Python :: 3.10",
+        "Topic :: Scientific/Engineering :: Machine Learning",
+        "Topic :: Scientific/Engineering :: Drift Detection",
+    ]
+    keywords = ["data quality", "data distribution drift", "ML pipelines"]
+    dynamic = ["version", "readme", "dependencies", "optional-dependencies"]
 
 [project.urls]
-"Homepage" = "https://github.com/BorjaEst/drift-benchmark"
-"Bug Tracker" = "https://github.com/BorjaEst/drift-benchmark/issues"
+    "Homepage"    = "https://github.com/BorjaEst/drift-benchmark"
+    "Bug Tracker" = "https://github.com/BorjaEst/drift-benchmark/issues"
 
 
 [tool.setuptools]
-package-dir = { "" = "src" }
+    package-dir = { "" = "src" }
 
 [tool.setuptools.dynamic]
-version = { file = "src/drift_benchmark/VERSION" }
-readme = { file = ["README.md"] }
-dependencies = { file = ["requirements.txt"] }
+    version      = { file = "src/drift_benchmark/VERSION" }
+    readme       = { file = ["README.md"] }
+    dependencies = { file = ["requirements.txt"] }
 
 [tool.setuptools.dynamic.optional-dependencies]
-full = { file = ["requirements-full.txt"] }
-dev = { file = ["requirements-dev.txt", "requirements-full.txt"] }
+    full = { file = ["requirements-full.txt"] }
+    dev  = { file = ["requirements-dev.txt", "requirements-full.txt"] }
 
 [tool.black]
-line-length = 120
-target-version = ["py310"]
+    line-length    = 120
+    target-version = ["py310"]
 
 [tool.isort]
-profile = "black"
-line_length = 120
+    profile     = "black"
+    line_length = 120
 
 [tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+    python_version           = "3.10"
+    warn_return_any          = true
+    warn_unused_configs      = true
+    disallow_untyped_defs    = true
+    disallow_incomplete_defs = true
 
 [tool.pytest.ini_options]
-pythonpath = [".", "src"]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-addopts = "--import-mode=importlib"
+    pythonpath = [".", "src"]
+    testpaths = ["tests"]
+    python_files = "test_*.py"
+    python_classes = "Test*"
+    python_functions = "test_*"
+    addopts = "--import-mode=importlib"
+    env = [
+        "COMPONENTS_DIR=tests/assets/components",
+        "CONFIGURATIONS_DIR=tests/assets/configurations",
+        "DATASETS_DIR=tests/assets/datasets",
+        "RESULTS_DIR=tests/assets/results",
+        "LOGS_DIR=tests/assets/logs",
+    ]
