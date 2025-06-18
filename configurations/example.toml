@@ -1,68 +1,83 @@
-# Benchmark configuration for comparing Evidently drift detection with other methods
+# Benchmark Configuration Example
 
+[metadata]
+    name        = "Example Drift Detection Benchmark"
+    description = "A simple benchmark to demonstrate the capabilities of drift-benchmark"
+    author      = "Drift Benchmark Team"
+    date        = "2025-06-18"
+    version     = "0.1.0"
+
+[settings]
+    seed                 = 42
+    n_runs               = 5
+    cross_validation     = true
+    cv_folds             = 3
+    timeout_per_detector = 300 # seconds
+
+[data]
 # Dataset configurations
-[[datasets]]
-    name      = "gaussian_drift"
-    source    = "generator"
-    generator = "gaussian"
-[[datasets.params]]
-    n_samples_reference = 1000
-    n_samples_current   = 1000
-    n_features          = 5
-    drift_features      = [0, 2]
-    shift_size          = 0.5
+[[data.datasets]]
+    name           = "synthetic_gradual_drift"
+    type           = "synthetic"
+    n_samples      = 5000
+    n_features     = 20
+    drift_type     = "gradual"
+    drift_position = 0.5
+    noise          = 0.05
 
-[[datasets]]
-    name      = "categorical_drift"
-    source    = "generator"
-    generator = "categorical"
-[[datasets.params]]
-    n_samples_reference = 1000
-    n_samples_current   = 1000
-    n_features          = 3
-    drift_features      = [0]
-    probability_shift   = 0.2
+[[data.datasets]]
+    name           = "synthetic_sudden_drift"
+    type           = "synthetic"
+    n_samples      = 5000
+    n_features     = 20
+    drift_type     = "sudden"
+    drift_position = 0.6
+    noise          = 0.05
 
-[[datasets]]
-    name   = "adult_dataset"
-    source = "real"
-[[datasets.params]]
-    test_size      = 0.3
-    random_state   = 42
-    drift_features = ["age", "education"]
+[[data.datasets]]
+    name          = "real_weather"
+    type          = "file"
+    path          = "datasets/weather.csv"
+    target_column = "RainTomorrow"
+    drift_column  = "date"
+    train_size    = 0.3
 
-# Detector configurations
-[[detectors]]
-    name   = "evidently_data_drift"
-    params = { drift_share_threshold = 0.3, test_threshold = 0.05 }
+[detectors]
+# List of detectors to evaluate
+[[detectors.algorithms]]
+    name       = "DDM"
+    library    = "skmultiflow"
+    parameters = { warning_level = 2.0, drift_level = 3.0 }
 
-[[detectors]]
-    name   = "evidently_data_quality"
-    params = { drift_threshold = 0.05 }
+[[detectors.algorithms]]
+    name       = "ADWIN"
+    library    = "skmultiflow"
+    parameters = { delta = 0.002 }
 
-[[detectors]]
-    name   = "alibi_mmd"
-    params = { p_val = 0.05, kernel = "rbf" }
+[[detectors.algorithms]]
+    name       = "KSWIN"
+    library    = "skmultiflow"
+    parameters = { alpha = 0.005, window_size = 100 }
 
+[[detectors.algorithms]]
+    name       = "PageHinkley"
+    library    = "skmultiflow"
+    parameters = { min_instances = 30, delta = 0.005, threshold = 50 }
+
+[metrics]
     # Evaluation metrics
     metrics = [
-        "accuracy",
-        "precision",
-        "recall",
-        "f1",
-        "execution_time",
-        "memory_usage",
+        "detection_delay",
+        "false_positive_rate",
+        "false_negative_rate",
+        "f1_score",
+        "computation_time",
     ]
 
-    # Experiment settings
-    repetitions  = 3
-    random_state = 42
-
-
-# Visualization settings
-[visualization]
-    output_path    = "./results/evidently_comparison"
-    formats        = ["png", "pdf"]
-    include_tables = true
-    dpi            = 300
-    style          = "seaborn-v0_8-whitegrid"
+[output]
+    save_results  = true
+    results_dir   = "results/example_benchmark"
+    visualization = true
+    plots         = ["roc_curve", "delay_distribution", "performance_comparison"]
+    export_format = ["csv", "json"]
+    log_level     = "info"

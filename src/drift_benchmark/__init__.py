@@ -1,1 +1,2 @@
+from drift_benchmark.benchmark import BenchmarkRunner
 from drift_benchmark.detectors import BaseDetector, get_detector, list_available_detectors, register_detector
