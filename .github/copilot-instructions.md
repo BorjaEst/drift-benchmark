@@ -108,9 +108,9 @@ This directory is by default at the CWD but can be configured at settings.
 Benchmarks are configured via TOML files and can be run using the CLI tool or programmatically:
 
 ```python
-from drift_benchmark.core import BenchmarkRunner
+from drift_benchmark import BenchmarkRunner
 
-runner = BenchmarkRunner(config_file='benchmark_configuration.yaml')
+runner = BenchmarkRunner(config_file='example.yaml')
 results = runner.run()
 results.visualize()
 ```
