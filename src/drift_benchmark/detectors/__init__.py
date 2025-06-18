@@ -41,7 +41,3 @@ def list_available_detectors() -> List[str]:
         List of detector names
     """
     return list(_DETECTOR_REGISTRY.keys())
-
-
-# Import and register built-in detectors
-from drift_benchmark.detectors.implementations import *

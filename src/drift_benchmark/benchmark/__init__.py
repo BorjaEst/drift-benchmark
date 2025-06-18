@@ -6,24 +6,24 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from ..data import generate_drift, load_dataset
-from ..detectors import get_detector, list_available_detectors
-from ..settings import BenchmarkConfig, load_config
+from drift_benchmark.data import generate_drift, load_dataset
+from drift_benchmark.detectors import get_detector, list_available_detectors
+from drift_benchmark.settings import BenchmarkConfig, load_config
 
 
 class BenchmarkRunner:
     """Main class for running drift detection benchmarks."""
 
-    def __init__(self, config: Optional[BenchmarkConfig] = None):
+    def __init__(self, config_path: Union[str, Path]):
         """Initialize the benchmark runner.
 
         Args:
-            config: BenchmarkConfig object
+            config_path: Path to the configuration file (TOML format)
 
         Raises:
             ValueError: If neither config_path nor config is provided
         """
-        self.config = config
+        self.config = load_config(config_path)
         self._validate_detectors()
         self.results = None
 
@@ -141,7 +141,7 @@ class BenchmarkResults:
             DataFrame with computed metrics
         """
         # Import metrics computation dynamically
-        from ..core.metrics import compute_metrics
+        from drift_benchmark.benchmark.metrics import compute_metrics
 
         return compute_metrics(self.results, self.metrics)
 
@@ -152,7 +152,7 @@ class BenchmarkResults:
             output_path: Path to save visualizations (overrides config path if provided)
         """
         # Import visualization functions dynamically
-        from ..figures.plots import plot_benchmark_results
+        from drift_benchmark.figures.plots import plot_benchmark_results
 
         # Use provided output path or the one from config
         path = output_path or (self.visualization_config.output_path if self.visualization_config else None)
