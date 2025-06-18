@@ -1,3 +1,4 @@
-# Everything except this folder
+# Everything except this folder and files
 /*
 !.gitignore
+!example.csv
