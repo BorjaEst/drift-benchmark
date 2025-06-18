@@ -30,6 +30,7 @@ class Settings(BaseModel):
     _DEFAULT_CONFIGURATIONS_DIR: ClassVar[str] = "configurations"
     _DEFAULT_DATASETS_DIR: ClassVar[str] = "datasets"
     _DEFAULT_RESULTS_DIR: ClassVar[str] = "results"
+    _DEFAULT_LOGS_DIR: ClassVar[str] = "logs"
 
     components_dir: str = Field(
         default=_DEFAULT_COMPONENTS_DIR,
@@ -46,6 +47,10 @@ class Settings(BaseModel):
     results_dir: str = Field(
         default=_DEFAULT_RESULTS_DIR,
         description="Directory for benchmark results",
+    )
+    logs_dir: Optional[str] = Field(
+        default=_DEFAULT_LOGS_DIR,
+        description="Directory for storing logs of benchmark runs",
     )
 
     @field_validator("*")
@@ -94,6 +99,10 @@ class Settings(BaseModel):
     def get_absolute_results_dir(self) -> str:
         """Get the absolute path to the results directory."""
         return self.get_absolute_path(self.results_dir)
+
+    def get_absolute_logs_dir(self) -> str:
+        """Get the absolute path to the logs directory."""
+        return self.get_absolute_path(self.logs_dir)
 
 
 # Create a global settings instance
