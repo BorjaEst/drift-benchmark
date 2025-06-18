@@ -2,7 +2,8 @@
 
 ## Project Overview
 
-drift-benchmark is a Python library designed to benchmark various drift detection frameworks and algorithms. It provides a standardized way to measure the performance of different methods for detecting data drift in machine learning pipelines.
+drift-benchmark is a Python library designed to benchmark various drift detection frameworks and algorithms.
+It provides a standardized way to measure the performance of different methods for detecting data drift in machine learning pipelines.
 
 ## Project Structure
 
@@ -10,6 +11,7 @@ drift-benchmark is a Python library designed to benchmark various drift detectio
 drift-benchmark/
 ├── drift_benchmark/             # Main package directory
 │   ├── __init__.py              # Package initialization
+│   ├── settings.py              # Configuration settings
 │   ├── core/                    # Core functionality
 │   │   ├── __init__.py
 │   │   ├── benchmark.py         # Benchmark runner
