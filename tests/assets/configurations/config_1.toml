@@ -1,0 +1,90 @@
+# Benchmark Configuration Example 1
+
+[metadata]
+    name        = "Example Drift Detection Benchmark"
+    description = "A simple benchmark to demonstrate the capabilities of drift-benchmark"
+    author      = "Drift Benchmark Team"
+    date        = "2025-06-18"
+    version     = "0.1.0"
+
+[settings]
+    seed                 = 42
+    n_runs               = 5
+    cross_validation     = true
+    cv_folds             = 3
+    timeout_per_detector = 300 # seconds
+
+[data]
+# Dataset configurations
+[[data.datasets]]
+    name           = "synthetic_gradual_drift"
+    type           = "synthetic"
+    n_samples      = 500
+    n_features     = 20
+    drift_type     = "gradual"
+    drift_position = 0.5
+    noise          = 0.05
+
+[[data.datasets]]
+    name           = "synthetic_sudden_drift"
+    type           = "synthetic"
+    n_samples      = 500
+    n_features     = 20
+    drift_type     = "sudden"
+    drift_position = 0.6
+    noise          = 0.05
+
+[[data.datasets]]
+    name          = "mock_dataset"
+    type          = "file"
+    target_column = "RainTomorrow"
+    drift_column  = "date"
+    train_size    = 0.3
+
+
+[detectors]
+# List of detectors to evaluate
+[[detectors.algorithms]]
+    name       = "MockDetector"
+    library    = "mock_adapter"
+    parameters = { drift_scenario = "threshold", drift_threshold = 0.05, false_positive_rate = 0.05 }
+
+[[detectors.algorithms]]
+    name = "PredefinedDetector"
+    library = "mock_adapter"
+    parameters = { drift_sequence = [
+        false,
+        false,
+        true,
+        false,
+        true,
+    ], p_values = [
+        0.8,
+        0.6,
+        0.02,
+        0.7,
+        0.01,
+    ] }
+
+[[detectors.algorithms]]
+    name       = "MockDetector"
+    library    = "mock_adapter"
+    parameters = { drift_scenario = "random", drift_probability = 0.3, seed = 12345 }
+
+
+[metrics]
+    # Evaluation metrics
+    metrics = [
+        "detection_delay",
+        "false_positive_rate",
+        "false_negative_rate",
+        "f1_score",
+        "computation_time",
+    ]
+
+[output]
+    save_results  = true
+    visualization = true
+    plots         = ["roc_curve", "delay_distribution", "performance_comparison"]
+    export_format = ["csv", "json"]
+    log_level     = "info"
