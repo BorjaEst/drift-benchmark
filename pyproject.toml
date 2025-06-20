@@ -60,9 +60,9 @@
     python_functions = "test_*"
     addopts = "--import-mode=importlib"
     env = [
-        "COMPONENTS_DIR=tests/assets/components",
-        "CONFIGURATIONS_DIR=tests/assets/configurations",
-        "DATASETS_DIR=tests/assets/datasets",
-        "RESULTS_DIR=tests/assets/results",
-        "LOGS_DIR=tests/assets/logs",
+        "DRIFT_BENCHMARK_COMPONENTS_DIR=tests/assets/components",
+        "DRIFT_BENCHMARK_CONFIGURATIONS_DIR=tests/assets/configurations",
+        "DRIFT_BENCHMARK_DATASETS_DIR=tests/assets/datasets",
+        "DRIFT_BENCHMARK_RESULTS_DIR=tests/assets/results",
+        "DRIFT_BENCHMARK_LOGS_DIR=tests/assets/logs",
     ]
