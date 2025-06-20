@@ -7,10 +7,15 @@ enabling standardized benchmarking and evaluation across different libraries.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Union
+from enum import Enum, auto
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel, Field
+
+from drift_benchmark.constants import DetectorMetadata
+from drift_benchmark.constants.enums import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +40,18 @@ class BaseDetector(ABC):
         self.name = name if name is not None else self.__class__.__name__
         self.metadata = kwargs.get("metadata", {})
         logger.debug(f"Initializing detector: {self.name}")
+
+    @classmethod
+    @abstractmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Metadata for the detector.
+
+        This property should return a DetectorMetadata instance containing
+        information about the detector's capabilities, requirements, and configuration.
+        """
+        msg = f"{cls.__name__} does not implement the metadata property."
+        raise NotImplementedError(msg)
 
     @abstractmethod
     def fit(self, reference_data: Union[np.ndarray, pd.DataFrame], **kwargs) -> "BaseDetector":
@@ -126,6 +143,27 @@ class DummyDetector(BaseDetector):
         self.is_fitted = False
         self.last_data_shape = None
 
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the dummy detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="DummyDetector",
+            description="A dummy detector that always returns the same drift result",
+            drift_types=[DriftType.CONCEPT, DriftType.COVARIATE, DriftType.LABEL],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.MULTIVARIATE,
+            data_types=[DataType.CONTINUOUS, DataType.CATEGORICAL, DataType.MIXED],
+            requires_labels=False,
+            references=["For testing and benchmarking purposes only"],
+            hyperparameters={"always_drift": "Boolean indicating whether drift is always detected"},
+        )
+
     def fit(self, reference_data: Union[np.ndarray, pd.DataFrame], **kwargs) -> "DummyDetector":
         """
         Store reference data shape.
@@ -170,6 +208,9 @@ class DummyDetector(BaseDetector):
         """
         Return dummy scores.
 
+        Args:
+            None
+
         Returns:
             Dictionary with dummy score values
         """
@@ -183,115 +224,57 @@ class DummyDetector(BaseDetector):
         }
 
     def reset(self) -> None:
-        """Reset the detector state (does nothing for dummy detector)."""
-        pass
-
-
-class ThresholdDetector(BaseDetector):
-    """
-    A simple detector that compares a statistic to a threshold.
-
-    This detector computes a statistic on both reference and current data,
-    then detects drift if the absolute difference exceeds a threshold.
-    """
-
-    def __init__(self, statistic: str = "mean", threshold: float = 0.1, **kwargs):
-        """
-        Initialize the threshold detector.
-
-        Args:
-            statistic: Statistic to compute ('mean', 'median', 'std')
-            threshold: Threshold for drift detection
-            **kwargs: Additional keyword arguments for BaseDetector
-        """
-        super().__init__(**kwargs)
-        self.statistic = statistic
-        self.threshold = threshold
-        self.reference_stat = None
-        self.current_stat = None
-        self.diff = None
+        """Reset the detector state."""
         self.is_fitted = False
+        self.last_data_shape = None
 
-    def _compute_statistic(self, data: Union[np.ndarray, pd.DataFrame]) -> float:
-        """
-        Compute the selected statistic on the data.
 
-        Args:
-            data: Input data
+# Example usage of the DummyDetector
+if __name__ == "__main__":
+    import numpy as np
 
-        Returns:
-            Computed statistic value
-        """
-        if isinstance(data, pd.DataFrame):
-            data = data.select_dtypes(include="number").values
+    # Display metadata
+    print("DummyDetector metadata:")
+    metadata = DummyDetector.metadata()
+    print(f"  Name: {metadata.name}")
+    print(f"  Description: {metadata.description}")
+    print(f"  Drift types: {[dt.name for dt in metadata.drift_types]}")
+    print(f"  Execution mode: {metadata.execution_mode.name}")
 
-        if self.statistic == "mean":
-            return float(np.mean(data))
-        elif self.statistic == "median":
-            return float(np.median(data))
-        elif self.statistic == "std":
-            return float(np.std(data))
-        else:
-            raise ValueError(f"Unknown statistic: {self.statistic}")
+    # Create a detector that always detects drift
+    detector_positive = DummyDetector(always_drift=True, name="AlwaysDrift")
 
-    def fit(self, reference_data: Union[np.ndarray, pd.DataFrame], **kwargs) -> "ThresholdDetector":
-        """
-        Compute statistic on reference data.
+    # Create a detector that never detects drift
+    detector_negative = DummyDetector(always_drift=False, name="NeverDrift")
 
-        Args:
-            reference_data: Reference data
-            **kwargs: Additional arguments
+    # Generate some sample data
+    reference_data = np.random.normal(0, 1, (100, 5))
+    test_data_1 = np.random.normal(0, 1, (50, 5))
+    test_data_2 = np.random.normal(2, 1, (50, 5))  # This data has a different mean
 
-        Returns:
-            Self
-        """
-        self.reference_stat = self._compute_statistic(reference_data)
-        self.is_fitted = True
-        return self
+    # Use the positive detector
+    print("\nTesting AlwaysDrift detector:")
+    detector_positive.fit(reference_data)
+    drift_detected = detector_positive.detect(test_data_1)
+    print(f"  Drift detected in similar data: {drift_detected}")
+    scores = detector_positive.score()
+    print(f"  Drift probability: {scores['drift_probability']:.2f}, Confidence: {scores['confidence']:.2f}")
 
-    def detect(self, data: Union[np.ndarray, pd.DataFrame], **kwargs) -> bool:
-        """
-        Detect drift by comparing statistics.
+    # Use the negative detector
+    print("\nTesting NeverDrift detector:")
+    detector_negative.fit(reference_data)
+    drift_detected = detector_negative.detect(test_data_2)
+    print(f"  Drift detected in different data: {drift_detected}")
+    scores = detector_negative.score()
+    print(f"  Drift probability: {scores['drift_probability']:.2f}, Confidence: {scores['confidence']:.2f}")
 
-        Args:
-            data: New data to check for drift
-            **kwargs: Additional arguments
+    # Reset a detector
+    print("\nResetting detector:")
+    detector_positive.reset()
+    print("  Detector reset successfully")
 
-        Returns:
-            True if absolute difference exceeds threshold, False otherwise
-        """
-        if not self.is_fitted:
-            raise RuntimeError("Detector must be fitted before calling detect()")
-
-        self.current_stat = self._compute_statistic(data)
-        self.diff = abs(self.current_stat - self.reference_stat)
-
-        return self.diff > self.threshold
-
-    def score(self) -> Dict[str, float]:
-        """
-        Return detection scores.
-
-        Returns:
-            Dictionary with detection scores
-        """
-        if self.current_stat is None or self.reference_stat is None:
-            raise RuntimeError("No drift detection has been performed")
-
-        return {
-            "reference_statistic": self.reference_stat,
-            "current_statistic": self.current_stat,
-            "absolute_difference": self.diff,
-            "threshold": self.threshold,
-            "drift_ratio": self.diff / self.threshold if self.threshold != 0 else float("inf"),
-        }
-
-    def reset(self) -> None:
-        """
-        Reset the detector state.
-
-        Keeps the reference statistic but resets current statistic and difference.
-        """
-        if self.is_fitted:
-            self.current_stat = None
-            self.diff = None
+    # This would raise an error because the detector is no longer fitted
+    try:
+        detector_positive.detect(test_data_1)
+    except RuntimeError as e:
+        print(f"  Expected error: {e}")
