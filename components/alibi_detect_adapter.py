@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from drift_benchmark.constants import DetectorMetadata
+from drift_benchmark.constants.enums import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
 from drift_benchmark.detectors.base import BaseDetector
 
 try:
@@ -51,6 +53,31 @@ class AlibiDetectBaseAdapter(BaseDetector):
         self.drift_detected = False
         self.p_value = None
         self.test_stats = None
+
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Alibi Detect base adapter.
+        This should be overridden by subclasses.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="AlibiDetectBase",
+            description="Base adapter for Alibi Detect drift detectors",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.MULTIVARIATE,
+            data_types=[DataType.CONTINUOUS, DataType.CATEGORICAL, DataType.MIXED],
+            requires_labels=False,
+            references=["https://github.com/SeldonIO/alibi-detect"],
+            hyperparameters={
+                "detector_type": "Type of Alibi Detect drift detector",
+                "p_val_threshold": "P-value threshold for drift detection",
+            },
+        )
 
     def fit(self, reference_data: np.ndarray, **kwargs) -> "AlibiDetectBaseAdapter":
         """
@@ -130,6 +157,7 @@ class AlibiDetectBaseAdapter(BaseDetector):
         scores = {
             "p_value": float(self.p_value),
             "threshold": float(self.p_val_threshold),
+            "drift_detected": float(self.drift_detected),
         }
 
         if self.test_stats is not None:
@@ -166,6 +194,33 @@ class KSDriftDetector(AlibiDetectBaseAdapter):
             detector_type="KSDrift", detector_kwargs=detector_kwargs, p_val_threshold=p_val_threshold, **kwargs
         )
 
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the KS drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="KSDriftDetector",
+            description="Kolmogorov-Smirnov statistical test for drift detection",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.UNIVARIATE,
+            data_types=[DataType.CONTINUOUS],
+            requires_labels=False,
+            references=[
+                "https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/ksdrift.html",
+                "https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test",
+            ],
+            hyperparameters={
+                "p_val_threshold": "P-value threshold for drift detection",
+                "alternative": "Alternative hypothesis: two-sided, less, greater",
+            },
+        )
+
 
 class MMDDriftDetector(AlibiDetectBaseAdapter):
     """Maximum Mean Discrepancy drift detector from Alibi Detect."""
@@ -198,6 +253,35 @@ class MMDDriftDetector(AlibiDetectBaseAdapter):
             detector_type="MMDDrift", detector_kwargs=detector_kwargs, p_val_threshold=p_val_threshold, **kwargs
         )
 
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the MMD drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="MMDDriftDetector",
+            description="Maximum Mean Discrepancy test for drift detection",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.DISTANCE_BASED,
+            data_dimension=DataDimension.MULTIVARIATE,
+            data_types=[DataType.CONTINUOUS, DataType.CATEGORICAL, DataType.MIXED],
+            requires_labels=False,
+            references=[
+                "https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/mmddrift.html",
+                "https://arxiv.org/abs/0805.2368",
+            ],
+            hyperparameters={
+                "p_val_threshold": "P-value threshold for drift detection",
+                "kernel": "Kernel used for the MMD computation (rbf, linear)",
+                "backend": "Backend to use (numpy, tensorflow, pytorch)",
+                "n_permutations": "Number of permutations for p-value computation",
+            },
+        )
+
 
 class ChiSquareDriftDetector(AlibiDetectBaseAdapter):
     """Chi-Square drift detector from Alibi Detect."""
@@ -222,6 +306,33 @@ class ChiSquareDriftDetector(AlibiDetectBaseAdapter):
             detector_type="ChiSquareDrift", detector_kwargs=detector_kwargs, p_val_threshold=p_val_threshold, **kwargs
         )
 
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Chi-Square drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="ChiSquareDriftDetector",
+            description="Chi-Square statistical test for detecting drift in categorical data",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.UNIVARIATE,
+            data_types=[DataType.CATEGORICAL],
+            requires_labels=False,
+            references=[
+                "https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/chisquaredrift.html",
+                "https://en.wikipedia.org/wiki/Chi-squared_test",
+            ],
+            hyperparameters={
+                "p_val_threshold": "P-value threshold for drift detection",
+                "categories_per_feature": "Dict specifying number of categories per feature",
+            },
+        )
+
 
 class TabularDriftDetector(AlibiDetectBaseAdapter):
     """Tabular drift detector from Alibi Detect."""
@@ -244,6 +355,30 @@ class TabularDriftDetector(AlibiDetectBaseAdapter):
 
         super().__init__(
             detector_type="TabularDrift", detector_kwargs=detector_kwargs, p_val_threshold=p_val_threshold, **kwargs
+        )
+
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Tabular drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="TabularDriftDetector",
+            description="Combined statistical tests for detecting drift in tabular data with mixed feature types",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.ENSEMBLE,
+            data_dimension=DataDimension.MULTIVARIATE,
+            data_types=[DataType.MIXED],
+            requires_labels=False,
+            references=["https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/tabulardrift.html"],
+            hyperparameters={
+                "p_val_threshold": "P-value threshold for drift detection",
+                "categories_per_feature": "Dict specifying number of categories per feature",
+            },
         )
 
 

@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
+from drift_benchmark.constants import DetectorMetadata
+from drift_benchmark.constants.enums import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
 from drift_benchmark.detectors.base import BaseDetector
 
 try:
@@ -65,6 +67,31 @@ class EvidentlyBaseAdapter(BaseDetector):
         self.drift_detected = False
         self.p_values = {}
         self.test_stats = {}
+
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Evidently base adapter.
+        This should be overridden by subclasses.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="EvidentlyBase",
+            description="Base adapter for Evidently drift detectors",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.MULTIVARIATE,
+            data_types=[DataType.CONTINUOUS, DataType.CATEGORICAL, DataType.MIXED],
+            requires_labels=False,
+            references=["https://github.com/evidentlyai/evidently"],
+            hyperparameters={
+                "test_type": "Type of Evidently test to use",
+                "significance_level": "Significance level for drift detection",
+            },
+        )
 
     def _prepare_data(self, data: np.ndarray) -> pd.DataFrame:
         """
@@ -228,6 +255,31 @@ class DataDriftDetector(EvidentlyBaseAdapter):
             test_type="DataDriftPreset", column_mapping=column_mapping, significance_level=significance_level, **kwargs
         )
 
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Data Drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="DataDriftDetector",
+            description="Evidently detector for overall data drift across multiple features",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.MULTIVARIATE,
+            data_types=[DataType.CONTINUOUS, DataType.CATEGORICAL, DataType.MIXED],
+            requires_labels=False,
+            references=["https://docs.evidentlyai.com/user-guide/test-presets/data-drift"],
+            hyperparameters={
+                "significance_level": "Significance level for drift detection",
+                "numerical_features": "List of numerical feature names",
+                "categorical_features": "List of categorical feature names",
+            },
+        )
+
 
 class FeatureDriftDetector(EvidentlyBaseAdapter):
     """Single Feature Drift detector from Evidently."""
@@ -245,6 +297,30 @@ class FeatureDriftDetector(EvidentlyBaseAdapter):
 
         super().__init__(
             test_type="ColumnDrift", test_kwargs=test_kwargs, significance_level=significance_level, **kwargs
+        )
+
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Feature Drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="FeatureDriftDetector",
+            description="Evidently detector for monitoring drift in a single feature",
+            drift_types=[DriftType.COVARIATE],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.UNIVARIATE,
+            data_types=[DataType.CONTINUOUS, DataType.CATEGORICAL],
+            requires_labels=False,
+            references=["https://docs.evidentlyai.com/reference/tests/test-column-drift"],
+            hyperparameters={
+                "column_name": "Name of the column to monitor for drift",
+                "significance_level": "Significance level for drift detection",
+            },
         )
 
 
@@ -268,6 +344,30 @@ class CategoricalTargetDriftDetector(EvidentlyBaseAdapter):
             test_type="CatTargetDrift", column_mapping=column_mapping, significance_level=significance_level, **kwargs
         )
 
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Categorical Target Drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="CategoricalTargetDriftDetector",
+            description="Evidently detector for monitoring drift in categorical target variable",
+            drift_types=[DriftType.LABEL],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.UNIVARIATE,
+            data_types=[DataType.CATEGORICAL],
+            requires_labels=True,
+            references=["https://docs.evidentlyai.com/reference/tests/test-cat-target-drift"],
+            hyperparameters={
+                "target_column": "Name of the categorical target column",
+                "significance_level": "Significance level for drift detection",
+            },
+        )
+
 
 class NumericalTargetDriftDetector(EvidentlyBaseAdapter):
     """Numerical Target Drift detector from Evidently."""
@@ -287,6 +387,30 @@ class NumericalTargetDriftDetector(EvidentlyBaseAdapter):
 
         super().__init__(
             test_type="NumTargetDrift", column_mapping=column_mapping, significance_level=significance_level, **kwargs
+        )
+
+    @classmethod
+    def metadata(cls) -> DetectorMetadata:
+        """
+        Provide metadata for the Numerical Target Drift detector.
+
+        Returns:
+            DetectorMetadata object with information about the detector
+        """
+        return DetectorMetadata(
+            name="NumericalTargetDriftDetector",
+            description="Evidently detector for monitoring drift in numerical target variable",
+            drift_types=[DriftType.LABEL],
+            execution_mode=ExecutionMode.BATCH,
+            family=DetectorFamily.STATISTICAL_TEST,
+            data_dimension=DataDimension.UNIVARIATE,
+            data_types=[DataType.CONTINUOUS],
+            requires_labels=True,
+            references=["https://docs.evidentlyai.com/reference/tests/test-num-target-drift"],
+            hyperparameters={
+                "target_column": "Name of the numerical target column",
+                "significance_level": "Significance level for drift detection",
+            },
         )
 
 
