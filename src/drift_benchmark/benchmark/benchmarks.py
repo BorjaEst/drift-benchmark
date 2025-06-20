@@ -6,8 +6,10 @@ experiments, including loading configurations, running detectors on datasets,
 computing metrics, and storing results.
 """
 
+import json
 import logging
 import os
+import pickle
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
@@ -20,6 +22,7 @@ from drift_benchmark.benchmark.configuration import BenchmarkConfig, load_config
 from drift_benchmark.benchmark.metrics import BenchmarkResult, DetectorPrediction, DriftEvaluationResult, time_execution
 from drift_benchmark.data import load_dataset
 from drift_benchmark.detectors import BaseDetector, get_detector_class
+from drift_benchmark.settings import settings
 
 
 class BenchmarkRunner:
@@ -70,15 +73,17 @@ class BenchmarkRunner:
             "cross_validation": self.config.settings.cross_validation,
             "cv_folds": self.config.settings.cv_folds,
             "benchmark_name": self.config.metadata.name,
+            "benchmark_version": self.config.metadata.version,
         }
 
-        self.logger.info(f"Initialized benchmark: {self.config.metadata.name}")
+        self.logger.info(f"Initialized benchmark: {self.config.metadata.name} (v{self.config.metadata.version})")
         self.logger.info(
-            f"Using {len(self.config.data.datasets)} datasets and " f"{len(self.config.detectors.algorithms)} detectors"
+            f"Using {len(self.config.data.datasets)} datasets and {len(self.config.detectors.algorithms)} detectors"
         )
 
     def _setup_logging(self) -> None:
         """Configure logging based on configuration settings."""
+        # Use the global settings log level if not overridden in benchmark config
         log_level = getattr(logging, self.config.output.log_level.upper(), logging.INFO)
 
         # Create formatter
@@ -104,20 +109,58 @@ class BenchmarkRunner:
 
         # Add file handler if saving results
         if self.config.output.save_results:
-            # Will be created in _prepare_output_dir
-            log_file = Path(self.config.output.results_dir) / "benchmark.log"
+            # Create logs directory if it doesn't exist (based on settings)
+            logs_dir = Path(settings.logs_dir)
+            logs_dir.mkdir(parents=True, exist_ok=True)
+
+            # Create a benchmark-specific log file
+            benchmark_name = self.config.metadata.name.lower().replace(" ", "_")
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            log_filename = f"{benchmark_name}_{timestamp}.log"
+
+            log_file = logs_dir / log_filename
+
+            # Also create a symlink in the results directory
+            results_dir = Path(self.config.output.results_dir)
+            results_log_file = results_dir / "benchmark.log"
 
             file_handler = logging.FileHandler(log_file, mode="w")
             file_handler.setFormatter(formatter)
             file_handler.setLevel(log_level)
             root_logger.addHandler(file_handler)
 
+            # Symlink the log file to the results directory
+            if os.path.exists(results_log_file) or os.path.islink(results_log_file):
+                os.unlink(results_log_file)
+            try:
+                os.symlink(log_file, results_log_file)
+            except OSError:
+                # Fall back to copying if symlinks aren't supported
+                self.logger.warning(f"Could not create symlink, will copy log file to {results_log_file}")
+
+                # Add a second file handler for the results directory
+                results_file_handler = logging.FileHandler(results_log_file, mode="w")
+                results_file_handler.setFormatter(formatter)
+                results_file_handler.setLevel(log_level)
+                root_logger.addHandler(results_file_handler)
+
     def _prepare_output_dir(self) -> None:
         """Create output directory for results if it doesn't exist."""
         if self.config.output.save_results:
+            # Use the output directory from config (which should already include settings.results_dir)
             output_dir = Path(self.config.output.results_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
-            self.logger.info(f"Output directory: {output_dir.absolute()}")
+
+            # Create benchmark-specific subdirectory
+            benchmark_name = self.config.metadata.name.lower().replace(" ", "_")
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            benchmark_dir = output_dir / f"{benchmark_name}_{timestamp}"
+
+            benchmark_dir.mkdir(parents=True, exist_ok=True)
+
+            # Update the output directory in the config
+            self.config.output.results_dir = str(benchmark_dir)
+
+            self.logger.info(f"Output directory: {benchmark_dir.absolute()}")
 
     def run(self) -> DriftEvaluationResult:
         """
@@ -143,10 +186,14 @@ class BenchmarkRunner:
             # Load and prepare dataset
             dataset_start_time = time.time()
             try:
-                # Convert dataset config to dict if using pydantic v2 model
+                # Convert dataset config to dict
                 dataset_params = (
                     dataset_config.model_dump() if hasattr(dataset_config, "model_dump") else dataset_config.dict()
                 )
+
+                # If path is relative and not absolute, use the datasets directory from settings
+                if dataset_params.get("path") and not os.path.isabs(dataset_params["path"]):
+                    dataset_params["path"] = os.path.join(settings.datasets_dir, dataset_params["path"])
 
                 X_ref, X_test, y_ref, y_test, drift_labels = load_dataset(dataset_params)
 
@@ -159,12 +206,10 @@ class BenchmarkRunner:
                     drift_count = sum(drift_labels)
                     total_windows = len(drift_labels)
                     drift_pct = (drift_count / total_windows) * 100
-                    self.logger.info(
-                        f"Drift distribution: {drift_count}/{total_windows} " f"windows ({drift_pct:.2f}%)"
-                    )
+                    self.logger.info(f"Drift distribution: {drift_count}/{total_windows} windows ({drift_pct:.2f}%)")
 
             except Exception as e:
-                self.logger.error(f"Error loading dataset {dataset_name}: {str(e)}")
+                self.logger.error(f"Error loading dataset {dataset_name}: {str(e)}", exc_info=True)
                 continue
 
             dataset_load_time = time.time() - dataset_start_time
@@ -287,7 +332,7 @@ class BenchmarkRunner:
             detector = detector_class(**detector_params)
             return detector
         except Exception as e:
-            self.logger.error(f"Error initializing detector {detector_name}: {str(e)}")
+            self.logger.error(f"Error initializing detector {detector_name}: {str(e)}", exc_info=True)
             raise ValueError(f"Failed to initialize detector {detector_name} from {library_name}")
 
     def _fit_detector(self, detector: BaseDetector, reference_data: np.ndarray) -> bool:
@@ -367,10 +412,11 @@ class BenchmarkRunner:
             result = func(*args, **kwargs)
             elapsed = time.time() - start_time
             if elapsed > timeout:
+                self.logger.warning(f"Function {func.__name__} exceeded timeout: {elapsed:.2f}s > {timeout}s")
                 return None
             return result
         except Exception as e:
-            self.logger.error(f"Error in function {func.__name__}: {str(e)}")
+            self.logger.error(f"Error in function {func.__name__}: {str(e)}", exc_info=True)
             return None
 
     def _finalize_results(self) -> None:
@@ -397,6 +443,11 @@ class BenchmarkRunner:
     def _save_results(self) -> None:
         """Save benchmark results to files."""
         output_dir = Path(self.config.output.results_dir)
+
+        # Save configuration used for the benchmark
+        config_dict = self.config.model_dump() if hasattr(self.config, "model_dump") else self.config.dict()
+        with open(output_dir / "config.json", "w") as f:
+            json.dump(config_dict, f, indent=2, default=str)
 
         # Create results summary
         summary = self.results.summary()
@@ -458,8 +509,6 @@ class BenchmarkRunner:
 
     def _save_json_results(self, output_dir: Path, summary: Dict[str, Any]) -> None:
         """Save results in JSON format."""
-        import json
-
         # Save summary as JSON
         with open(output_dir / "summary.json", "w") as f:
             json.dump(summary, f, indent=2, default=str)
@@ -502,7 +551,5 @@ class BenchmarkRunner:
 
     def _save_pickle_results(self, output_dir: Path) -> None:
         """Save results in pickle format (for later analysis)."""
-        import pickle
-
         with open(output_dir / "results.pkl", "wb") as f:
             pickle.dump(self.results, f)
