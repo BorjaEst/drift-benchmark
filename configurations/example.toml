@@ -14,8 +14,8 @@
     cv_folds             = 3
     timeout_per_detector = 300 # seconds
 
-[data]
-# Dataset configurations
+
+[data] # Dataset configurations
 [[data.datasets]]
     name           = "synthetic_gradual_drift"
     type           = "synthetic"
@@ -35,21 +35,25 @@
     noise          = 0.05
 
 [[data.datasets]]
-    name       = "california_housing"
-    type       = "builtin"
-    test_size  = 0.3
-    preprocess = { scaling = true, scaling_method = "standard", handle_missing = true }
+    name      = "california_housing"
+    type      = "builtin"
+    test_size = 0.3
+
+[data.datasets.preprocess]
+    scaling        = true
+    scaling_method = "standard"
+    handle_missing = true
 
 [[data.datasets]]
     name          = "real_weather"
     type          = "file"
+    path          = "example.csv"
     target_column = "RainTomorrow"
     drift_column  = "date"
     train_size    = 0.3
 
 
-[detectors]
-# List of detectors to evaluate
+[detectors] # List of detectors to evaluate
 [[detectors.algorithms]]
     name       = "KSDrift"
     library    = "alibi_detect_adapter"
@@ -71,16 +75,13 @@
     parameters = { column_name = "feature_1", significance_level = 0.01 }
 
 
+# Metrics are not directly defined in the configuration schema as a section
+# Instead, they are defined as a dictionary field of the root configuration
 [metrics]
-    # Evaluation metrics
-    metrics = [
-        "detection_delay",
-        "false_positive_rate",
-        "false_negative_rate",
-        "f1_score",
-        "computation_time",
-    ]
+    detection   = ["f1_score", "false_positive_rate", "false_negative_rate"]
+    performance = ["detection_delay", "computation_time"]
 
+# Output configuration 
 [output]
     save_results  = true
     visualization = true
