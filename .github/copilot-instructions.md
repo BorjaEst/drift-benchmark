@@ -62,7 +62,8 @@ This module provides utilities for loading standard datasets and generating synt
 
 ### Detectors Module
 
-This module contains the detector registry and its utilities functions. It also implement the common interface defined in `base.py`.
+This module contains the detector registry and its utilities functions.
+It also implement the common interface defined in `base.py`.
 
 ### Visualization Module
 
@@ -91,6 +92,43 @@ This directory is by default at the CWD but can be configured at settings.
 
 This directory is used to store the output of benchmark runs, including performance metrics, visualizations, and logs.
 This directory is by default at the CWD but can be configured at settings.
+
+## Detector Classes
+
+### Detector Categories by Drift Type:
+
+Detectors can be differentiated by the type of drift they are designed to detect:
+
+- Concept drift – changes in the relationship between features and labels (i.e., shifts in P(y|X)).
+- Data (covariate) drift – changes in the distribution of input features (P(X)) without directly affecting the target.
+- Prior probability (label) drift – shifts in the distribution of the labels themselves (P(y)), even if P(X|y)
+
+### Detector Categories by Implementation Type:
+
+Detectors can be differentiated by their implementation type into:
+
+- Streaming: Detectors that process data in a streaming fashion, analyzing each data point as it arrives.
+- Batch: Detectors that analyze data in batches, requiring a complete dataset before performing drift detection
+
+### Detector Categories by Family:
+
+- Change detection: Detectors that identify changes in the data distribution over time.
+- Statistical process control: Detectors that use control charts to monitor data and detect drift.
+- Window-based: Detectors that analyze data within a sliding window to detect drift.
+- Distance-based: Detectors that measure the distance between distributions to identify drift.
+- Statistical tests: Detectors that use statistical tests to determine if a drift has occurred.
+- Ensemble methods: Detectors that combine multiple drift detection algorithms to improve robustness and accuracy.
+- Machine learning-based: Detectors that use machine learning models to learn patterns in the data and detect drift.
+
+### Detector Categories by data type:
+
+- Univariate: Detectors that analyze a single feature or variable at a time.
+- Multivariate: Detectors that analyze multiple features or variables simultaneously.
+
+### Detector Categories by value type:
+
+- Continuous: Detectors that work with continuous numerical data.
+- Categorical: Detectors that work with categorical data.
 
 ## Development Guidelines
 
