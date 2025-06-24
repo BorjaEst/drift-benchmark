@@ -16,26 +16,40 @@ METHODS_TOML = os.path.join(os.path.dirname(__file__), "methods.toml")
 
 
 @lru_cache(maxsize=1)
-def load_methods() -> Dict[str, List[Dict[str, Any]]]:
+def load_methods() -> List[Dict[str, Any]]:
     """
     Load methods from the methods.toml file.
 
     Returns:
-        Dict: The loaded methods data
+        List[Dict]: The loaded methods data (list of method dicts)
     """
     with open(METHODS_TOML, "rb") as f:
-        return tomli.load(f)
+        data = tomli.load(f)
+    # TOML structure: list of [[method]] with possible [[method.implementation]] sublists
+    # Flatten each method and its implementations into a single detector entry
+    methods = []
+    for method in data.get("method", []):
+        base = {k: v for k, v in method.items() if k != "implementation"}
+        implementations = method.get("implementation", [])
+        # If no implementations, treat the method as a single detector
+        if not implementations:
+            methods.append(base)
+        else:
+            for impl in implementations:
+                detector = base.copy()
+                detector.update(impl)
+                methods.append(detector)
+    return methods
 
 
 def get_all_methods() -> List[Dict[str, Any]]:
     """
-    Get all available drift detection methods.
+    Get all available drift detection methods (flattened: one per implementation).
 
     Returns:
         List[Dict]: List of all methods with their metadata
     """
-    methods_data = load_methods()
-    return methods_data.get("detector", [])
+    return load_methods()
 
 
 def get_method_by_name(name: str) -> Optional[Dict[str, Any]]:
@@ -48,8 +62,7 @@ def get_method_by_name(name: str) -> Optional[Dict[str, Any]]:
     Returns:
         Optional[Dict]: The method data if found, None otherwise
     """
-    methods = get_all_methods()
-    for method in methods:
+    for method in get_all_methods():
         if method.get("name") == name:
             return method
     return None
@@ -87,7 +100,6 @@ def filter_methods(
         data_types = [data_types]
 
     for method in methods:
-        # Apply filters
         if drift_types and not any(dt in method.get("drift_types", []) for dt in drift_types):
             continue
         if execution_mode and method.get("execution_mode") != execution_mode:
@@ -116,12 +128,10 @@ def search_methods(query: str) -> List[Dict[str, Any]]:
     Returns:
         List[Dict]: List of matching methods
     """
-    methods = get_all_methods()
     query = query.lower()
-
     return [
         method
-        for method in methods
+        for method in get_all_methods()
         if query in method.get("name", "").lower() or query in method.get("description", "").lower()
     ]
 
@@ -133,9 +143,8 @@ def get_available_drift_types() -> Set[str]:
     Returns:
         Set[str]: Set of unique drift types
     """
-    methods = get_all_methods()
     drift_types = set()
-    for method in methods:
+    for method in get_all_methods():
         if "drift_types" in method:
             drift_types.update(method["drift_types"])
     return drift_types
@@ -148,8 +157,7 @@ def get_available_families() -> Set[str]:
     Returns:
         Set[str]: Set of unique method families
     """
-    methods = get_all_methods()
-    return {method.get("family") for method in methods if "family" in method}
+    return {method.get("family") for method in get_all_methods() if "family" in method}
 
 
 def get_available_data_types() -> Set[str]:
@@ -159,9 +167,8 @@ def get_available_data_types() -> Set[str]:
     Returns:
         Set[str]: Set of unique data types
     """
-    methods = get_all_methods()
     data_types = set()
-    for method in methods:
+    for method in get_all_methods():
         if "data_types" in method:
             data_types.update(method["data_types"])
     return data_types
@@ -174,9 +181,8 @@ def get_methods_summary() -> Dict[str, int]:
     Returns:
         Dict[str, int]: Counts of methods by different categories
     """
-    methods = get_all_methods()
     summary = {
-        "total": len(methods),
+        "total": len(get_all_methods()),
         "batch": len(filter_methods(execution_mode="BATCH")),
         "streaming": len(filter_methods(execution_mode="STREAMING")),
         "univariate": len(filter_methods(data_dimension="UNIVARIATE")),
