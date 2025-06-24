@@ -5,103 +5,82 @@ This module defines the common interface that all drift detectors must implement
 enabling standardized benchmarking and evaluation across different libraries.
 """
 
-import logging
-from abc import ABC, abstractmethod
-from enum import Enum, auto
+import abc
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field
 
 from drift_benchmark.constants import DetectorMetadata
-from drift_benchmark.constants.enums import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
-
-logger = logging.getLogger(__name__)
 
 
-class BaseDetector(ABC):
-    """
-    Base class for all drift detectors.
+class BaseDetector(abc.ABC):
+    """Base class for all drift detectors."""
 
-    This abstract class defines the common interface that all drift detectors must implement.
-    It provides methods for initialization, fitting to reference data, detecting drift,
-    scoring detection results, and resetting the detector state.
-    """
+    # Class attribute for aliases
+    aliases: List[str] = []
 
     def __init__(self, name: Optional[str] = None, **kwargs):
         """
         Initialize the detector.
 
         Args:
-            name: Optional name for the detector instance
-            **kwargs: Additional keyword arguments for specific detector implementations
+            name: Optional custom name for the detector
+            **kwargs: Additional keyword arguments
         """
-        self.name = name if name is not None else self.__class__.__name__
-        self.metadata = kwargs.get("metadata", {})
-        logger.debug(f"Initializing detector: {self.name}")
+        self.name = name or self.__class__.__name__
 
     @classmethod
-    @abstractmethod
     def metadata(cls) -> DetectorMetadata:
         """
-        Metadata for the detector.
+        Provide metadata about the detector.
 
-        This property should return a DetectorMetadata instance containing
-        information about the detector's capabilities, requirements, and configuration.
+        Returns:
+            DetectorMetadata object with information about the detector
         """
-        msg = f"{cls.__name__} does not implement the metadata property."
-        raise NotImplementedError(msg)
+        raise NotImplementedError("Subclasses must implement metadata()")
 
-    @abstractmethod
+    @abc.abstractmethod
     def fit(self, reference_data: Union[np.ndarray, pd.DataFrame], **kwargs) -> "BaseDetector":
         """
         Initialize the drift detector with reference data.
 
         Args:
             reference_data: Reference data used as baseline
-            **kwargs: Additional arguments for specific detector implementations
+            **kwargs: Additional arguments
 
         Returns:
             Self
         """
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def detect(self, data: Union[np.ndarray, pd.DataFrame], **kwargs) -> bool:
         """
         Detect if drift has occurred.
 
         Args:
-            data: New data batch to check for drift
-            **kwargs: Additional arguments for specific detector implementations
+            data: New data to check for drift
+            **kwargs: Additional arguments
 
         Returns:
             True if drift is detected, False otherwise
         """
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def score(self) -> Dict[str, float]:
         """
         Return detection scores.
-
-        This method should provide quantitative measures of the detection result,
-        such as p-values, test statistics, or other relevant metrics.
 
         Returns:
             Dictionary with detection scores
         """
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def reset(self) -> None:
-        """
-        Reset the detector state.
-
-        This method should reset any internal state of the detector,
-        preparing it for new detection without refitting.
-        """
+        """Reset the detector state."""
         pass
 
     def get_metadata(self) -> Dict[str, Any]:

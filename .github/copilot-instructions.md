@@ -64,6 +64,7 @@ This module provides utilities for loading standard datasets and generating synt
 
 This module contains the detector registry and its utilities functions.
 It also implement the common interface defined in `base.py`.
+The BaseDetector includes an `aliases` class attribute to support detector naming conventions from different libraries.
 
 ### Visualization Module
 
@@ -136,8 +137,15 @@ Detectors can be differentiated by their implementation type into:
 
 1. Create a new file in `<working-dir>/implementations/` named after your detector, e.g., `mydetector_adapter.py`
 2. Implement the detector by extending the `BaseDetector` class from `drift_benchmark/detectors/base.py`
-3. Implement required methods like `fit()`, `detect()` and `score()`
-4. Add tests for your detector at the end of the file using pytest framework
+3. Add an `aliases` class attribute to your detector class to support naming conventions from the original library. For example:
+   ```python
+   class MyDetector(BaseDetector):
+       # Add original library method names as aliases
+       aliases = ["original_name", "alternative_name"]
+   ```
+4. Implement required methods like `fit()`, `detect()` and `score()`
+5. Implement the `metadata()` class method to provide information about the detector
+6. Add tests for your detector at the end of the file using pytest framework
 
 ### Adding a New Dataset
 
@@ -184,5 +192,5 @@ Dependencies are managed in pyproject.toml with setuptools dynamically via:
 ```
 git clone https://github.com/yourusername/drift-benchmark.git
 cd drift-benchmark
-pip install -e ".[dev]"
+pip install
 ```

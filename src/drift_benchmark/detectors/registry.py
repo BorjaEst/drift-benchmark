@@ -63,6 +63,12 @@ def get_detector(detector_name: str) -> Type[BaseDetector]:
         KeyError: If detector is not found in the registry
     """
     if detector_name not in _DETECTOR_REGISTRY:
+        # Check if detector name matches any alias
+        for cls_name, cls in _DETECTOR_REGISTRY.items():
+            if hasattr(cls, "aliases") and detector_name in cls.aliases:
+                logger.debug(f"Found detector '{cls_name}' for alias '{detector_name}'")
+                return cls
+
         raise KeyError(
             f"Detector '{detector_name}' not found in registry. "
             f"Available detectors: {list(_DETECTOR_REGISTRY.keys())}"
@@ -111,10 +117,10 @@ def get_detector_class(name: str, library: Optional[str] = None) -> Type[BaseDet
     Get a detector class by name and optionally by library.
 
     This function checks the registry for a detector matching the specified name
-    and optionally from a specific library adapter.
+    and optionally from a specific library adapter. It also checks detector aliases.
 
     Args:
-        name: Name of the detector class
+        name: Name of the detector class or any of its aliases
         library: Optional name of the adapter library (e.g., 'alibi', 'river', 'evidently')
 
     Returns:
@@ -124,13 +130,22 @@ def get_detector_class(name: str, library: Optional[str] = None) -> Type[BaseDet
         KeyError: If detector is not found in the registry
     """
     if library is None:
-        # If no library specified, just search by name
+        # If no library specified, search by name directly
         return get_detector(name)
+
+    # First, check if we can find a detector by its alias
+    for detector_name, detector_cls in _DETECTOR_REGISTRY.items():
+        # Check if detector has aliases and if the desired name is in those aliases
+        if hasattr(detector_cls, "aliases") and name in detector_cls.aliases:
+            # Check if this detector belongs to the specified library
+            if library.lower() in detector_name.lower():
+                logger.debug(f"Found detector '{detector_name}' for alias '{name}' in library '{library}'")
+                return detector_cls
 
     # Look for a detector with the specified name from the specified library
     full_name = f"{library.capitalize()}{name}"
 
-    # First try with the library prefix
+    # Try with the library prefix
     try:
         return get_detector(full_name)
     except KeyError:
@@ -138,17 +153,28 @@ def get_detector_class(name: str, library: Optional[str] = None) -> Type[BaseDet
         try:
             return get_detector(name)
         except KeyError:
-            # Look for any detector from the specified library
+            # Collect information about available detectors from the specified library
             library_detectors = []
+            available_aliases = []
+
             for detector_name, detector_cls in _DETECTOR_REGISTRY.items():
                 # Check if detector name starts with or contains the library name
                 if detector_name.lower().startswith(library.lower()) or library.lower() in detector_name.lower():
                     library_detectors.append(detector_name)
 
+                    # Add aliases information if available
+                    if hasattr(detector_cls, "aliases") and detector_cls.aliases:
+                        available_aliases.extend([(alias, detector_name) for alias in detector_cls.aliases])
+
+            # Include alias information in the error message
+            alias_info = ""
+            if available_aliases:
+                alias_info = f"\nAvailable aliases: {', '.join([f'{alias} -> {detector}' for alias, detector in available_aliases])}"
+
             if library_detectors:
                 raise KeyError(
                     f"Detector '{name}' from library '{library}' not found. "
-                    f"Available detectors from this library: {library_detectors}"
+                    f"Available detectors from this library: {library_detectors}{alias_info}"
                 )
             else:
                 raise KeyError(
@@ -165,6 +191,20 @@ def list_available_detectors() -> List[str]:
         List of detector names in the registry
     """
     return list(_DETECTOR_REGISTRY.keys())
+
+
+def list_available_aliases() -> Dict[str, List[str]]:
+    """
+    List all detector aliases.
+
+    Returns:
+        Dictionary mapping detector names to their aliases
+    """
+    aliases = {}
+    for name, cls in _DETECTOR_REGISTRY.items():
+        if hasattr(cls, "aliases") and cls.aliases:
+            aliases[name] = cls.aliases
+    return aliases
 
 
 def get_detector_info() -> Dict[str, Dict[str, Any]]:
@@ -188,6 +228,11 @@ def get_detector_info() -> Dict[str, Dict[str, Any]]:
                 "data_types": [dt.name for dt in metadata.data_types],
                 "requires_labels": metadata.requires_labels,
             }
+
+            # Include aliases if available
+            if hasattr(cls, "aliases") and cls.aliases:
+                result[name]["aliases"] = cls.aliases
+
         except Exception as e:
             logger.error(f"Error getting metadata for detector {name}: {str(e)}")
             result[name] = {"error": str(e)}
@@ -244,10 +289,14 @@ def discover_and_register_detectors(components_dir: Optional[str] = None) -> int
                         and obj != BaseDetector
                         and not name.startswith("_")
                     ):
-
                         register_detector(obj)
                         adapter_count += 1
-                        logger.info(f"Registered detector: {name} from {module_name}")
+
+                        # Log aliases if available
+                        if hasattr(obj, "aliases") and obj.aliases:
+                            logger.info(f"Registered detector: {name} from {module_name} with aliases: {obj.aliases}")
+                        else:
+                            logger.info(f"Registered detector: {name} from {module_name}")
 
             except (ImportError, AttributeError) as e:
                 logger.error(f"Error loading detector from {module_file}: {str(e)}")
@@ -300,6 +349,8 @@ if __name__ == "__main__":
         print(f"  {name}:")
         print(f"    Description: {metadata['description']}")
         print(f"    Drift types: {metadata['drift_types']}")
+        if "aliases" in metadata:
+            print(f"    Aliases: {metadata['aliases']}")
 
     # Find detectors by criteria
     concept_drift_detectors = get_detector_by_criteria(drift_type=DriftType.CONCEPT)

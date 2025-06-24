@@ -30,6 +30,9 @@ except ImportError:
 class EvidentlyBaseAdapter(BaseDetector):
     """Base adapter class for Evidently drift detectors."""
 
+    # Add aliases class attribute
+    aliases = []
+
     def __init__(
         self,
         test_type: str,
@@ -226,6 +229,9 @@ class EvidentlyBaseAdapter(BaseDetector):
 class DataDriftDetector(EvidentlyBaseAdapter):
     """Data Drift detector from Evidently."""
 
+    # Add library name as an alias
+    aliases = ["DataDrift"]
+
     def __init__(
         self,
         significance_level: float = 0.05,
@@ -284,6 +290,9 @@ class DataDriftDetector(EvidentlyBaseAdapter):
 class FeatureDriftDetector(EvidentlyBaseAdapter):
     """Single Feature Drift detector from Evidently."""
 
+    # Add library name as an alias
+    aliases = ["FeatureDrift"]
+
     def __init__(self, column_name: str, significance_level: float = 0.05, **kwargs):
         """
         Initialize the Feature Drift detector.
@@ -326,6 +335,9 @@ class FeatureDriftDetector(EvidentlyBaseAdapter):
 
 class CategoricalTargetDriftDetector(EvidentlyBaseAdapter):
     """Categorical Target Drift detector from Evidently."""
+
+    # Add library name as an alias
+    aliases = ["CategoricalTargetDrift", "CatTargetDrift"]
 
     def __init__(self, target_column: str, significance_level: float = 0.05, **kwargs):
         """
@@ -371,6 +383,9 @@ class CategoricalTargetDriftDetector(EvidentlyBaseAdapter):
 
 class NumericalTargetDriftDetector(EvidentlyBaseAdapter):
     """Numerical Target Drift detector from Evidently."""
+
+    # Add library name as an alias
+    aliases = ["NumericalTargetDrift", "NumTargetDrift"]
 
     def __init__(self, target_column: str, significance_level: float = 0.05, **kwargs):
         """

@@ -26,6 +26,9 @@ except ImportError:
 class AlibiDetectBaseAdapter(BaseDetector):
     """Base adapter class for Alibi Detect drift detectors."""
 
+    # Add aliases class attribute
+    aliases = []
+
     def __init__(self, detector_type: str, detector_kwargs: Dict[str, Any], p_val_threshold: float = 0.05, **kwargs):
         """
         Initialize the Alibi Detect adapter.
@@ -177,6 +180,9 @@ class AlibiDetectBaseAdapter(BaseDetector):
 class KSDriftDetector(AlibiDetectBaseAdapter):
     """Kolmogorov-Smirnov drift detector from Alibi Detect."""
 
+    # Add library name as an alias
+    aliases = ["KSDrift"]
+
     def __init__(self, p_val_threshold: float = 0.05, alternative: str = "two-sided", **kwargs):
         """
         Initialize the KS drift detector.
@@ -224,6 +230,9 @@ class KSDriftDetector(AlibiDetectBaseAdapter):
 
 class MMDDriftDetector(AlibiDetectBaseAdapter):
     """Maximum Mean Discrepancy drift detector from Alibi Detect."""
+
+    # Add library name as an alias
+    aliases = ["MMDDrift"]
 
     def __init__(
         self,
@@ -286,6 +295,9 @@ class MMDDriftDetector(AlibiDetectBaseAdapter):
 class ChiSquareDriftDetector(AlibiDetectBaseAdapter):
     """Chi-Square drift detector from Alibi Detect."""
 
+    # Add library name as an alias
+    aliases = ["ChiSquareDrift"]
+
     def __init__(
         self, p_val_threshold: float = 0.05, categories_per_feature: Optional[Dict[int, int]] = None, **kwargs
     ):
@@ -336,6 +348,9 @@ class ChiSquareDriftDetector(AlibiDetectBaseAdapter):
 
 class TabularDriftDetector(AlibiDetectBaseAdapter):
     """Tabular drift detector from Alibi Detect."""
+
+    # Add library name as an alias
+    aliases = ["TabularDrift"]
 
     def __init__(
         self, p_val_threshold: float = 0.05, categories_per_feature: Optional[Dict[int, int]] = None, **kwargs
