@@ -12,123 +12,99 @@
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Online Kolmogorov-Smirnov"
-    description = "Streaming version of the Kolmogorov-Smirnov test for online drift detection."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Online Kolmogorov-Smirnov"
+    description     = "Streaming version of the Kolmogorov-Smirnov test for online drift detection."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1145/2939672.2939836",
-        "dos Reis et al. (2016)",
-    ]
+    references      = ["https://doi.org/10.1145/2939672.2939836", "dos Reis et al. (2016)"]
     hyperparameters = { threshold = 0.05, window_size = 100 }
 
 [[detector]]
-    name = "Incremental Kolmogorov-Smirnov Test"
-    description = "Incremental version of the KS test designed for data streams."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Incremental Kolmogorov-Smirnov Test"
+    description     = "Incremental version of the KS test designed for data streams."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1145/2939672.2939836",
-        "dos Reis et al. (2016)",
-    ]
+    references      = ["https://doi.org/10.1145/2939672.2939836", "dos Reis et al. (2016)"]
     hyperparameters = { threshold = 0.05, window_size = 100 }
 
 [[detector]]
-    name = "Cramér-von Mises Test"
-    description = "Non-parametric test that determines whether a sample comes from a specified distribution."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Cramér-von Mises Test"
+    description     = "Non-parametric test that determines whether a sample comes from a specified distribution."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1080/03461238.1928.10416862",
-        "Cramér (1902)",
-    ]
+    references      = ["https://doi.org/10.1080/03461238.1928.10416862", "Cramér (1902)"]
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Online Cramér-von Mises Test"
-    description = "Streaming version of the Cramér-von Mises test for online drift detection."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Online Cramér-von Mises Test"
+    description     = "Streaming version of the Cramér-von Mises test for online drift detection."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1080/03461238.1928.10416862",
-        "Cramér (1902)",
-    ]
+    references      = ["https://doi.org/10.1080/03461238.1928.10416862", "Cramér (1902)"]
     hyperparameters = { threshold = 0.05, window_size = 100 }
 
 [[detector]]
-    name = "Anderson-Darling Test"
-    description = "Statistical test that detects whether a sample comes from a specified distribution, with increased sensitivity in the tails."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Anderson-Darling Test"
+    description     = "Statistical test that detects whether a sample comes from a specified distribution, with increased sensitivity in the tails."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.2307/2288805",
-        "Scholz and Stephens (1987)",
-    ]
+    references      = ["https://doi.org/10.2307/2288805", "Scholz and Stephens (1987)"]
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Mann-Whitney U-Test"
-    description = "Non-parametric test to determine whether two independent samples come from the same distribution."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Mann-Whitney U-Test"
+    description     = "Non-parametric test to determine whether two independent samples come from the same distribution."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1214/aoms/1177730491",
-        "Mann and Whitney (1947)",
-    ]
+    references      = ["https://doi.org/10.1214/aoms/1177730491", "Mann and Whitney (1947)"]
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Kuiper Test"
-    description = "Non-parametric test similar to Kolmogorov-Smirnov but more sensitive to differences in the tails of distributions."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Kuiper Test"
+    description     = "Non-parametric test similar to Kolmogorov-Smirnov but more sensitive to differences in the tails of distributions."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1016/S1385-7258(60)50006-0",
-        "Kuiper (1960)",
-    ]
+    references      = ["https://doi.org/10.1016/S1385-7258(60)50006-0", "Kuiper (1960)"]
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Baumgartner Weiss Schindler Test"
-    description = "Non-parametric test for equality of multivariate distributions."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Baumgartner Weiss Schindler Test"
+    description     = "Non-parametric test for equality of multivariate distributions."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.2307/2533862",
-        "Baumgartner et al. (1998)",
-    ]
+    references      = ["https://doi.org/10.2307/2533862", "Baumgartner et al. (1998)"]
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
@@ -156,17 +132,15 @@
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "EPPS-Singleton Test"
-    description = "Test for equality of distributions that can be more powerful than Kolmogorov-Smirnov for certain distributions."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "EPPS-Singleton Test"
+    description     = "Test for equality of distributions that can be more powerful than Kolmogorov-Smirnov for certain distributions."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.epps_singleton_2samp.html",
-    ]
+    references      = ["https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.epps_singleton_2samp.html"]
     hyperparameters = { threshold = 0.05 }
 
 # Statistical Tests - Categorical
@@ -231,153 +205,124 @@
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Statistical Test of Equal Proportions Detection"
-    description = "Uses test of equal proportions to detect changes in categorical data streams."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_TEST"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CATEGORICAL"]
+    name            = "Statistical Test of Equal Proportions Detection"
+    description     = "Uses test of equal proportions to detect changes in categorical data streams."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CATEGORICAL"]
     requires_labels = false
-    references = [
-        "https://link.springer.com/chapter/10.1007/978-3-540-75488-6_27",
-        "Nishida and Yamauchi (2007)",
-    ]
+    references      = ["https://link.springer.com/chapter/10.1007/978-3-540-75488-6_27", "Nishida and Yamauchi (2007)"]
     hyperparameters = { threshold = 0.05, window_size = 100 }
 
 # Distance-based Methods
 [[detector]]
-    name = "Maximum Mean Discrepancy"
-    description = "Kernel-based method that measures the distance between distributions in a reproducing kernel Hilbert space."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "MULTIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Maximum Mean Discrepancy"
+    description     = "Kernel-based method that measures the distance between distributions in a reproducing kernel Hilbert space."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "MULTIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://dl.acm.org/doi/10.5555/2188385.2188410",
-        "Gretton et al. (2012)",
-    ]
+    references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
     hyperparameters = { kernel = "rbf", gamma = "auto", threshold = 0.05 }
 
 [[detector]]
-    name = "Online Maximum Mean Discrepancy"
-    description = "Streaming version of MMD for online drift detection."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "DISTANCE_BASED"
-    data_dimension = "MULTIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Online Maximum Mean Discrepancy"
+    description     = "Streaming version of MMD for online drift detection."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "MULTIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://dl.acm.org/doi/10.5555/2188385.2188410",
-        "Gretton et al. (2012)",
-    ]
+    references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
     hyperparameters = { kernel = "rbf", gamma = "auto", threshold = 0.05, window_size = 100 }
 
 [[detector]]
-    name = "Empirical Maximum Mean Discrepancy"
-    description = "Empirical estimation of MMD for practical drift detection."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "MULTIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Empirical Maximum Mean Discrepancy"
+    description     = "Empirical estimation of MMD for practical drift detection."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "MULTIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://dl.acm.org/doi/10.5555/2188385.2188410",
-        "Gretton et al. (2012)",
-    ]
+    references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
     hyperparameters = { kernel = "rbf", gamma = "auto", threshold = 0.05 }
 
 [[detector]]
-    name = "Wasserstein Distance"
-    description = "Metric that measures the distance between probability distributions, also known as Earth Mover's Distance."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Wasserstein Distance"
+    description     = "Metric that measures the distance between probability distributions, also known as Earth Mover's Distance."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1023/A:1026543900054",
-        "Rubner et al. (2000)",
-    ]
+    references      = ["https://doi.org/10.1023/A:1026543900054", "Rubner et al. (2000)"]
     hyperparameters = { threshold = 0.1 }
 
 [[detector]]
-    name = "Earth Mover's Distance"
-    description = "Alternative name for Wasserstein distance, focuses on minimum cost to transform one distribution into another."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Earth Mover's Distance"
+    description     = "Alternative name for Wasserstein distance, focuses on minimum cost to transform one distribution into another."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1023/A:1026543900054",
-        "Rubner et al. (2000)",
-    ]
+    references      = ["https://doi.org/10.1023/A:1026543900054", "Rubner et al. (2000)"]
     hyperparameters = { threshold = 0.1 }
 
 [[detector]]
-    name = "Energy Distance"
-    description = "Distance between distributions based on statistical energy, sensitive to any type of distributional difference."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Energy Distance"
+    description     = "Distance between distributions based on statistical energy, sensitive to any type of distributional difference."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1016/j.jspi.2013.03.018",
-        "Székely et al. (2013)",
-    ]
+    references      = ["https://doi.org/10.1016/j.jspi.2013.03.018", "Székely et al. (2013)"]
     hyperparameters = { threshold = 0.1 }
 
 [[detector]]
-    name = "Hellinger Distance"
-    description = "Measure of similarity between two probability distributions, related to the Bhattacharyya distance."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS", "CATEGORICAL"]
+    name            = "Hellinger Distance"
+    description     = "Measure of similarity between two probability distributions, related to the Bhattacharyya distance."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1515/CRLL.1909.136.210",
-        "Hellinger (1909)",
-    ]
+    references      = ["https://doi.org/10.1515/CRLL.1909.136.210", "Hellinger (1909)"]
     hyperparameters = { threshold = 0.1 }
 
 [[detector]]
-    name = "Bhattacharyya Distance"
-    description = "Measure of similarity between two probability distributions, closely related to the Hellinger distance."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Bhattacharyya Distance"
+    description     = "Measure of similarity between two probability distributions, closely related to the Hellinger distance."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://www.jstor.org/stable/25047882",
-        "Bhattacharyya (1946)",
-    ]
+    references      = ["https://www.jstor.org/stable/25047882", "Bhattacharyya (1946)"]
     hyperparameters = { threshold = 0.1 }
 
 [[detector]]
-    name = "Total Variation Distance"
-    description = "Maximum difference between the probabilities assigned by two distributions."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CATEGORICAL"]
+    name            = "Total Variation Distance"
+    description     = "Maximum difference between the probabilities assigned by two distributions."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CATEGORICAL"]
     requires_labels = false
-    references = [
-        "https://en.wikipedia.org/wiki/Total_variation_distance_of_probability_measures",
-    ]
+    references      = ["https://en.wikipedia.org/wiki/Total_variation_distance_of_probability_measures"]
     hyperparameters = { threshold = 0.1 }
 
 [[detector]]
@@ -393,34 +338,28 @@
     hyperparameters = { threshold = 0.1 }
 
 [[detector]]
-    name = "Histogram Intersection Normalized Complement"
-    description = "Measures dissimilarity between histograms by calculating complement of their intersection."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS", "CATEGORICAL"]
+    name            = "Histogram Intersection Normalized Complement"
+    description     = "Measures dissimilarity between histograms by calculating complement of their intersection."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1007/BF00130487",
-        "Swain and Ballard (1991)",
-    ]
+    references      = ["https://doi.org/10.1007/BF00130487", "Swain and Ballard (1991)"]
     hyperparameters = { bins = 10, threshold = 0.1 }
 
 # Divergence-based Methods
 [[detector]]
-    name = "Kullback-Leibler Divergence Drift Detection"
-    description = "Measures the difference between two probability distributions using KL divergence."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS", "CATEGORICAL"]
+    name            = "Kullback-Leibler Divergence Drift Detection"
+    description     = "Measures the difference between two probability distributions using KL divergence."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1214/aoms/1177729694",
-        "Kullback and Leibler (1951)",
-    ]
+    references      = ["https://doi.org/10.1214/aoms/1177729694", "Kullback and Leibler (1951)"]
     hyperparameters = { threshold = 0.1, bins = 10 }
 
 [[detector]]
@@ -436,34 +375,28 @@
     hyperparameters = { threshold = 0.1, bins = 10 }
 
 [[detector]]
-    name = "Population Stability Index"
-    description = "Measures the stability of a distribution over time, based on KL divergence."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "DISTANCE_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS", "CATEGORICAL"]
+    name            = "Population Stability Index"
+    description     = "Measures the stability of a distribution over time, based on KL divergence."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1057/jors.2008.144",
-        "Wu and Olson (2010)",
-    ]
+    references      = ["https://doi.org/10.1057/jors.2008.144", "Wu and Olson (2010)"]
     hyperparameters = { threshold = 0.25, bins = 10 }
 
 # Streaming Methods - Concept Drift Detection
 [[detector]]
-    name = "Drift Detection Method"
-    description = "Monitors classification error rate to detect concept drift in streams."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_PROCESS_CONTROL"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Drift Detection Method"
+    description     = "Monitors classification error rate to detect concept drift in streams."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_PROCESS_CONTROL"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = true
-    references = [
-        "https://doi.org/10.1007/978-3-540-28645-5_29",
-        "Gama et al. (2004)",
-    ]
+    references      = ["https://doi.org/10.1007/978-3-540-28645-5_29", "Gama et al. (2004)"]
     hyperparameters = { warning_level = 2.0, drift_level = 3.0 }
 
 [[detector]]
@@ -494,18 +427,15 @@
     hyperparameters = { delta = 0.005, lambda = 50, alpha = 1 }
 
 [[detector]]
-    name = "Adaptive Windowing"
-    description = "Uses adaptive window sizes to detect changes in data streams."
-    drift_types = ["CONCEPT_DRIFT", "DATA_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "WINDOW_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Adaptive Windowing"
+    description     = "Uses adaptive window sizes to detect changes in data streams."
+    drift_types     = ["CONCEPT_DRIFT", "DATA_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "WINDOW_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1137/1.9781611972771.42",
-        "Bifet and Gavalda (2007)",
-    ]
+    references      = ["https://doi.org/10.1137/1.9781611972771.42", "Bifet and Gavalda (2007)"]
     hyperparameters = { delta = 0.05 }
 
 [[detector]]
@@ -533,63 +463,51 @@
     hyperparameters = { lambda = 0.1, threshold = 3.0 }
 
 [[detector]]
-    name = "Exponential Cumulative Drift Detection"
-    description = "Extends CUSUM with exponential weighting for more adaptive drift detection."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_PROCESS_CONTROL"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Exponential Cumulative Drift Detection"
+    description     = "Extends CUSUM with exponential weighting for more adaptive drift detection."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_PROCESS_CONTROL"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = true
-    references = [
-        "https://doi.org/10.1016/j.patrec.2011.08.019",
-        "Ross et al. (2012)",
-    ]
+    references      = ["https://doi.org/10.1016/j.patrec.2011.08.019", "Ross et al. (2012)"]
     hyperparameters = { lambda = 0.1, threshold = 3.0 }
 
 [[detector]]
-    name = "EWMA Concept Drift Detection Warning"
-    description = "Uses exponentially weighted moving average charts with warning levels for drift detection."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_PROCESS_CONTROL"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "EWMA Concept Drift Detection Warning"
+    description     = "Uses exponentially weighted moving average charts with warning levels for drift detection."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_PROCESS_CONTROL"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = true
-    references = [
-        "https://doi.org/10.1016/j.patrec.2011.08.019",
-        "Ross et al. (2012)",
-    ]
+    references      = ["https://doi.org/10.1016/j.patrec.2011.08.019", "Ross et al. (2012)"]
     hyperparameters = { lambda = 0.2, warning_threshold = 2.0, drift_threshold = 3.0 }
 
 [[detector]]
-    name = "Hoeffding's Drift Detection Method Test-A"
-    description = "Variation of drift detection method using Hoeffding's inequality (Test A variant)."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_PROCESS_CONTROL"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Hoeffding's Drift Detection Method Test-A"
+    description     = "Variation of drift detection method using Hoeffding's inequality (Test A variant)."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_PROCESS_CONTROL"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = true
-    references = [
-        "https://doi.org/10.1109/TKDE.2014.2345382",
-        "Frias-Blanco et al. (2014)",
-    ]
+    references      = ["https://doi.org/10.1109/TKDE.2014.2345382", "Frias-Blanco et al. (2014)"]
     hyperparameters = { delta = 0.05 }
 
 [[detector]]
-    name = "Hoeffding's Drift Detection Method Test-W"
-    description = "Variation of drift detection method using Hoeffding's inequality (Test W variant)."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_PROCESS_CONTROL"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Hoeffding's Drift Detection Method Test-W"
+    description     = "Variation of drift detection method using Hoeffding's inequality (Test W variant)."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "STATISTICAL_PROCESS_CONTROL"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = true
-    references = [
-        "https://doi.org/10.1109/TKDE.2014.2345382",
-        "Frias-Blanco et al. (2014)",
-    ]
+    references      = ["https://doi.org/10.1109/TKDE.2014.2345382", "Frias-Blanco et al. (2014)"]
     hyperparameters = { delta = 0.05 }
 
 [[detector]]
@@ -629,18 +547,15 @@
     hyperparameters = { delta = 0.05 }
 
 [[detector]]
-    name = "Bayesian Online Change Detection"
-    description = "Bayesian approach to detecting changes in data streams based on posterior probabilities."
-    drift_types = ["CONCEPT_DRIFT", "DATA_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "CHANGE_DETECTION"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Bayesian Online Change Detection"
+    description     = "Bayesian approach to detecting changes in data streams based on posterior probabilities."
+    drift_types     = ["CONCEPT_DRIFT", "DATA_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "CHANGE_DETECTION"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.48550/arXiv.0710.3742",
-        "Adams and MacKay (2007)",
-    ]
+    references      = ["https://doi.org/10.48550/arXiv.0710.3742", "Adams and MacKay (2007)"]
     hyperparameters = { hazard_function = "constant", alpha = 1.0, beta = 1.0 }
 
 # Advanced Methods
@@ -681,29 +596,15 @@
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name            = "Change Detection in Data Streams"
-    description     = "Framework for detecting changes in high-dimensional data streams."
-    drift_types     = ["DATA_DRIFT", "CONCEPT_DRIFT"]
+    name            = "Reactive Drift Detection Method"
+    description     = "Extension of DDM that reacts more quickly to drift by using different warning levels."
+    drift_types     = ["CONCEPT_DRIFT"]
     execution_mode  = "STREAMING"
-    family          = "ENSEMBLE_METHODS"
-    data_dimension  = "MULTIVARIATE"
-    data_types      = ["CONTINUOUS", "CATEGORICAL"]
-    requires_labels = false
-    hyperparameters = { window_size = 100 }
-
-[[detector]]
-    name = "Reactive Drift Detection Method"
-    description = "Extension of DDM that reacts more quickly to drift by using different warning levels."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "STATISTICAL_PROCESS_CONTROL"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    family          = "STATISTICAL_PROCESS_CONTROL"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = true
-    references = [
-        "https://www.sciencedirect.com/science/article/abs/pii/S0957417417305614",
-        "Barros et al. (2017)",
-    ]
+    references      = ["https://www.sciencedirect.com/science/article/abs/pii/S0957417417305614", "Barros et al. (2017)"]
     hyperparameters = { warning_level = 1.33, drift_level = 2.0 }
 
 [[detector]]
@@ -719,53 +620,51 @@
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Margin Density Drift Detection Method"
-    description = "Detects drift by monitoring density of samples in the margin of a classifier."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "MACHINE_LEARNING_BASED"
-    data_dimension = "MULTIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "Margin Density Drift Detection Method"
+    description     = "Detects drift by monitoring density of samples in the margin of a classifier."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "MACHINE_LEARNING_BASED"
+    data_dimension  = "MULTIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = true
-    references = [
-        "https://www.sciencedirect.com/science/article/pii/S1877050915017871",
-    ]
+    references      = ["https://www.sciencedirect.com/science/article/pii/S1877050915017871"]
     hyperparameters = { margin_width = 0.1, warn_threshold = 0.75, drift_threshold = 0.9 }
 
 [[detector]]
-    name            = "Online Accuracy Updated Ensemble"
-    description     = "Ensemble method that updates weights based on accuracy for handling concept drift."
-    drift_types     = ["CONCEPT_DRIFT"]
-    execution_mode  = "STREAMING"
-    family          = "ENSEMBLE_METHODS"
-    data_dimension  = "MULTIVARIATE"
-    data_types      = ["CONTINUOUS", "CATEGORICAL"]
-    requires_labels = true
-    hyperparameters = { n_estimators = 10, window_size = 100 }
-
-[[detector]]
-    name            = "Unsupervised Drift Detector"
-    description     = "Detects drift in an unsupervised manner without requiring labels."
+    name            = "Mixed-Type Tabular Data"
+    description     = "Specialized detector for handling both continuous and categorical features in tabular data."
     drift_types     = ["DATA_DRIFT"]
     execution_mode  = "BATCH"
     family          = "MACHINE_LEARNING_BASED"
     data_dimension  = "MULTIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
+    references      = ["https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/tabulardrift.html"]
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
-    name = "Mixed-Type Tabular Data"
-    description = "Specialized detector for handling both continuous and categorical features in tabular data."
-    drift_types = ["DATA_DRIFT"]
-    execution_mode = "BATCH"
-    family = "MACHINE_LEARNING_BASED"
-    data_dimension = "MULTIVARIATE"
-    data_types = ["CONTINUOUS", "CATEGORICAL"]
+    name            = "KSWIN"
+    description     = "Kolmogorov-Smirnov Windowing method for drift detection in data streams."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "WINDOW_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/tabulardrift.html",
-    ]
+    references      = ["https://doi.org/10.1016/j.neucom.2019.11.111", "Raab et al. (2020)"]
+    hyperparameters = { alpha = 0.05, window_size = 100 }
+
+[[detector]]
+    name            = "Mixed-Type Tabular Data"
+    description     = "Specialized detector for handling both continuous and categorical features in tabular data."
+    drift_types     = ["DATA_DRIFT"]
+    execution_mode  = "BATCH"
+    family          = "MACHINE_LEARNING_BASED"
+    data_dimension  = "MULTIVARIATE"
+    data_types      = ["CONTINUOUS", "CATEGORICAL"]
+    requires_labels = false
+    references      = ["https://docs.seldon.io/projects/alibi-detect/en/latest/cd/methods/tabulardrift.html"]
     hyperparameters = { threshold = 0.05 }
 
 [[detector]]
@@ -780,16 +679,13 @@
     hyperparameters = { period = 1000 }
 
 [[detector]]
-    name = "KSWIN"
-    description = "Kolmogorov-Smirnov Windowing method for drift detection in data streams."
-    drift_types = ["CONCEPT_DRIFT"]
-    execution_mode = "STREAMING"
-    family = "WINDOW_BASED"
-    data_dimension = "UNIVARIATE"
-    data_types = ["CONTINUOUS"]
+    name            = "KSWIN"
+    description     = "Kolmogorov-Smirnov Windowing method for drift detection in data streams."
+    drift_types     = ["CONCEPT_DRIFT"]
+    execution_mode  = "STREAMING"
+    family          = "WINDOW_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
     requires_labels = false
-    references = [
-        "https://doi.org/10.1016/j.neucom.2019.11.111",
-        "Raab et al. (2020)",
-    ]
+    references      = ["https://doi.org/10.1016/j.neucom.2019.11.111", "Raab et al. (2020)"]
     hyperparameters = { alpha = 0.05, window_size = 100 }
