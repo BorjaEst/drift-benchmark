@@ -12,7 +12,7 @@ from typing import Dict, Optional
 from rich.console import Console
 from rich.logging import RichHandler
 
-from drift_benchmark.benchmark import BenchmarkRunner
+from drift_benchmark.benchmark import BenchmarkRunner, load_config
 from drift_benchmark.detectors import (
     BaseDetector,
     discover_and_register_detectors,
