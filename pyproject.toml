@@ -64,5 +64,5 @@
         "DRIFT_BENCHMARK_CONFIGURATIONS_DIR=tests/assets/configurations",
         "DRIFT_BENCHMARK_DATASETS_DIR=tests/assets/datasets",
         "DRIFT_BENCHMARK_RESULTS_DIR=tests/assets/results",
-        "DRIFT_BENCHMARK_LOGS_DIR=tests/assets/logs",
+        "DRIFT_BENCHMARK_LOGS_DIR=logs",
     ]
