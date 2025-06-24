@@ -1,4 +1,3 @@
-# Statistical Tests - Univariate Continuous
 [[detector]]
     name            = "Kolmogorov-Smirnov Test"
     description     = "Non-parametric test that quantifies the distance between empirical distribution functions of two samples."
@@ -143,7 +142,6 @@
     references      = ["https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.epps_singleton_2samp.html"]
     hyperparameters = { threshold = 0.05 }
 
-# Statistical Tests - Categorical
 [[detector]]
     name            = "Chi-square Test"
     description     = "Statistical test that determines whether there is a significant difference between observed and expected frequencies."
@@ -216,7 +214,6 @@
     references      = ["https://link.springer.com/chapter/10.1007/978-3-540-75488-6_27", "Nishida and Yamauchi (2007)"]
     hyperparameters = { threshold = 0.05, window_size = 100 }
 
-# Distance-based Methods
 [[detector]]
     name            = "Maximum Mean Discrepancy"
     description     = "Kernel-based method that measures the distance between distributions in a reproducing kernel Hilbert space."
@@ -349,7 +346,6 @@
     references      = ["https://doi.org/10.1007/BF00130487", "Swain and Ballard (1991)"]
     hyperparameters = { bins = 10, threshold = 0.1 }
 
-# Divergence-based Methods
 [[detector]]
     name            = "Kullback-Leibler Divergence Drift Detection"
     description     = "Measures the difference between two probability distributions using KL divergence."
@@ -386,7 +382,6 @@
     references      = ["https://doi.org/10.1057/jors.2008.144", "Wu and Olson (2010)"]
     hyperparameters = { threshold = 0.25, bins = 10 }
 
-# Streaming Methods - Concept Drift Detection
 [[detector]]
     name            = "Drift Detection Method"
     description     = "Monitors classification error rate to detect concept drift in streams."
@@ -558,7 +553,6 @@
     references      = ["https://doi.org/10.48550/arXiv.0710.3742", "Adams and MacKay (2007)"]
     hyperparameters = { hazard_function = "constant", alpha = 1.0, beta = 1.0 }
 
-# Advanced Methods
 [[detector]]
     name            = "Principal Component Analysis for Concept Drift"
     description     = "Uses PCA to monitor changes in the principal components of a data stream."
