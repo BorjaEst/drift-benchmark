@@ -17,7 +17,8 @@ drift-benchmark/
 ├── src/drift_benchmark/         # Main package directory
 │   ├── __init__.py              # Package initialization
 │   ├── settings.py              # Configuration settings
-│   ├── benchmark/                    # Core functionality
+│   ├── methods.toml             # List of methods and their metadata
+│   ├── benchmark/               # Core functionality
 │   │   ├── __init__.py
 │   │   ├── benchmarks.py        # Benchmark runner
 │   │   ├── configuration.py     # Benchmark runner
@@ -29,7 +30,10 @@ drift-benchmark/
 │   ├── detectors/               # Drift detection algorithms
 │   │   ├── __init__.py
 │   │   └── base.py              # Base detector class
-│   └── figures/                 # Visualization tools
+│   ├── methods/                 # Standardization of detector implementations
+│   │   ├── __init__.py
+│   │   └── methods.toml         # Base detector class
+│   └── figures/                 # List of methods and their metadata
 │       ├── __init__.py
 │       └── plots.py             # Plotting utilities
 ├── tests/                       # Test directory
@@ -66,6 +70,32 @@ This module contains the detector registry and its utilities functions.
 It also implement the common interface defined in `base.py`.
 The BaseDetector includes an `aliases` class attribute to support detector naming conventions from different libraries.
 
+### Methods Module
+
+This module provides a standardized way to define and register drift detection methods.
+It includes a `methods.toml` file that lists all available methods and their metadata, such as aliases, categories, and implementation details.
+The methods are dynamically loaded with lru_cache to improve performance.
+The `methods.toml` file serves as a central registry for all drift detection methods, allowing for easy extension and modification.
+A method metadata example:
+
+```toml
+[kolmogorov_smirnov]
+    name            = "Kolmogorov-Smirnov Test"
+    description     = "Non-parametric test that quantifies the distance between empirical distribution functions of two samples."
+    drift_types     = ["COVARIATE"]
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
+    requires_labels = false
+    references      = ["https://doi.org/10.2307/2280095", "Massey Jr (1951)"]
+
+[kolmogorov_smirnov.implementations.ks_batch]
+    name            = "Batch Kolmogorov-Smirnov"
+    execution_mode  = "BATCH"
+    hyperparameters = ["threshold"]
+    references      = []
+```
+
 ### Visualization Module
 
 Tools for visualizing drift detection results, benchmark comparisons, and performance metrics.
@@ -75,6 +105,7 @@ Tools for visualizing drift detection results, benchmark comparisons, and perfor
 This directory contains specific implementations of drift detection algorithms. Each detector is implemented as a class that adheres to a common interface defined in `base.py`.
 This directory is by default at the CWD but can be configured at settings.
 Implementations are loaded dynamically when the library is initialized, allowing for easy extension and addition of new detectors.
+Implementations should not implement BaseAdapters and evoid as much boilerplate code as possible on the fit and detect methods in order to obtain feasible timings for benchmarks.
 
 ### Configurations Directory
 
@@ -194,3 +225,199 @@ git clone https://github.com/yourusername/drift-benchmark.git
 cd drift-benchmark
 pip install
 ```
+
+## Frameworks adapters to implement in Componenents Directory
+
+### Evidently
+
+Evidently provides various statistical tests for drift detection. The following table summarizes the available tests, their applicability, and how drift scores are calculated:
+
+<table>
+    <thead>
+        <tr>
+            <th>StatTest</th>
+            <th>Applicable to</th>
+            <th>Drift score</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <code>ks</code>
+                <br>Kolmogorov–Smirnov (K-S) test
+            </td>
+            <td>tabular data<br>only numerical <br><br><strong>Default method for numerical data, if
+                ≤ 1000 objects</strong></td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>chisquare</code>
+                <br>Chi-Square test
+            </td>
+            <td>tabular data<br>only categorical<br><br><strong>Default method for categorical with
+                &gt; 2 labels, if ≤ 1000 objects</strong></td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>z</code>
+                <br> Z-test
+            </td>
+            <td>tabular data<br>only categorical<br><br><strong>Default method for binary data, if ≤
+                1000 objects</strong></td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>wasserstein</code>
+                <br> Wasserstein distance (normed)
+            </td>
+            <td>tabular data<br>only numerical<br><br><strong>Default method for numerical data, if
+                &gt; 1000 objects</strong></td>
+            <td>returns <code>distance</code><br>drift detected when <code>distance</code> ≥ <code>
+                threshold</code><br>default threshold: 0.1</td>
+        </tr>
+        <tr>
+            <td>
+                <code>kl_div</code>
+                <br>Kullback-Leibler divergence
+            </td>
+            <td>tabular data<br>numerical and categorical</td>
+            <td>returns <code>divergence</code><br>drift detected when <code>divergence</code> ≥ <code>
+                threshold</code><br>default threshold: 0.1</td>
+        </tr>
+        <tr>
+            <td>
+                <code>psi</code>
+                <br> Population Stability Index (PSI)
+            </td>
+            <td>tabular data<br>numerical and categorical</td>
+            <td>returns <code>psi_value</code><br>drift detected when <code>psi_value</code> ≥ <code>
+                threshold</code><br>default threshold: 0.1</td>
+        </tr>
+        <tr>
+            <td>
+                <code>jensenshannon</code>
+                <br> Jensen-Shannon distance
+            </td>
+            <td>tabular data<br>numerical and categorical<br><br><strong>Default method for
+                categorical, if &gt; 1000 objects</strong></td>
+            <td>returns <code>distance</code><br>drift detected when <code>distance</code> ≥ <code>
+                threshold</code><br>default threshold: 0.1</td>
+        </tr>
+        <tr>
+            <td>
+                <code>anderson</code>
+                <br> Anderson-Darling test
+            </td>
+            <td>tabular data<br>only numerical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>fisher_exact</code>
+                <br> Fisher's Exact test
+            </td>
+            <td>tabular data<br>only categorical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>cramer_von_mises</code>
+                <br> Cramer-Von-Mises test
+            </td>
+            <td>tabular data<br>only numerical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>g-test</code>
+                <br> G-test
+            </td>
+            <td>tabular data<br>only categorical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>hellinger</code>
+                <br> Hellinger Distance (normed)
+            </td>
+            <td>tabular data<br>numerical and categorical</td>
+            <td>returns <code>distance</code><br>drift detected when <code>distance</code> &gt;= <code>
+                threshold</code><br>default threshold: 0.1</td>
+        </tr>
+        <tr>
+            <td>
+                <code>mannw</code>
+                <br> Mann-Whitney U-rank test
+            </td>
+            <td>tabular data<br>only numerical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>ed</code>
+                <br> Energy distance
+            </td>
+            <td>tabular data<br>only numerical</td>
+            <td>returns <code>distance</code><br>drift detected when <code>distance &gt;= threshold</code><br>default
+                threshold: 0.1</td>
+        </tr>
+        <tr>
+            <td>
+                <code>es</code>
+                <br> Epps-Singleton test
+            </td>
+            <td>tabular data<br>only numerical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>t_test</code>
+                <br> T-Test
+            </td>
+            <td>tabular data<br>only numerical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>empirical_mmd</code>
+                <br> Empirical-MMD
+            </td>
+            <td>tabular data<br>only numerical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value &lt; threshold</code><br>default
+                threshold: 0.05</td>
+        </tr>
+        <tr>
+            <td>
+                <code>TVD</code>
+                <br> Total-Variation-Distance
+            </td>
+            <td>tabular data<br>only categorical</td>
+            <td>returns <code>p_value</code><br>drift detected when <code>p_value</code> &lt; <code>
+                threshold</code><br>default threshold: 0.05</td>
+        </tr>
+    </tbody>
+</table>
+
+Evidently has the following data drift tests available:
+
+- TestAllFeaturesValueDrift
+- TestColumnDrift
+- TestCustomFeaturesValueDrift
+- TestEmbeddingsDrift
+- TestNumberOfDriftedColumns
+- TestShareOfDriftedColumns
+
+### Alibi Detect

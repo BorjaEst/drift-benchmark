@@ -1,56 +1,50 @@
-from abc import ABC, abstractmethod
-from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Union
 
-import numpy as np
-import pandas as pd
 from pydantic import BaseModel, Field
 
-from drift_benchmark.constants.enums import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
+from drift_benchmark.constants.literals import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
 
 
-class DetectorMetadata(BaseModel):
-    """Metadata for drift detectors."""
+class ImplementationData(BaseModel):
+    """Metadata for drift detector implementations."""
 
     model_config = {"extra": "forbid"}  # Forbid extra fields not defined in the model
 
-    name: str = Field(
-        ...,
-        description="Name of the detector",
-    )
-    description: str = Field(
-        ...,
-        description="Brief description of the detector's functionality",
-    )
-    drift_types: List[DriftType] = Field(
-        ...,
-        description="List of drift types that the detector can handle",
-    )
-    execution_mode: ExecutionMode = Field(
-        ...,
-        description="Execution mode of the detector (e.g., streaming or batch)",
-    )
-    family: DetectorFamily = Field(
-        ...,
-        description="Family of the drift detection algorithm (e.g., statistical, machine learning)",
-    )
-    data_dimension: DataDimension = Field(
-        ...,
-        description="Data dimensionality the detector can handle (e.g., univariate, multivariate)",
-    )
-    data_types: List[DataType] = Field(
-        ...,
-        description="List of data types the detector can handle (e.g., continuous, categorical, mixed)",
-    )
-    requires_labels: bool = Field(
-        False,
-        description="Whether the detector requires labels for drift detection",
-    )
-    references: Optional[List[str]] = Field(
-        None,
-        description="List of references or links to documentation for the detector",
-    )
-    hyperparameters: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Hyperparameters for the detector, if applicable",
-    )
+    name: str = Field(..., description="Name of the implementation")
+    execution_mode: ExecutionMode = Field(..., description="Execution mode of the implementation")
+    hyperparameters: List[str] = Field(..., description="Allowed configuration hyperparameters")
+    references: List[str] = Field(..., description="List of references for the implementation")
+
+
+class MethodData(BaseModel):
+    """Metadata for drift detection methods."""
+
+    model_config = {"extra": "forbid"}  # Forbid extra fields not defined in the model
+
+    name: str = Field(..., description="Name of the drift detection method")
+    description: str = Field(..., description="Description of the drift detection method")
+    drift_types: List[DriftType] = Field(..., description="List of drift types the method can detect")
+    family: DetectorFamily = Field(..., description="Family of the drift detection method")
+    data_dimension: DataDimension = Field(..., description="Dimensionality of the data")
+    data_types: List[DataType] = Field(..., description="List of data types the method can operate on")
+    requires_labels: bool = Field(..., description="Whether the method requires labels for drift detection")
+    references: List[str] = Field(..., description="List of references for the method")
+
+
+class MethodMetadata(MethodData):
+    """Data model for drift detection methods with implementations."""
+
+    implementations: Dict[str, ImplementationData] = Field(..., description="List of implementations for the method")
+
+    def __getitem__(self, implementation_id: str) -> ImplementationData:
+        """Get an implementation by its ID."""
+        return self.implementations[implementation_id]
+
+
+class DetectorMetadata(BaseModel):
+    """Metadata for a drift detection method and its implementations."""
+
+    model_config = {"extra": "forbid"}  # Forbid extra fields not defined in the model
+
+    method: MethodData = Field(..., description="Method metadata")
+    implementation: ImplementationData = Field(..., description="Implementation metadata")

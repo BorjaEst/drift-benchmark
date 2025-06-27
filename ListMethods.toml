@@ -1,484 +1,452 @@
 # Methods definitions for drift detection
 # Each method can have multiple implementations
 
-[[method]]
-    id              = "kolmogorov_smirnov"
+[kolmogorov_smirnov]
     name            = "Kolmogorov-Smirnov Test"
     description     = "Non-parametric test that quantifies the distance between empirical distribution functions of two samples."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.2307/2280095", "Massey Jr (1951)"]
 
-[[method.implementation]]
-    id              = "ks_batch"
-    name            = "Batch Kolmogorov-Smirnov"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [kolmogorov_smirnov.implementations.ks_batch]
+        name            = "Batch Kolmogorov-Smirnov"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method.implementation]]
-    id              = "ks_online"
-    name            = "Online Kolmogorov-Smirnov"
-    execution_mode  = "STREAMING"
-    hyperparameters = { threshold = 0.05, window_size = 100 }
-    references      = ["https://doi.org/10.1145/2939672.2939836", "dos Reis et al. (2016)"]
+    [kolmogorov_smirnov.implementations.ks_online]
+        name            = "Online Kolmogorov-Smirnov"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["threshold", "window_size"]
+        references      = ["https://doi.org/10.1145/2939672.2939836", "dos Reis et al. (2016)"]
 
-[[method.implementation]]
-    id              = "ks_incremental"
-    name            = "Incremental Kolmogorov-Smirnov"
-    execution_mode  = "STREAMING"
-    hyperparameters = { threshold = 0.05, window_size = 100 }
-    references      = ["https://doi.org/10.1145/2939672.2939836", "dos Reis et al. (2016)"]
+    [kolmogorov_smirnov.implementations.ks_incremental]
+        name            = "Incremental Kolmogorov-Smirnov"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["threshold", "window_size"]
+        references      = ["https://doi.org/10.1145/2939672.2939836", "dos Reis et al. (2016)"]
 
-[[method]]
-    id              = "cramer_von_mises"
+[cramer_von_mises]
     name            = "Cramér-von Mises Test"
     description     = "Non-parametric test that determines whether a sample comes from a specified distribution."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.1080/03461238.1928.10416862", "Cramér (1902)"]
 
-[[method.implementation]]
-    id              = "cvm_batch"
-    name            = "Batch Cramér-von Mises"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [cramer_von_mises.implementations.cvm_batch]
+        name            = "Batch Cramér-von Mises"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method.implementation]]
-    id              = "cvm_online"
-    name            = "Online Cramér-von Mises"
-    execution_mode  = "STREAMING"
-    hyperparameters = { threshold = 0.05, window_size = 100 }
+    [cramer_von_mises.implementations.cvm_online]
+        name            = "Online Cramér-von Mises"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["threshold", "window_size"]
+        references      = []
 
-[[method]]
-    id              = "anderson_darling"
+[anderson_darling]
     name            = "Anderson-Darling Test"
     description     = "Statistical test that detects whether a sample comes from a specified distribution, with increased sensitivity in the tails."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.2307/2288805", "Scholz and Stephens (1987)"]
 
-[[method.implementation]]
-    id              = "ad_batch"
-    name            = "Anderson-Darling Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [anderson_darling.implementations.ad_batch]
+        name            = "Anderson-Darling Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "mann_whitney"
+[mann_whitney]
     name            = "Mann-Whitney U-Test"
     description     = "Non-parametric test to determine whether two independent samples come from the same distribution."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.1214/aoms/1177730491", "Mann and Whitney (1947)"]
 
-[[method.implementation]]
-    id              = "mw_batch"
-    name            = "Mann-Whitney U-Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [mann_whitney.implementations.mw_batch]
+        name            = "Mann-Whitney U-Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "kuiper"
+[kuiper]
     name            = "Kuiper Test"
     description     = "Non-parametric test similar to Kolmogorov-Smirnov but more sensitive to differences in the tails of distributions."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.1016/S1385-7258(60)50006-0", "Kuiper (1960)"]
 
-[[method.implementation]]
-    id              = "kuiper_batch"
-    name            = "Batch Kuiper Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [kuiper.implementations.kuiper_batch]
+        name            = "Batch Kuiper Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "baumgartner_weiss_schindler"
+[baumgartner_weiss_schindler]
     name            = "Baumgartner Weiss Schindler Test"
     description     = "Non-parametric test for equality of multivariate distributions."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.2307/2533862", "Baumgartner et al. (1998)"]
 
-[[method.implementation]]
-    id              = "bws_batch"
-    name            = "Batch Baumgartner Weiss Schindler Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [baumgartner_weiss_schindler.implementations.bws_batch]
+        name            = "Batch Baumgartner Weiss Schindler Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "t_test"
+[t_test]
     name            = "T-Test"
     description     = "Parametric test that determines if there is a significant difference between the means of two groups."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://en.wikipedia.org/wiki/Student%27s_t-test"]
 
-[[method.implementation]]
-    id              = "ttest_batch"
-    name            = "Batch T-Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [t_test.implementations.ttest_batch]
+        name            = "Batch T-Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "welch_t_test"
+[welch_t_test]
     name            = "Welch's T-Test"
     description     = "Adaptation of the t-test for samples with unequal variances."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.2307/2332510", "Welch (1947)"]
 
-[[method.implementation]]
-    id              = "welch_batch"
-    name            = "Batch Welch's T-Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [welch_t_test.implementations.welch_batch]
+        name            = "Batch Welch's T-Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "epps_singleton"
+[epps_singleton]
     name            = "EPPS-Singleton Test"
     description     = "Test for equality of distributions that can be more powerful than Kolmogorov-Smirnov for certain distributions."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.epps_singleton_2samp.html"]
 
-[[method.implementation]]
-    id              = "epps_batch"
-    name            = "Batch EPPS-Singleton Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [epps_singleton.implementations.epps_batch]
+        name            = "Batch EPPS-Singleton Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "chi_square"
+[chi_square]
     name            = "Chi-square Test"
     description     = "Statistical test that determines whether there is a significant difference between observed and expected frequencies."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CATEGORICAL"]
     requires_labels = false
     references      = ["https://doi.org/10.1080/14786440009463897", "Pearson (1900)"]
 
-[[method.implementation]]
-    id              = "chi_batch"
-    name            = "Batch Chi-square Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [chi_square.implementations.chi_batch]
+        name            = "Batch Chi-square Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "fisher_exact"
+[fisher_exact]
     name            = "Fisher Exact Test"
     description     = "Exact test for categorical data analysis when sample sizes are small."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CATEGORICAL"]
     requires_labels = false
     references      = ["https://en.wikipedia.org/wiki/Fisher%27s_exact_test"]
 
-[[method.implementation]]
-    id              = "fisher_batch"
-    name            = "Batch Fisher Exact Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [fisher_exact.implementations.fisher_batch]
+        name            = "Batch Fisher Exact Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method.implementation]]
-    id              = "fisher_online"
-    name            = "Online Fisher Exact Test"
-    execution_mode  = "STREAMING"
-    hyperparameters = { threshold = 0.05, window_size = 100 }
-    references      = ["https://en.wikipedia.org/wiki/Fisher%27s_exact_test"]
+    [fisher_exact.implementations.fisher_online]
+        name            = "Online Fisher Exact Test"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["threshold", "window_size"]
+        references      = ["https://en.wikipedia.org/wiki/Fisher%27s_exact_test"]
 
-[[method]]
-    id              = "g_test"
+[g_test]
     name            = "G-Test"
     description     = "Log-likelihood ratio test that compares observed frequencies to expected frequencies."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CATEGORICAL"]
     requires_labels = false
     references      = ["https://en.wikipedia.org/wiki/G-test"]
 
-[[method.implementation]]
-    id              = "g_batch"
-    name            = "Batch G-Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [g_test.implementations.g_batch]
+        name            = "Batch G-Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "z_test"
+[z_test]
     name            = "Z-Test"
     description     = "Statistical test used to determine whether two population means are different when variances are known."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CATEGORICAL"]
     requires_labels = false
     references      = ["https://en.wikipedia.org/wiki/Z-test"]
 
-[[method.implementation]]
-    id              = "z_batch"
-    name            = "Batch Z-Test"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.05 }
+    [z_test.implementations.z_batch]
+        name            = "Batch Z-Test"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "maximum_mean_discrepancy"
+[maximum_mean_discrepancy]
     name            = "Maximum Mean Discrepancy"
     description     = "Kernel-based method that measures the distance between distributions in a reproducing kernel Hilbert space."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "MULTIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
 
-[[method.implementation]]
-    id              = "mmd_batch"
-    name            = "Batch Maximum Mean Discrepancy"
-    execution_mode  = "BATCH"
-    hyperparameters = { kernel = "rbf", gamma = "auto", threshold = 0.05 }
+    [maximum_mean_discrepancy.implementations.mmd_batch]
+        name            = "Batch Maximum Mean Discrepancy"
+        execution_mode  = "BATCH"
+        hyperparameters = ["kernel", "gamma", "threshold"]
+        references      = []
 
-[[method.implementation]]
-    id              = "mmd_online"
-    name            = "Online Maximum Mean Discrepancy"
-    execution_mode  = "STREAMING"
-    hyperparameters = { kernel = "rbf", gamma = "auto", threshold = 0.05, window_size = 100 }
-    references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
+    [maximum_mean_discrepancy.implementations.mmd_online]
+        name            = "Online Maximum Mean Discrepancy"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["kernel", "gamma", "threshold", "window_size"]
+        references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
 
-[[method.implementation]]
-    id              = "mmd_empirical"
-    name            = "Empirical Maximum Mean Discrepancy"
-    execution_mode  = "BATCH"
-    hyperparameters = { kernel = "rbf", gamma = "auto", threshold = 0.05 }
-    references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
+    [maximum_mean_discrepancy.implementations.mmd_empirical]
+        name            = "Empirical Maximum Mean Discrepancy"
+        execution_mode  = "BATCH"
+        hyperparameters = ["kernel", "gamma", "threshold"]
+        references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
 
-[[method]]
-    id              = "wasserstein_distance"
+[wasserstein_distance]
     name            = "Wasserstein Distance"
     description     = "Metric that measures the distance between probability distributions, also known as Earth Mover's Distance."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.1023/A:1026543900054", "Rubner et al. (2000)"]
 
-[[method.implementation]]
-    id              = "wasserstein_batch"
-    name            = "Batch Wasserstein Distance"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1 }
+    [wasserstein_distance.implementations.wasserstein_batch]
+        name            = "Batch Wasserstein Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method.implementation]]
-    id              = "earth_mover_distance"
-    name            = "Earth Mover's Distance"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1 }
-    references      = ["https://doi.org/10.1023/A:1026543900054", "Rubner et al. (2000)"]
+    [wasserstein_distance.implementations.earth_mover_distance]
+        name            = "Earth Mover's Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = ["https://doi.org/10.1023/A:1026543900054", "Rubner et al. (2000)"]
 
-[[method]]
-    id              = "energy_distance"
+[energy_distance]
     name            = "Energy Distance"
     description     = "Distance between distributions based on statistical energy, sensitive to any type of distributional difference."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.1016/j.jspi.2013.03.018", "Székely et al. (2013)"]
 
-[[method.implementation]]
-    id              = "energy_batch"
-    name            = "Batch Energy Distance"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1 }
+    [energy_distance.implementations.energy_batch]
+        name            = "Batch Energy Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "hellinger_distance"
+[hellinger_distance]
     name            = "Hellinger Distance"
     description     = "Measure of similarity between two probability distributions, related to the Bhattacharyya distance."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
     references      = ["https://doi.org/10.1515/CRLL.1909.136.210", "Hellinger (1909)"]
 
-[[method.implementation]]
-    id              = "hellinger_batch"
-    name            = "Batch Hellinger Distance"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1 }
+    [hellinger_distance.implementations.hellinger_batch]
+        name            = "Batch Hellinger Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "bhattacharyya_distance"
+[bhattacharyya_distance]
     name            = "Bhattacharyya Distance"
     description     = "Measure of similarity between two probability distributions, closely related to the Hellinger distance."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://www.jstor.org/stable/25047882", "Bhattacharyya (1946)"]
 
-[[method.implementation]]
-    id              = "bhattacharyya_batch"
-    name            = "Batch Bhattacharyya Distance"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1 }
+    [bhattacharyya_distance.implementations.bhattacharyya_batch]
+        name            = "Batch Bhattacharyya Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "total_variation_distance"
+[total_variation_distance]
     name            = "Total Variation Distance"
     description     = "Maximum difference between the probabilities assigned by two distributions."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CATEGORICAL"]
     requires_labels = false
     references      = ["https://en.wikipedia.org/wiki/Total_variation_distance_of_probability_measures"]
 
-[[method.implementation]]
-    id              = "tvd_batch"
-    name            = "Batch Total Variation Distance"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1 }
+    [total_variation_distance.implementations.tvd_batch]
+        name            = "Batch Total Variation Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "l_infinity_distance"
+[l_infinity_distance]
     name            = "L-Infinity Distance"
     description     = "Maximum absolute difference between corresponding elements of two distributions, also known as Supremum norm."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://en.wikipedia.org/wiki/Chebyshev_distance"]
 
-[[method.implementation]]
-    id              = "linf_batch"
-    name            = "Batch L-Infinity Distance"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1 }
+    [l_infinity_distance.implementations.linf_batch]
+        name            = "Batch L-Infinity Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
 
-[[method]]
-    id              = "histogram_intersection_normalized_complement"
+[histogram_intersection_normalized_complement]
     name            = "Histogram Intersection Normalized Complement"
     description     = "Measures dissimilarity between histograms by calculating complement of their intersection."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
     references      = ["https://doi.org/10.1007/BF00130487", "Swain and Ballard (1991)"]
 
-[[method.implementation]]
-    id              = "hist_inter_batch"
-    name            = "Batch Histogram Intersection Normalized Complement"
-    execution_mode  = "BATCH"
-    hyperparameters = { bins = 10, threshold = 0.1 }
+    [histogram_intersection_normalized_complement.implementations.hist_inter_batch]
+        name            = "Batch Histogram Intersection Normalized Complement"
+        execution_mode  = "BATCH"
+        hyperparameters = ["bins", "threshold"]
+        references      = []
 
-[[method]]
-    id              = "kullback_leibler_divergence"
+[kullback_leibler_divergence]
     name            = "Kullback-Leibler Divergence Drift Detection"
     description     = "Measures the difference between two probability distributions using KL divergence."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
     references      = ["https://doi.org/10.1214/aoms/1177729694", "Kullback and Leibler (1951)"]
 
-[[method.implementation]]
-    id              = "kl_batch"
-    name            = "Batch Kullback-Leibler Divergence"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1, bins = 10 }
+    [kullback_leibler_divergence.implementations.kl_batch]
+        name            = "Batch Kullback-Leibler Divergence"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold", "bins"]
+        references      = []
 
-[[method]]
-    id              = "jensen_shannon_divergence"
+[jensen_shannon_divergence]
     name            = "Jensen-Shannon Divergence Drift Detection"
     description     = "Symmetrized and smoothed version of KL divergence for measuring distribution difference."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
     references      = ["https://doi.org/10.1109/18.61115", "Lin (1991)"]
 
-[[method.implementation]]
-    id              = "js_batch"
-    name            = "Batch Jensen-Shannon Divergence"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.1, bins = 10 }
+    [jensen_shannon_divergence.implementations.js_batch]
+        name            = "Batch Jensen-Shannon Divergence"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold", "bins"]
+        references      = []
 
-[[method]]
-    id              = "population_stability_index"
+[population_stability_index]
     name            = "Population Stability Index"
     description     = "Measures the stability of a distribution over time, based on KL divergence."
-    drift_types     = ["DATA_DRIFT"]
+    drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
     references      = ["https://doi.org/10.1057/jors.2008.144", "Wu and Olson (2010)"]
 
-[[method.implementation]]
-    id              = "psi_batch"
-    name            = "Batch Population Stability Index"
-    execution_mode  = "BATCH"
-    hyperparameters = { threshold = 0.25, bins = 10 }
+    [population_stability_index.implementations.psi_batch]
+        name            = "Batch Population Stability Index"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold", "bins"]
+        references      = []
 
-[[method]]
-    id              = "drift_detection_method"
+[drift_detection_method]
     name            = "Drift Detection Method (DDM)"
     description     = "Monitors classification error rate to detect concept drift in streams."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "STATISTICAL_PROCESS_CONTROL"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.1007/978-3-540-28645-5_29", "Gama et al. (2004)"]
 
-[[method.implementation]]
-    id              = "ddm_standard"
-    name            = "Standard DDM"
-    execution_mode  = "STREAMING"
-    hyperparameters = { warning_level = 2.0, drift_level = 3.0 }
+    [drift_detection_method.implementations.ddm_standard]
+        name            = "Standard DDM"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["warning_level", "drift_level"]
+        references      = []
 
-[[method]]
-    id = "early_drift_detection_method"
+[early_drift_detection_method]
     name = "Early Drift Detection Method (EDDM)"
     description = "Extension of DDM that detects gradual concept drift earlier."
-    drift_types = ["CONCEPT_DRIFT"]
+    drift_types = ["CONCEPT"]
     family = "STATISTICAL_PROCESS_CONTROL"
     data_dimension = "UNIVARIATE"
     data_types = ["CONTINUOUS"]
@@ -488,177 +456,152 @@
         "Baena-Garcıa et al. (2006)",
     ]
 
-[[method.implementation]]
-    id              = "eddm_standard"
-    name            = "Standard EDDM"
-    execution_mode  = "STREAMING"
-    hyperparameters = { warning_level = 0.95, drift_level = 0.9 }
+    [early_drift_detection_method.implementations.eddm_standard]
+        name            = "Standard EDDM"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["warning_level", "drift_level"]
+        references      = []
 
-[[method]]
-    id              = "page_hinkley"
+[page_hinkley]
     name            = "Page-Hinkley Test"
     description     = "Sequential analysis technique for detecting changes in the average of a Gaussian signal."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "CHANGE_DETECTION"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.2307/2333009", "Page (1954)"]
 
-[[method.implementation]]
-    id              = "ph_standard"
-    name            = "Standard Page-Hinkley"
-    execution_mode  = "STREAMING"
-    hyperparameters = { delta = 0.005, lambda = 50, alpha = 1 }
+    [page_hinkley.implementations.ph_standard]
+        name            = "Standard Page-Hinkley"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["delta", "lambda", "alpha"]
+        references      = []
 
-[[method]]
-    id              = "adaptive_windowing"
+[adaptive_windowing]
     name            = "Adaptive Windowing (ADWIN)"
     description     = "Uses adaptive window sizes to detect changes in data streams."
-    drift_types     = ["CONCEPT_DRIFT", "DATA_DRIFT"]
+    drift_types     = ["CONCEPT", "COVARIATE"]
     family          = "WINDOW_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.1137/1.9781611972771.42", "Bifet and Gavalda (2007)"]
 
-[[method.implementation]]
-    id              = "adwin_standard"
-    name            = "Standard ADWIN"
-    execution_mode  = "STREAMING"
-    hyperparameters = { delta = 0.05 }
+    [adaptive_windowing.implementations.adwin_standard]
+        name            = "Standard ADWIN"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["delta"]
+        references      = []
 
-[[method]]
-    id              = "cusum"
+[cusum]
     name            = "Cumulative Sum Control Chart (CUSUM)"
     description     = "Sequential analysis technique for monitoring change detection using cumulative sum."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "CHANGE_DETECTION"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.2307/2333009", "Page (1954)"]
 
-[[method.implementation]]
-    id              = "cusum_standard"
-    name            = "Standard CUSUM"
-    execution_mode  = "STREAMING"
-    hyperparameters = { threshold = 5.0, drift_threshold = 20.0 }
+    [cusum.implementations.cusum_standard]
+        name            = "Standard CUSUM"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["threshold", "drift_threshold"]
+        references      = []
 
-[[method]]
-    id              = "geometric_moving_average"
+[geometric_moving_average]
     name            = "Geometric Moving Average"
     description     = "Control chart that monitors the geometric weighted moving average of a process."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "CHANGE_DETECTION"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.2307/1266443", "Roberts (1959)"]
 
-[[method.implementation]]
-    id              = "gma_standard"
-    name            = "Standard Geometric Moving Average"
-    execution_mode  = "STREAMING"
-    hyperparameters = { lambda = 0.1, threshold = 3.0 }
+    [geometric_moving_average.implementations.gma_standard]
+        name            = "Standard Geometric Moving Average"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["lambda", "threshold"]
+        references      = []
 
-[[method]]
-    id              = "exponential_cumulative_drift"
+[exponential_cumulative_drift]
     name            = "Exponential Cumulative Drift Detection"
     description     = "Extends CUSUM with exponential weighting for more adaptive drift detection."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "STATISTICAL_PROCESS_CONTROL"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.1016/j.patrec.2011.08.019", "Ross et al. (2012)"]
 
-[[method.implementation]]
-    id              = "ecdd_standard"
-    name            = "Standard Exponential Cumulative Drift Detection"
-    execution_mode  = "STREAMING"
-    hyperparameters = { lambda = 0.1, threshold = 3.0 }
+    [exponential_cumulative_drift.implementations.ecdd_standard]
+        name            = "Standard Exponential Cumulative Drift Detection"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["lambda", "threshold"]
+        references      = []
 
-[[method]]
-    id              = "ewma_concept_drift"
+[ewma_CONCEPT]
     name            = "EWMA Concept Drift Detection Warning"
     description     = "Uses exponentially weighted moving average charts with warning levels for drift detection."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "STATISTICAL_PROCESS_CONTROL"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.1016/j.patrec.2011.08.019", "Ross et al. (2012)"]
 
-[[method.implementation]]
-    id              = "ewma_standard"
-    name            = "Standard EWMA Concept Drift Detection"
-    execution_mode  = "STREAMING"
-    hyperparameters = { lambda = 0.2, warning_threshold = 2.0, drift_threshold = 3.0 }
+    [ewma_CONCEPT.implementations.ewma_standard]
+        name            = "Standard EWMA Concept Drift Detection"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["lambda", "warning_threshold", "drift_threshold"]
+        references      = []
 
-[[method]]
-    id              = "hoeffding_drift_detection_test_a"
+[hoeffding_drift_detection_test_a]
     name            = "Hoeffding's Drift Detection Method Test-A"
     description     = "Variation of drift detection method using Hoeffding's inequality (Test A variant)."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "STATISTICAL_PROCESS_CONTROL"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.1109/TKDE.2014.2345382", "Frias-Blanco et al. (2014)"]
 
-[[method.implementation]]
-    id              = "hddm_a_standard"
-    name            = "Standard Hoeffding's Drift Detection Method Test-A"
-    execution_mode  = "STREAMING"
-    hyperparameters = { delta = 0.05 }
+    [hoeffding_drift_detection_test_a.implementations.hddm_a_standard]
+        name            = "Standard Hoeffding's Drift Detection Method Test-A"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["delta"]
+        references      = []
 
-[[method]]
-    id              = "hoeffding_drift_detection_test_w"
+[hoeffding_drift_detection_test_w]
     name            = "Hoeffding's Drift Detection Method Test-W"
     description     = "Variation of drift detection method using Hoeffding's inequality (Test W variant)."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "STATISTICAL_PROCESS_CONTROL"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = true
     references      = ["https://doi.org/10.1109/TKDE.2014.2345382", "Frias-Blanco et al. (2014)"]
 
-[[method.implementation]]
-    id              = "hddm_w_standard"
-    name            = "Standard Hoeffding's Drift Detection Method Test-W"
-    execution_mode  = "STREAMING"
-    hyperparameters = { delta = 0.05 }
+    [hoeffding_drift_detection_test_w.implementations.hddm_w_standard]
+        name            = "Standard Hoeffding's Drift Detection Method Test-W"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["delta"]
+        references      = []
 
-[[method]]
-    id              = "kswin"
+[kswin]
     name            = "Kolmogorov-Smirnov Windowing (KSWIN)"
     description     = "Kolmogorov-Smirnov Windowing method for drift detection in data streams."
-    drift_types     = ["CONCEPT_DRIFT"]
+    drift_types     = ["CONCEPT"]
     family          = "WINDOW_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS"]
     requires_labels = false
     references      = ["https://doi.org/10.1016/j.neucom.2019.11.111", "Raab et al. (2020)"]
 
-[[method.implementation]]
-    id              = "kswin_standard"
-    name            = "Standard KSWIN"
-    execution_mode  = "STREAMING"
-    hyperparameters = { alpha = 0.05, window_size = 100 }
-
-[[method]]
-    id              = "periodic_trigger"
-    name            = "Periodic Trigger"
-    description     = "Simple drift detector that triggers at fixed intervals, used as a baseline."
-    drift_types     = ["DATA_DRIFT", "CONCEPT_DRIFT"]
-    family          = "WINDOW_BASED"
-    data_dimension  = "MULTIVARIATE"
-    data_types      = ["CONTINUOUS", "CATEGORICAL"]
-    requires_labels = false
-
-[[method.implementation]]
-    id              = "periodic_trigger_standard"
-    name            = "Standard Periodic Trigger"
-    execution_mode  = "STREAMING"
-    hyperparameters = { period = 1000 }
+    [kswin.implementations.kswin_standard]
+        name            = "Standard KSWIN"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["alpha", "window_size"]
+        references      = []
