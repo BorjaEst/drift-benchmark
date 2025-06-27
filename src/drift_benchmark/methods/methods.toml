@@ -605,3 +605,19 @@
         execution_mode  = "STREAMING"
         hyperparameters = ["alpha", "window_size"]
         references      = []
+
+[periodic_trigger]
+    name            = "Periodic Trigger Detector"
+    description     = "Detector that triggers drift detection at regular intervals for testing purposes."
+    drift_types     = ["CONCEPT", "COVARIATE", "LABEL"]
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS", "CATEGORICAL"]
+    requires_labels = false
+    references      = []
+
+    [periodic_trigger.implementations.periodic_trigger_standard]
+        name            = "Standard Periodic Trigger Detector"
+        execution_mode  = "STREAMING"
+        hyperparameters = ["interval"]
+        references      = []
