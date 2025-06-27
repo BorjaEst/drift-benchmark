@@ -8,5 +8,7 @@
     // TOML configuration
     "evenBetterToml.formatter.alignEntries": true,
     "evenBetterToml.formatter.indentEntries": true,
-    "evenBetterToml.formatter.alignComments": false
+    "evenBetterToml.formatter.alignComments": false,
+    "evenBetterToml.formatter.indentTables": true,
+    "evenBetterToml.formatter.columnWidth": 120
 }
