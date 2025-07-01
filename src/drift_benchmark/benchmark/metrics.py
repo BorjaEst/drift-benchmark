@@ -144,6 +144,12 @@ class DriftEvaluationResult:
     # Overall ranking summary
     rankings: Dict[str, Dict[str, int]] = field(default_factory=dict)
 
+    # Statistical summaries for each detector
+    statistical_summaries: Dict[str, Dict[str, float]] = field(default_factory=dict)
+
+    # Best performing detectors by metric
+    best_performers: Dict[str, str] = field(default_factory=dict)
+
     def add_result(self, result: BenchmarkResult) -> None:
         """Add an individual benchmark result."""
         self.results.append(result)

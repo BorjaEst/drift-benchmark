@@ -168,9 +168,40 @@ class OutputModel(BaseModel):
     save_results: bool = Field(True, description="Whether to save benchmark results")
     visualization: bool = Field(True, description="Whether to generate visualizations")
     plots: List[str] = Field(default_factory=list, description="Types of plots to generate")
-    export_format: List[ExportFormat] = Field(default_factory=lambda: ["csv"], description="Formats to export results")
-    log_level: LogLevel = Field(settings.log_level.lower(), description="Logging level")
+    export_format: List[ExportFormat] = Field(default_factory=lambda: ["CSV"], description="Formats to export results")
+    log_level: LogLevel = Field("INFO", description="Logging level")
     results_dir: str = Field(settings.results_dir, description="Directory to save results")
+
+
+class MetricConfig(BaseModel):
+    """Configuration for evaluation metrics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., description="Name of the metric")
+    enabled: bool = Field(True, description="Whether this metric should be computed")
+    parameters: Dict[str, Any] = Field(default_factory=dict, description="Metric-specific parameters")
+    weight: float = Field(1.0, description="Weight for aggregated scoring")
+
+
+class EvaluationConfig(BaseModel):
+    """Configuration for evaluation settings."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    metrics: List[MetricConfig] = Field(
+        default_factory=lambda: [
+            MetricConfig(name="accuracy"),
+            MetricConfig(name="precision"),
+            MetricConfig(name="recall"),
+            MetricConfig(name="f1_score"),
+        ],
+        description="List of metrics to compute",
+    )
+    cross_validation: bool = Field(False, description="Whether to use cross-validation")
+    cv_folds: int = Field(5, description="Number of cross-validation folds")
+    significance_tests: bool = Field(True, description="Whether to perform statistical significance tests")
+    confidence_level: float = Field(0.95, description="Confidence level for statistical tests")
 
 
 class BenchmarkConfig(BaseModel):
@@ -182,7 +213,7 @@ class BenchmarkConfig(BaseModel):
     settings: SettingsModel = Field(default_factory=SettingsModel, description="Benchmark settings")
     data: DataConfigModel = Field(..., description="Data configuration")
     detectors: DetectorConfigModel = Field(..., description="Detector configuration")
-    metrics: Dict[str, Metric] = Field(default_factory=dict, description="Evaluation metrics")
+    evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig, description="Evaluation configuration")
     output: OutputModel = Field(default_factory=OutputModel, description="Output configuration")
 
     def get_detector_count(self) -> int:
