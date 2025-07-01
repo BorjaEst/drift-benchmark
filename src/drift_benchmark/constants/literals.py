@@ -127,3 +127,21 @@ OutlierMethod = Literal[
     "ZSCORE",  # Z-score based outlier detection
     "IQR",  # Interquartile Range method
 ]
+
+# Export formats for benchmark results
+ExportFormat = Literal[
+    "CSV",  # Comma-separated values
+    "JSON",  # JavaScript Object Notation
+    "PICKLE",  # Python pickle format
+    "EXCEL",  # Microsoft Excel format
+    "PARQUET",  # Apache Parquet format
+]
+
+# Logging levels
+LogLevel = Literal[
+    "DEBUG",  # Detailed information for debugging
+    "INFO",  # General information
+    "WARNING",  # Warning messages
+    "ERROR",  # Error messages
+    "CRITICAL",  # Critical error messages
+]
