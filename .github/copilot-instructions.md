@@ -39,8 +39,9 @@ drift-benchmark/
 │   │   └── types.py             # Type aliases and type definitions
 │   ├── data/                    # Data handling utilities
 │   │   ├── __init__.py
-│   │   ├── datasets.py          # Loader for standard datasets
-│   │   └── drift_generators.py  # Tools to simulate drift
+│   │   ├── datasets.py          # Configuration-driven data loading
+│   │   ├── preprocessing.py     # Comprehensive preprocessing pipeline
+│   │   └── drift_generators.py  # Synthetic data and drift simulation
 │   ├── detectors/               # Drift detection algorithms
 │   │   ├── __init__.py
 │   │   ├── base.py              # Base detector class
@@ -164,7 +165,255 @@ metrics.py is based on dataclasses for structured data handling and validation.
 
 ### Data Module
 
-This module provides utilities for loading standard datasets and generating synthetic data with different types of drift (concept drift, feature drift, etc.).
+This module provides comprehensive, configuration-driven utilities for data loading, preprocessing, and synthetic drift generation. The module has been completely refactored to use Pydantic v2 models for type safety and validation.
+
+**Key Features:**
+
+- **Configuration-Driven**: All data operations driven by strongly-typed Pydantic configurations
+- **Multiple Data Sources**: Support for synthetic, file-based, and sklearn datasets
+- **Comprehensive Preprocessing**: Scaling, encoding, imputation, dimensionality reduction, and outlier removal
+- **Extensible Architecture**: Easy addition of new generators, drift patterns, and preprocessing methods
+- **Type Safety**: Full type hints and automatic validation throughout
+- **Backward Compatibility**: Legacy function names maintained where possible
+
+**Module Structure:**
+
+```python
+from drift_benchmark.data import (
+    # Main data loading functions
+    load_dataset,              # Universal dataset loader
+    generate_synthetic_data,   # Synthetic data generation
+    preprocess_data,          # Data preprocessing pipeline
+
+    # Configuration-driven loaders
+    load_synthetic_dataset,    # For SyntheticDataConfig
+    load_file_dataset,        # For FileDataConfig
+    load_sklearn_dataset,     # For SklearnDataConfig
+
+    # Built-in dataset registry
+    get_builtin_datasets,     # List available datasets
+    load_builtin_dataset,     # Load by name
+
+    # Legacy compatibility
+    load_iris, load_wine, load_breast_cancer,  # Direct sklearn loaders
+)
+```
+
+**Core Components:**
+
+#### datasets.py - Configuration-Driven Data Loading
+
+**Main Interface:**
+
+```python
+from drift_benchmark.constants.types import DatasetConfig, SyntheticDataConfig, FileDataConfig, SklearnDataConfig
+from drift_benchmark.data import load_dataset
+
+# Universal loader that routes based on configuration type
+result = load_dataset(config)  # Returns DatasetResult
+
+# Standardized output format
+class DatasetResult:
+    X_ref: pd.DataFrame        # Reference data features
+    X_test: pd.DataFrame       # Test data features
+    y_ref: Optional[pd.Series] # Reference data targets
+    y_test: Optional[pd.Series] # Test data targets
+    drift_info: DriftInfo      # Drift metadata
+    metadata: DatasetMetadata  # Dataset metadata
+```
+
+**Supported Dataset Types:**
+
+1. **Synthetic Datasets** (`type="synthetic"`):
+
+```python
+config = SyntheticDataConfig(
+    name="gaussian_drift",
+    type="synthetic",
+    generator_name="gaussian",     # gaussian, mixed, multimodal, time_series
+    n_samples=1000,
+    n_features=4,
+    drift_pattern="sudden",        # sudden, gradual, incremental, recurring
+    drift_position=0.5,
+    drift_magnitude=2.0,
+    noise=0.1
+)
+```
+
+2. **File Datasets** (`type="file"`):
+
+```python
+config = FileDataConfig(
+    name="weather_data",
+    type="file",
+    file_path="datasets/weather.csv",
+    file_format="csv",            # csv, parquet, json
+    target_column="temperature",
+    test_split=0.3,
+    drift_points=[1000, 2000],   # Known drift locations
+    random_state=42
+)
+```
+
+3. **Sklearn Datasets** (`type="sklearn"`):
+
+```python
+config = SklearnDataConfig(
+    name="iris_dataset",
+    type="sklearn",
+    dataset_name="iris",          # iris, wine, breast_cancer, digits
+    test_split=0.3,
+    random_state=42
+)
+```
+
+#### preprocessing.py - Comprehensive Data Preprocessing
+
+**Features:**
+
+- **Scaling**: Standard, Min-Max, Robust scaling
+- **Encoding**: One-hot, Label encoding for categorical features
+- **Imputation**: Mean, Median, Mode, Constant value strategies
+- **Dimensionality Reduction**: PCA with configurable variance retention
+- **Outlier Removal**: Isolation Forest, Z-score, IQR methods
+- **State Management**: Fit on reference data, transform both reference and test
+
+**Usage:**
+
+```python
+from drift_benchmark.data.preprocessing import PreprocessingPipeline
+from drift_benchmark.constants.types import PreprocessingConfig
+from drift_benchmark.constants import ScalingMethod, EncodingMethod, ImputationMethod
+
+# Configure preprocessing
+config = PreprocessingConfig(
+    scaling=ScalingMethod.STANDARD,
+    encoding=EncodingMethod.ONE_HOT,
+    imputation=ImputationMethod.MEAN,
+    handle_missing=True,
+    pca_components=0.95,          # Retain 95% variance
+    remove_outliers=True,
+    outlier_method=OutlierMethod.ISOLATION_FOREST
+)
+
+# Apply preprocessing
+pipeline = PreprocessingPipeline(config)
+pipeline.fit(X_ref)
+X_ref_processed = pipeline.transform(X_ref)
+X_test_processed = pipeline.transform(X_test)
+
+# Or use convenience function
+X_ref_processed, X_test_processed = preprocess_data(X_ref, X_test, config)
+```
+
+#### drift_generators.py - Synthetic Data and Drift Simulation
+
+**Available Generators:**
+
+- **gaussian**: Multivariate normal distributions
+- **mixed**: Mixed continuous and categorical features
+- **multimodal**: Multiple modes in feature distributions
+- **time_series**: Temporal data with trend and seasonality
+
+**Drift Patterns:**
+
+- **sudden**: Abrupt change at specified position
+- **gradual**: Smooth transition over specified duration
+- **incremental**: Step-wise changes over time
+- **recurring**: Periodic drift patterns
+
+**Drift Characteristics:**
+
+- **mean_shift**: Changes in feature means
+- **variance_shift**: Changes in feature variances
+- **correlation_shift**: Changes in feature correlations
+- **distribution_shift**: Complete distribution changes
+
+**Usage:**
+
+```python
+from drift_benchmark.data import generate_synthetic_data
+from drift_benchmark.constants.types import SyntheticDataConfig
+
+config = SyntheticDataConfig(
+    name="complex_drift",
+    type="synthetic",
+    generator_name="mixed",
+    n_samples=2000,
+    n_features=6,
+    drift_pattern="gradual",
+    drift_position=0.4,
+    drift_duration=0.3,           # Gradual transition over 30% of data
+    drift_magnitude=2.5,
+    categorical_features=[2, 4],  # Features 2 and 4 are categorical
+    noise=0.05,
+    random_state=42
+)
+
+result = generate_synthetic_data(config)
+```
+
+**Built-in Dataset Registry:**
+
+```python
+from drift_benchmark.data import get_builtin_datasets, load_builtin_dataset
+
+# List available datasets
+datasets = get_builtin_datasets()
+print(datasets)  # ['iris', 'wine', 'breast_cancer', 'digits']
+
+# Load by name
+result = load_builtin_dataset('iris', test_split=0.3)
+```
+
+**Integration with Configuration:**
+
+The data module seamlessly integrates with the benchmark configuration system:
+
+```python
+from drift_benchmark.benchmark.configuration import BenchmarkConfig
+from drift_benchmark.data import load_dataset
+
+# Load configuration
+config = BenchmarkConfig.from_toml('my_benchmark.toml')
+
+# Load all datasets from configuration
+results = []
+for dataset_config in config.data.datasets:
+    result = load_dataset(dataset_config)
+    results.append(result)
+```
+
+**Data Types and Validation:**
+
+All data configurations use comprehensive Pydantic models with automatic validation:
+
+```python
+from drift_benchmark.constants.types import SyntheticDataConfig
+from drift_benchmark.constants import DataGenerator, DriftPattern
+
+# Automatic validation of literal values
+config = SyntheticDataConfig(
+    name="test",
+    type="synthetic",                    # Validated against DatasetType literal
+    generator_name="gaussian",           # Validated against DataGenerator literal
+    drift_pattern="sudden",              # Validated against DriftPattern literal
+    n_samples=1000,                     # Must be positive integer
+    n_features=2,                       # Must be positive integer
+    drift_position=0.5,                 # Must be between 0 and 1
+    drift_magnitude=1.0                 # Must be positive
+)
+```
+
+**Error Handling and Validation:**
+
+The module provides comprehensive error handling and validation:
+
+- **Configuration Validation**: Pydantic models catch invalid parameters
+- **Data Validation**: Checks for data consistency and format
+- **Path Resolution**: Automatic path resolution for file datasets
+- **Missing Data Handling**: Configurable strategies for missing values
+- **Type Compatibility**: Ensures data types match detector requirements
 
 ### Detectors Module
 
@@ -277,9 +526,17 @@ This module provides comprehensive type definitions and data models for type saf
 from drift_benchmark.constants import (
     # Literal types for type hints with automatic validation
     DriftType, ExecutionMode, DetectorFamily, DataDimension, DataType,
+    DatasetType, DataGenerator, DriftPattern, DriftCharacteristic,
+    FileFormat, ScalingMethod, EncodingMethod, ImputationStrategy,
+    OutlierMethod, PreprocessingMethod,
 
     # Data models with automatic validation
-    MethodMetadata, DetectorMetadata, ImplementationData, MethodData
+    MethodMetadata, DetectorMetadata, ImplementationData, MethodData,
+
+    # Data configuration models
+    DatasetConfig, SyntheticDataConfig, FileDataConfig, SklearnDataConfig,
+    PreprocessingConfig, DatasetResult, DriftInfo, DatasetMetadata
+)
 )
 ```
 
@@ -341,17 +598,103 @@ The constants module includes Pydantic v2 models that automatically validate:
 - **Data Types**: CONTINUOUS (numerical), CATEGORICAL (discrete), MIXED (both)
 - **Execution Modes**: BATCH (complete datasets) vs STREAMING (incremental processing)
 
+**Data Configuration Categories:**
+
+**Dataset Types:**
+
+- **SYNTHETIC**: Generated synthetic datasets with configurable drift
+- **FILE**: Datasets loaded from files (CSV, Parquet, JSON)
+- **SKLEARN**: Built-in scikit-learn datasets
+
+**Data Generators:**
+
+- **GAUSSIAN**: Multivariate normal distributions
+- **MIXED**: Mixed continuous and categorical features
+- **MULTIMODAL**: Multiple modes in feature distributions
+- **TIME_SERIES**: Temporal data with trend and seasonality
+
+**Drift Patterns:**
+
+- **SUDDEN**: Abrupt change at specified position
+- **GRADUAL**: Smooth transition over specified duration
+- **INCREMENTAL**: Step-wise changes over time
+- **RECURRING**: Periodic drift patterns
+
+**Drift Characteristics:**
+
+- **MEAN_SHIFT**: Changes in feature means
+- **VARIANCE_SHIFT**: Changes in feature variances
+- **CORRELATION_SHIFT**: Changes in feature correlations
+- **DISTRIBUTION_SHIFT**: Complete distribution changes
+
+**Preprocessing Methods:**
+
+**Scaling Methods:**
+
+- **STANDARD**: Z-score standardization (mean=0, std=1)
+- **MIN_MAX**: Min-max scaling to [0,1] range
+- **ROBUST**: Robust scaling using median and IQR
+- **MAX_ABS**: Scaling by maximum absolute value
+
+**Encoding Methods:**
+
+- **ONE_HOT**: One-hot encoding for categorical features
+- **LABEL**: Label encoding (ordinal) for categorical features
+- **TARGET**: Target encoding using target variable statistics
+
+**Imputation Strategies:**
+
+- **MEAN**: Fill missing values with feature mean
+- **MEDIAN**: Fill missing values with feature median
+- **MODE**: Fill missing values with feature mode
+- **CONSTANT**: Fill missing values with specified constant
+- **FORWARD_FILL**: Forward fill missing values
+- **BACKWARD_FILL**: Backward fill missing values
+
+**Outlier Detection Methods:**
+
+- **ISOLATION_FOREST**: Isolation Forest algorithm
+- **Z_SCORE**: Statistical Z-score method
+- **IQR**: Interquartile range method
+- **LOCAL_OUTLIER_FACTOR**: Local Outlier Factor algorithm
+
+**File Formats:**
+
+- **CSV**: Comma-separated values
+- **PARQUET**: Apache Parquet columnar format
+- **JSON**: JavaScript Object Notation
+
 **Usage Example:**
 
 ```python
-from drift_benchmark.constants.types import MethodMetadata, ImplementationData
+from drift_benchmark.constants.types import MethodMetadata, ImplementationData, SyntheticDataConfig, PreprocessingConfig
+from drift_benchmark.constants import DatasetType, DriftPattern, ScalingMethod
 
-# Create implementation with automatic validation
+# Create method implementation with automatic validation
 impl = ImplementationData(
     name="Batch KS Test",
     execution_mode="BATCH",  # Automatically validated against ExecutionMode Literal
     hyperparameters=["threshold"],
     references=[]
+)
+
+# Create data configuration with automatic validation
+data_config = SyntheticDataConfig(
+    name="test_dataset",
+    type="synthetic",  # Validated against DatasetType Literal
+    generator_name="gaussian",  # Validated against DataGenerator Literal
+    n_samples=1000,
+    n_features=2,
+    drift_pattern="sudden",  # Validated against DriftPattern Literal
+    drift_position=0.5,
+    drift_magnitude=1.0
+)
+
+# Create preprocessing configuration
+prep_config = PreprocessingConfig(
+    scaling="standard",  # Validated against ScalingMethod Literal
+    encoding="one_hot",  # Validated against EncodingMethod Literal
+    handle_missing=True
 )
 
 # Invalid values will raise ValidationError automatically
