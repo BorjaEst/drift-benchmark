@@ -17,12 +17,6 @@
         hyperparameters = ["threshold"]
         references      = []
 
-    [kolmogorov_smirnov.implementations.ks_online]
-        name            = "Online Kolmogorov-Smirnov"
-        execution_mode  = "STREAMING"
-        hyperparameters = ["threshold", "window_size"]
-        references      = ["https://doi.org/10.1145/2939672.2939836", "dos Reis et al. (2016)"]
-
     [kolmogorov_smirnov.implementations.ks_incremental]
         name            = "Incremental Kolmogorov-Smirnov"
         execution_mode  = "STREAMING"
