@@ -35,7 +35,6 @@ drift-benchmark/
 │   │   └── metrics.py           # Evaluation metrics
 │   ├── constants/               # Constants and type definitions
 │   │   ├── __init__.py
-│   │   ├── enums.py             # Enumeration definitions
 │   │   ├── literals.py          # Literal constants
 │   │   └── types.py             # Type aliases and type definitions
 │   ├── data/                    # Data handling utilities
@@ -181,11 +180,10 @@ This module contains the detector registry and base implementation framework.
 **BaseDetector Interface:**
 
 ```python
-class BaseDetector(ABC):
-    # Class attributes for method/implementation mapping
-    method_id: str = ""
-    implementation_id: str = ""
+from drift_benchmark.detectors.base import BaseDetector, register_method
 
+@register_method("kolmogorov_smirnov", "ks_batch")
+class MyDetector(BaseDetector):
     @abstractmethod
     def fit(self, X_ref: ArrayLike, y_ref: Optional[ArrayLike] = None) -> "BaseDetector":
         """Fit detector on reference data"""
@@ -195,14 +193,18 @@ class BaseDetector(ABC):
         """Detect drift in test data"""
 
     @abstractmethod
-    def score(self, X_test: ArrayLike, y_test: Optional[ArrayLike] = None) -> float:
+    def score(self) -> Dict[str, float]:
         """Return drift score/distance metric"""
 
+    @abstractmethod
+    def reset(self) -> None:
+        """Reset detector to initial state"""
+
     @classmethod
-    def metadata(cls) -> dict:
+    def metadata(cls) -> DetectorMetadata:
         """Return detector metadata from methods.toml registry"""
-        from drift_benchmark.methods import get_method_metadata
-        return get_method_metadata(cls.method_id, cls.implementation_id)
+        from drift_benchmark.methods import get_detector_by_id
+        return get_detector_by_id(cls.method_id, cls.implementation_id)
 ```
 
 ### Methods Module
@@ -257,6 +259,112 @@ This module provides a centralized registry for drift detection methods through 
 - **STATISTICAL_PROCESS_CONTROL**: Control chart methods
 - **CHANGE_DETECTION**: Sequential change detection
 - **WINDOW_BASED**: Sliding window approaches
+
+### Constants Module
+
+This module provides comprehensive type definitions and data models for type safety and validation throughout the drift-benchmark library using Pydantic v2 with Literal types.
+
+**Key Features:**
+
+- **Type Safety**: Strong typing with Pydantic v2 models and automatic Literal validation
+- **Automatic Validation**: Pydantic automatically validates against Literal types without manual validators
+- **Clean Architecture**: Simple, maintainable code without redundant enum classes
+- **Comprehensive Coverage**: Covers all categorization aspects of drift detection methods
+
+**Module Structure:**
+
+```python
+from drift_benchmark.constants import (
+    # Literal types for type hints with automatic validation
+    DriftType, ExecutionMode, DetectorFamily, DataDimension, DataType,
+
+    # Data models with automatic validation
+    MethodMetadata, DetectorMetadata, ImplementationData, MethodData
+)
+```
+
+**Automatic Validation with Literal Types:**
+
+```python
+from drift_benchmark.constants.types import MethodData
+
+# Pydantic automatically validates against Literal types
+try:
+    method = MethodData(
+        name="Test Method",
+        description="A comprehensive test method",
+        drift_types=["CONCEPT", "COVARIATE"],  # Validated against DriftType Literal
+        family="STATISTICAL_TEST",             # Validated against DetectorFamily Literal
+        data_dimension="UNIVARIATE",           # Validated against DataDimension Literal
+        data_types=["CONTINUOUS"],             # Validated against DataType Literal
+        requires_labels=False,
+        references=["https://example.com"]
+    )
+    print("✓ Method data is valid")
+except ValidationError as e:
+    print(f"✗ Validation failed: {e}")
+```
+
+**Data Models with Validation:**
+
+The constants module includes Pydantic v2 models that automatically validate:
+
+- **Method names and descriptions** (minimum length requirements)
+- **Drift types** (must be valid Literal values: CONCEPT, COVARIATE, LABEL)
+- **Detector families** (must be valid Literal values)
+- **Data dimensions** (UNIVARIATE or MULTIVARIATE)
+- **Data types** (CONTINUOUS, CATEGORICAL, MIXED)
+- **Implementation IDs** (non-empty strings)
+- **List constraints** (minimum length for required lists)
+
+**Categories Defined:**
+
+**Drift Types:**
+
+- **CONCEPT**: Changes in target relationship P(y|X)
+- **COVARIATE**: Changes in input feature distributions P(X)
+- **LABEL**: Changes in target distribution P(y)
+
+**Detector Families:**
+
+- **STATISTICAL_TEST**: Hypothesis testing approaches
+- **DISTANCE_BASED**: Distribution distance measures
+- **STATISTICAL_PROCESS_CONTROL**: Control chart methods
+- **CHANGE_DETECTION**: Sequential change detection
+- **WINDOW_BASED**: Sliding window approaches
+- **ENSEMBLE**: Ensemble methods
+- **MACHINE_LEARNING**: ML-based approaches
+
+**Data Characteristics:**
+
+- **Data Dimension**: UNIVARIATE (single feature) vs MULTIVARIATE (multiple features)
+- **Data Types**: CONTINUOUS (numerical), CATEGORICAL (discrete), MIXED (both)
+- **Execution Modes**: BATCH (complete datasets) vs STREAMING (incremental processing)
+
+**Usage Example:**
+
+```python
+from drift_benchmark.constants.types import MethodMetadata, ImplementationData
+
+# Create implementation with automatic validation
+impl = ImplementationData(
+    name="Batch KS Test",
+    execution_mode="BATCH",  # Automatically validated against ExecutionMode Literal
+    hyperparameters=["threshold"],
+    references=[]
+)
+
+# Invalid values will raise ValidationError automatically
+try:
+    invalid_impl = ImplementationData(
+        name="",  # Will fail: min_length=1
+        execution_mode="INVALID_MODE",  # Will fail: not in ExecutionMode Literal
+        hyperparameters=[],
+        references=[]
+    )
+except ValidationError as e:
+    print(f"Validation caught error: {e}")
+```
 
 ### Visualization Module
 
@@ -331,12 +439,11 @@ Detection methods can be differentiated by multiple characteristics:
 2. **Implement Base Class**: Extend `BaseDetector` from `drift_benchmark.detectors.base`
 
    ```python
-   from drift_benchmark.detectors.base import BaseDetector
+    from drift_benchmark.detectors.base import BaseDetector, register_method
 
-   class MyFrameworkDetector(BaseDetector):
-       # Map to methods.toml entries
-       method_id = "kolmogorov_smirnov"
-       implementation_id = "ks_batch"
+    @register_method("method_id", "implementation_id")
+    class MyFrameworkDetector(BaseDetector):
+        pass
    ```
 
 3. **Method Mapping**: Ensure `method_id` and `implementation_id` match entries in `methods.toml`:

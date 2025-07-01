@@ -5,7 +5,7 @@ This package provides a common interface for drift detection algorithms
 and implementations of various drift detectors.
 """
 
-from drift_benchmark.detectors.base import BaseDetector
+from drift_benchmark.detectors.base import BaseDetector, register_method
 from drift_benchmark.detectors.registry import (
     clear_registry,
     discover_and_register_detectors,
@@ -22,8 +22,9 @@ from drift_benchmark.detectors.registry import (
 )
 
 __all__ = [
-    # Base detector classes
+    # Base detector classes and decorators
     "BaseDetector",
+    "register_method",
     # Registry functions
     "register_detector",
     "get_detector",

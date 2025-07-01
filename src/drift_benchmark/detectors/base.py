@@ -7,13 +7,52 @@ enabling standardized benchmarking and evaluation across different libraries.
 
 import abc
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import numpy as np
 import pandas as pd
 
 from drift_benchmark.constants.types import DetectorMetadata
 from drift_benchmark.methods import detector_exists, get_detector_by_id
+
+
+def register_method(method_id: str, implementation_id: str):
+    """
+    Decorator to register a detector with method and implementation IDs.
+
+    This provides a cleaner alternative to setting class attributes manually.
+
+    Args:
+        method_id: The method ID from methods.toml
+        implementation_id: The implementation ID from methods.toml
+
+    Returns:
+        Decorated class with method_id and implementation_id set
+
+    Example:
+        @register_method("kolmogorov_smirnov", "ks_batch")
+        class KSDetector(BaseDetector):
+            def fit(self, reference_data): ...
+            def detect(self, data): ...
+            def score(self): ...
+            def reset(self): ...
+    """
+
+    def decorator(cls: Type[BaseDetector]) -> Type[BaseDetector]:
+        # Validate that the method exists in methods.toml
+        if not detector_exists(method_id, implementation_id):
+            raise ValueError(
+                f"Method '{method_id}' with implementation '{implementation_id}' "
+                f"not found in methods.toml. Please add it to the registry first."
+            )
+
+        # Set the class attributes
+        cls.method_id = method_id
+        cls.implementation_id = implementation_id
+
+        return cls
+
+    return decorator
 
 
 class BaseDetector(abc.ABC):
