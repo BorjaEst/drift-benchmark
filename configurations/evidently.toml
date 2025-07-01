@@ -1,0 +1,162 @@
+# Benchmark Configuration Example
+[metadata]
+    name        = "Benchmark for Evidently Adapter"
+    description = "A benchmark to evaluate drift detection capabilities using the Evidently adapter."
+    author      = "Drift Benchmark Team"
+    date        = "2025-06-18"
+    version     = "0.1.0"
+
+[settings]
+    seed                 = 42
+    n_runs               = 5
+    cross_validation     = true
+    cv_folds             = 3
+    timeout_per_detector = 300 # seconds
+
+
+[data] # Dataset configurations
+[[data.datasets]]
+    name      = "california_housing"
+    type      = "builtin"
+    test_size = 0.3
+
+
+[detectors] # List of detectors to evaluate
+
+# Statistical Tests - Univariate Continuous
+[[detectors.algorithms]]
+    name       = "Kolmogorov-Smirnov Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Cramér-von Mises Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Anderson-Darling Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Mann-Whitney U-Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "T-Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "EPPS-Singleton Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Energy Distance"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.1 }
+
+[[detectors.algorithms]]
+    name       = "Empirical Maximum Mean Discrepancy"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+# Statistical Tests - Categorical
+[[detectors.algorithms]]
+    name       = "Chi-square Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Fisher Exact Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "G-Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Z-Test"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+# Distance-based Methods
+[[detectors.algorithms]]
+    name       = "Wasserstein Distance"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.1 }
+
+[[detectors.algorithms]]
+    name       = "Hellinger Distance"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.1 }
+
+[[detectors.algorithms]]
+    name       = "Total Variation Distance"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.1 }
+
+[[detectors.algorithms]]
+    name       = "Jensen-Shannon Divergence Drift Detection"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.1, bins = 10 }
+
+[[detectors.algorithms]]
+    name       = "Kullback-Leibler Divergence Drift Detection"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.1, bins = 10 }
+
+[[detectors.algorithms]]
+    name       = "Population Stability Index"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.25, bins = 10 }
+
+# Multivariate Drift Detection
+[[detectors.algorithms]]
+    name       = "All Features Value Drift"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Share of Drifted Columns"
+    library    = "evidently_adapter"
+    parameters = { threshold = 0.3 }
+
+[[detectors.algorithms]]
+    name       = "Number of Drifted Columns"
+    library    = "evidently_adapter"
+    parameters = {}
+
+[[detectors.algorithms]]
+    name = "Custom Features Value Drift"
+    library = "evidently_adapter"
+    parameters = { features = [
+        "MedInc",
+        "HouseAge",
+        "AveRooms",
+    ], threshold = 0.05 }
+
+[[detectors.algorithms]]
+    name       = "Embeddings Drift Detection"
+    library    = "evidently_adapter"
+    parameters = { embeddings_name = "embeddings" }
+
+# Metrics are not directly defined in the configuration schema as a section
+# Instead, they are defined as a dictionary field of the root configuration
+[metrics]
+    detection   = ["f1_score", "false_positive_rate", "false_negative_rate"]
+    performance = ["detection_delay", "computation_time"]
+
+# Output configuration 
+[output]
+    save_results  = true
+    visualization = true
+    plots         = ["roc_curve", "delay_distribution", "performance_comparison"]
+    export_format = ["csv", "json"]
+    log_level     = "info"
+    results_dir   = "evidently_benchmark_results"
