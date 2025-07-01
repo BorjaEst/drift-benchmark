@@ -275,7 +275,7 @@ def discover_and_register_detectors(components_dir: Optional[str] = None) -> int
         Number of detectors registered
     """
     if components_dir is None:
-        components_dir = settings.get_absolute_components_dir()
+        components_dir = settings.components_dir
 
     # Ensure components directory exists
     components_path = Path(components_dir)
