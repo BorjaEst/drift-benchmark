@@ -33,6 +33,11 @@ drift-benchmark/
 │   │   ├── benchmarks.py        # Benchmark runner
 │   │   ├── configuration.py     # Configuration models to run benchmarks
 │   │   └── metrics.py           # Evaluation metrics
+│   ├── constants/               # Constants and type definitions
+│   │   ├── __init__.py
+│   │   ├── enums.py             # Enumeration definitions
+│   │   ├── literals.py          # Literal constants
+│   │   └── types.py             # Type aliases and type definitions
 │   ├── data/                    # Data handling utilities
 │   │   ├── __init__.py
 │   │   ├── datasets.py          # Loader for standard datasets
