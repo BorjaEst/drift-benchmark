@@ -21,7 +21,7 @@ drift-benchmark/
 │   ├── benchmark/               # Core functionality
 │   │   ├── __init__.py
 │   │   ├── benchmarks.py        # Benchmark runner
-│   │   ├── configuration.py     # Benchmark runner
+│   │   ├── configuration.py     # Configuration models to run benchmarks
 │   │   └── metrics.py           # Evaluation metrics
 │   ├── data/                    # Data handling utilities
 │   │   ├── __init__.py
