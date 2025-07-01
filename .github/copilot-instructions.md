@@ -984,19 +984,24 @@ This comprehensive configuration system allows for flexible and reproducible ben
 ```
 tests/
 ├── conftest.py                    # Pytest configuration and fixtures
-├── test_benchmark.py              # Core benchmark functionality tests
 ├── test_settings.py               # Settings module tests
+├── test_benchmark/                # Core benchmark tests
+│   ├── test_benchmarks.py         # Benchmark execution tests
+│   ├── test_configuration.py      # Configuration loading
+│   └── test_metrics.py            # Metrics computation tests
+├── test_data/                     # Data handling tests
+│   ├── test_datasets.py           # Dataset loading and generation tests
+│   └── test_generators.py         # Drift data generators tests
 ├── test_detectors/                # Detector-specific tests
 │   ├── test_base.py               # BaseDetector interface tests
-│   ├── test_evidently.py          # Evidently adapter tests
-│   └── test_alibi_detect.py       # Alibi Detect adapter tests
+│   └── test_adapter.py            # Adapter tests from assets/components
 ├── test_methods/                  # Method registry tests
 │   ├── test_methods_loading.py    # methods.toml loading tests
 │   └── test_method_validation.py  # Method metadata validation
 └── assets/                        # Test data and mock components
-    ├── components/
-    ├── configurations/
-    └── datasets/
+    ├── components/                # Mock detector implementations
+    ├── configurations/            # Mock benchmark configurations
+    └── datasets/                  # Mock datasets for testing
 ```
 
 **Running Tests:**
