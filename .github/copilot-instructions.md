@@ -52,8 +52,95 @@ drift-benchmark/
 
 ### Settings Module
 
-This module contains configuration settings for the benchmark, including paths to data, directories, detector implementations and other global settings.
-Settings are defined using pydantic v2 models for type safety and validation.
+This module provides comprehensive configuration management for the drift-benchmark library using Pydantic v2 models for type safety and validation.
+
+**Key Features:**
+
+- **Environment Variable Support**: All settings configurable via `DRIFT_BENCHMARK_` prefixed environment variables
+- **`.env` File Support**: Automatic loading from `.env` file in project root
+- **Path Resolution**: Automatic conversion of relative to absolute paths with `~` expansion support
+- **Validation**: Built-in validation for all configuration values with sensible defaults
+- **Logging Integration**: Automatic logging setup with file and console handlers
+- **Export Functionality**: Export current settings to `.env` format
+
+**Settings Configuration:**
+
+```python
+from drift_benchmark.settings import settings
+
+# Access current settings
+print(f"Components directory: {settings.components_dir}")
+print(f"Log level: {settings.log_level}")
+print(f"Max workers: {settings.max_workers}")
+
+# Create all configured directories
+settings.create_directories()
+
+# Setup logging with configured level and file output
+settings.setup_logging()
+logger = settings.get_logger(__name__)
+
+# Export current settings to .env file
+settings.to_env_file("my_config.env")
+```
+
+**Available Settings:**
+
+| Setting              | Type     | Default            | Description                                       | Environment Variable                 |
+| -------------------- | -------- | ------------------ | ------------------------------------------------- | ------------------------------------ |
+| `components_dir`     | str      | `"components"`     | Directory for detector implementations            | `DRIFT_BENCHMARK_COMPONENTS_DIR`     |
+| `configurations_dir` | str      | `"configurations"` | Directory for benchmark configs                   | `DRIFT_BENCHMARK_CONFIGURATIONS_DIR` |
+| `datasets_dir`       | str      | `"datasets"`       | Directory for datasets                            | `DRIFT_BENCHMARK_DATASETS_DIR`       |
+| `results_dir`        | str      | `"results"`        | Directory for results output                      | `DRIFT_BENCHMARK_RESULTS_DIR`        |
+| `logs_dir`           | str      | `"logs"`           | Directory for log files                           | `DRIFT_BENCHMARK_LOGS_DIR`           |
+| `log_level`          | str      | `"INFO"`           | Logging level (DEBUG/INFO/WARNING/ERROR/CRITICAL) | `DRIFT_BENCHMARK_LOG_LEVEL`          |
+| `enable_caching`     | bool     | `true`             | Enable method registry caching                    | `DRIFT_BENCHMARK_ENABLE_CACHING`     |
+| `max_workers`        | int      | `4`                | Max parallel workers (1-32, auto-limited by CPU)  | `DRIFT_BENCHMARK_MAX_WORKERS`        |
+| `random_seed`        | int/None | `42`               | Random seed for reproducibility                   | `DRIFT_BENCHMARK_RANDOM_SEED`        |
+| `memory_limit_mb`    | int      | `4096`             | Memory limit in MB (512-32768)                    | `DRIFT_BENCHMARK_MEMORY_LIMIT_MB`    |
+
+**Configuration Methods:**
+
+1. **Environment Variables:**
+
+   ```bash
+   export DRIFT_BENCHMARK_LOG_LEVEL=DEBUG
+   export DRIFT_BENCHMARK_MAX_WORKERS=8
+   export DRIFT_BENCHMARK_DATASETS_DIR=/data/drift-datasets
+   ```
+
+2. **`.env` File:**
+
+   ```bash
+   # Copy example and customize
+   cp .env.example .env
+   # Edit .env file with your settings
+   ```
+
+3. **Programmatic Configuration:**
+
+   ```python
+   from drift_benchmark.settings import Settings
+
+   # Create custom settings instance
+   custom_settings = Settings(
+       log_level="DEBUG",
+       max_workers=8,
+       datasets_dir="/custom/datasets"
+   )
+   ```
+
+**Path Properties:**
+All directory settings provide both string and Path object access:
+
+```python
+# String paths (absolute, resolved)
+settings.components_dir  # "/absolute/path/to/components"
+
+# Path objects for easier manipulation
+settings.components_path  # Path("/absolute/path/to/components")
+settings.results_path.mkdir(parents=True, exist_ok=True)
+```
 
 ### Benchmark Module
 
@@ -621,6 +708,18 @@ source venv/bin/activate  # Linux/Mac
 pip install -e .
 pip install -r requirements-dev.txt
 
+# Setup configuration
+cp .env.example .env
+# Edit .env file as needed
+
+# Create directories and setup logging
+python -c "
+from drift_benchmark.settings import settings
+settings.create_directories()
+settings.setup_logging()
+print('Setup complete!')
+"
+
 # Verify installation
 python -c "import drift_benchmark; print('Installation successful!')"
 ```
@@ -628,21 +727,32 @@ python -c "import drift_benchmark; print('Installation successful!')"
 **Development Workflow:**
 
 ```bash
-# 1. Install pre-commit hooks
+# 1. Setup configuration
+cp .env.example .env
+# Edit .env for your development environment
+
+# 2. Install pre-commit hooks
 pre-commit install
 
-# 2. Run tests to verify setup
+# 3. Create directories and setup logging
+python -c "
+from drift_benchmark.settings import settings
+settings.create_directories()
+settings.setup_logging()
+"
+
+# 4. Run tests to verify setup
 pytest tests/
 
-# 3. Check code style
+# 5. Check code style
 black --check src/ tests/
 isort --check-only src/ tests/
 flake8 src/ tests/
 
-# 4. Type checking
+# 6. Type checking
 mypy src/
 
-# 5. Run full validation
+# 7. Run full validation
 make test  # or equivalent command
 ```
 
@@ -868,3 +978,186 @@ Menelaus focuses on data drift detection with statistical tests and distance-bas
 - Distribution-free methods
 - Multivariate drift detection
 - Batch processing optimization
+
+## Settings Configuration Guide
+
+### Quick Start
+
+1. **Default Configuration** - Works out of the box:
+
+   ```python
+   from drift_benchmark.settings import settings
+   print(f"Using components from: {settings.components_dir}")
+   ```
+
+2. **Environment Variables** - Override specific settings:
+
+   ```bash
+   export DRIFT_BENCHMARK_LOG_LEVEL=DEBUG
+   export DRIFT_BENCHMARK_MAX_WORKERS=8
+   export DRIFT_BENCHMARK_DATASETS_DIR=/data/drift-datasets
+   python your_script.py
+   ```
+
+3. **`.env` File** - Persistent configuration:
+
+   ```bash
+   # Create .env file from example
+   cp .env.example .env
+
+   # Edit .env file
+   DRIFT_BENCHMARK_LOG_LEVEL=DEBUG
+   DRIFT_BENCHMARK_DATASETS_DIR=/data/drift-datasets
+   DRIFT_BENCHMARK_MEMORY_LIMIT_MB=8192
+   ```
+
+### Settings Validation
+
+All settings are automatically validated:
+
+- **Directory paths**: Converted to absolute paths, support `~` expansion
+- **Log level**: Must be valid logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- **Max workers**: Limited by CPU count and field constraints (1-32)
+- **Memory limit**: Must be between 512MB and 32GB
+- **Random seed**: Must be non-negative integer or None
+
+### Common Patterns
+
+**Development Setup:**
+
+```python
+from drift_benchmark.settings import settings
+
+# Setup for development
+settings.setup_logging()  # Configure logging
+settings.create_directories()  # Create all directories
+
+# Get configured logger
+logger = settings.get_logger(__name__)
+logger.info("Starting benchmark...")
+```
+
+**Custom Configuration:**
+
+```python
+from drift_benchmark.settings import Settings
+
+# Create custom settings for specific use case
+benchmark_settings = Settings(
+    log_level="DEBUG",
+    max_workers=16,
+    datasets_dir="/shared/datasets",
+    results_dir="/output/results"
+)
+
+# Export configuration for team sharing
+benchmark_settings.to_env_file("team_config.env")
+```
+
+**CI/CD Integration:**
+
+```bash
+# In CI environment, override specific settings
+export DRIFT_BENCHMARK_LOG_LEVEL=WARNING
+export DRIFT_BENCHMARK_MAX_WORKERS=2
+export DRIFT_BENCHMARK_RESULTS_DIR=/tmp/ci_results
+
+# Run benchmarks with CI settings
+python -m drift_benchmark run configurations/ci_benchmark.toml
+```
+
+### Settings Utilities
+
+Use the provided utility script for settings management:
+
+```bash
+# Show current settings
+python scripts/settings_util.py show
+
+# Create all configured directories
+python scripts/settings_util.py create-dirs
+
+# Export current settings to .env file
+python scripts/settings_util.py export my_config.env
+```
+
+### Environment Variable Priority
+
+Settings are loaded in order (later overrides earlier):
+
+1. Default values in Settings class
+2. Values from `.env` file in project root
+3. Environment variables with `DRIFT_BENCHMARK_` prefix
+4. Direct instantiation parameters
+
+### Performance Considerations
+
+- **Caching**: Keep `enable_caching=true` for better performance
+- **Workers**: Set `max_workers` based on available CPU cores and memory
+- **Memory**: Adjust `memory_limit_mb` based on dataset sizes and available RAM
+- **Logging**: Use `WARNING` or `ERROR` levels in production for better performance
+
+### Settings Testing
+
+When writing tests that use settings:
+
+```python
+import tempfile
+from pathlib import Path
+from drift_benchmark.settings import Settings
+
+def test_with_custom_settings():
+    """Test using custom settings configuration."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create custom settings for testing
+        test_settings = Settings(
+            components_dir=str(Path(temp_dir) / "test_components"),
+            results_dir=str(Path(temp_dir) / "test_results"),
+            log_level="DEBUG",
+            max_workers=2
+        )
+
+        # Create directories for test
+        test_settings.create_directories()
+
+        # Use in your test logic
+        assert test_settings.components_path.exists()
+        assert test_settings.log_level == "DEBUG"
+
+def test_with_env_vars(monkeypatch):
+    """Test settings with environment variables."""
+    monkeypatch.setenv("DRIFT_BENCHMARK_LOG_LEVEL", "WARNING")
+    monkeypatch.setenv("DRIFT_BENCHMARK_MAX_WORKERS", "8")
+
+    settings = Settings()
+    assert settings.log_level == "WARNING"
+    assert settings.max_workers == 8
+```
+
+### Settings in Detector Implementation
+
+Use settings in your detector implementations:
+
+```python
+from drift_benchmark.detectors.base import BaseDetector
+from drift_benchmark.settings import settings
+
+class MyDetector(BaseDetector):
+    def __init__(self):
+        # Get configured logger
+        self.logger = settings.get_logger(self.__class__.__name__)
+
+        # Use random seed if configured
+        if settings.random_seed is not None:
+            np.random.seed(settings.random_seed)
+
+    def fit(self, X_ref, y_ref=None):
+        self.logger.debug(f"Fitting detector with {len(X_ref)} reference samples")
+        # Your implementation here
+        return self
+
+    def detect(self, X_test, y_test=None):
+        self.logger.debug(f"Detecting drift in {len(X_test)} test samples")
+        # Your implementation here
+        return False
+```
