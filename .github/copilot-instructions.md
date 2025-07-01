@@ -155,13 +155,279 @@ settings.results_path.mkdir(parents=True, exist_ok=True)
 
 ### Benchmark Module
 
-This module contains the main functionality. It handles the execution of experiments, the evaluation of results, and the computation of performance metrics.
-benchmarks.py is the main entry point for running benchmarks
-configuration.py defines configuration models using pydantic v2 for running benchmarks, including datasets, detectors, and parameters.
-configuration.py also provides utilities for loading and validating benchmark configurations from TOML files.
-metrics.py provides functions to compute evaluation metrics for drift detection results.
-metrics.py includes functions to compute evaluation metrics for drift detection results, such as precision, recall, F1-score, and area under the ROC curve (AUC-ROC).
-metrics.py is based on dataclasses for structured data handling and validation.
+This module contains the core benchmark functionality with a **modular, extensible architecture** designed for performance, maintainability, and scalability. The module follows clean architecture principles with clear separation of concerns.
+
+**Key Architecture Components:**
+
+- **Configuration**: Models and validation for benchmark configuration (Pydantic v2)
+- **Execution**: Core benchmark execution engine with pluggable strategies
+- **Evaluation**: Comprehensive metrics computation and statistical analysis
+- **Storage**: Result persistence, export, and loading functionality
+
+**Module Structure:**
+
+```python
+from drift_benchmark.benchmark import (
+    # Configuration system
+    BenchmarkConfig, DataConfigModel, DatasetModel, DetectorConfigModel,
+    DetectorModel, MetadataModel, OutputModel, EvaluationConfig, MetricConfig,
+    load_config,
+
+    # Execution system
+    BenchmarkRunner, BenchmarkExecutor, ExecutionStrategy,
+    SequentialExecutionStrategy, ParallelExecutionStrategy,
+
+    # Evaluation system
+    EvaluationEngine, MetricsCalculator, ResultAggregator,
+
+    # Storage system
+    ResultStorage, ResultExporter, ResultLoader,
+
+    # Metrics and results
+    BenchmarkResult, DetectionResult, DetectorPrediction, DriftEvaluationResult,
+    calculate_detection_delay, calculate_f1_score, compute_confusion_matrix,
+    generate_binary_drift_vector, time_execution,
+)
+```
+
+#### Core Components
+
+**BenchmarkRunner** - Main orchestrator for benchmark execution:
+
+```python
+from drift_benchmark.benchmark import BenchmarkRunner, SequentialExecutionStrategy, ParallelExecutionStrategy
+
+# Create runner with configuration
+runner = BenchmarkRunner(config_file="benchmark.toml")
+
+# Or with config object
+config = BenchmarkConfig(...)
+runner = BenchmarkRunner(config=config)
+
+# Choose execution strategy
+runner.set_execution_strategy(SequentialExecutionStrategy())  # Default
+runner.set_execution_strategy(ParallelExecutionStrategy(max_workers=4))
+
+# Run benchmark
+results = runner.run()
+```
+
+**ExecutionStrategy** - Pluggable execution strategies:
+
+- **SequentialExecutionStrategy**: Runs detectors one by one (memory efficient)
+- **ParallelExecutionStrategy**: Runs detectors in parallel (faster execution)
+
+**EvaluationEngine** - Advanced metrics and statistical analysis:
+
+```python
+from drift_benchmark.benchmark import EvaluationEngine
+
+engine = EvaluationEngine()
+
+# Comprehensive result finalization
+engine.finalize_results(results)
+
+# Statistical comparisons
+comparison = engine.compare_detectors(results, "detector_a", "detector_b", "f1_score")
+
+# Performance analysis
+performance_report = engine.generate_performance_report(results)
+robustness_analysis = engine.analyze_robustness(results.results)
+```
+
+**ResultStorage** - Flexible result persistence:
+
+```python
+from drift_benchmark.benchmark import ResultStorage, ResultExporter
+
+# Storage with multiple export formats
+storage = ResultStorage(output_config)
+storage.save_results(results)  # Exports to CSV, JSON, Excel, Pickle
+
+# Load previous results
+previous_results = storage.load_results(results_dir)
+
+# Create archives
+archive_path = storage.create_archive()
+```
+
+#### Enhanced Configuration System
+
+The configuration system uses **Pydantic v2** for comprehensive validation and type safety:
+
+```python
+from drift_benchmark.benchmark import BenchmarkConfig, EvaluationConfig, MetricConfig
+
+config = BenchmarkConfig(
+    metadata=MetadataModel(...),
+    settings=SettingsModel(...),
+    data=DataConfigModel(...),
+    detectors=DetectorConfigModel(...),
+    evaluation=EvaluationConfig(
+        metrics=[
+            MetricConfig(name="accuracy", enabled=True, weight=1.0),
+            MetricConfig(name="f1_score", enabled=True, weight=2.0),
+            MetricConfig(name="precision", enabled=True, weight=1.0),
+            MetricConfig(name="recall", enabled=True, weight=1.0),
+        ],
+        cross_validation=True,
+        cv_folds=5,
+        significance_tests=True,
+        confidence_level=0.95
+    ),
+    output=OutputModel(
+        save_results=True,
+        export_format=["CSV", "JSON", "EXCEL"],
+        visualization=True,
+        log_level="INFO"
+    )
+)
+```
+
+#### Performance Features
+
+**Parallel Execution**:
+
+- Thread-based parallelism for detector evaluation
+- Configurable worker pools
+- Automatic load balancing
+- Memory-efficient task distribution
+
+**Timeout Management**:
+
+- Per-detector timeout configuration
+- Graceful handling of slow detectors
+- Comprehensive error reporting
+
+**Memory Management**:
+
+- Efficient data handling for large datasets
+- Streaming result processing
+- Automatic cleanup of temporary files
+
+**Progress Tracking**:
+
+- Real-time progress bars with `tqdm`
+- Detailed logging at multiple levels
+- Performance timing and profiling
+
+#### Statistical Analysis Features
+
+**Comprehensive Metrics**:
+
+- Standard classification metrics (accuracy, precision, recall, F1)
+- Detection delay analysis
+- ROC curve analysis
+- Custom metric support
+
+**Statistical Testing**:
+
+- Significance tests between detectors (t-test, Mann-Whitney U)
+- Effect size calculations (Cohen's d)
+- Confidence intervals
+- Multiple comparison corrections
+
+**Performance Analysis**:
+
+- Detector rankings across multiple metrics
+- Robustness analysis across datasets
+- Performance matrices and heatmaps
+- Best performer identification
+
+**Result Aggregation**:
+
+- Results grouped by detector and dataset
+- Statistical summaries (mean, std, percentiles)
+- Cross-validation analysis
+- Trend analysis
+
+#### Export and Visualization
+
+**Multiple Export Formats**:
+
+- **CSV**: Detailed metrics, rankings, and predictions
+- **JSON**: Complete structured results with metadata
+- **Excel**: Multi-sheet workbooks with formatting
+- **Pickle**: Full Python objects for analysis
+
+**Comprehensive Exports**:
+
+```python
+# Automatic export includes:
+results/
+├── benchmark_results.json      # Complete structured results
+├── summary.json               # Executive summary
+├── detector_metrics.csv       # Performance metrics by detector
+├── detector_rankings.csv      # Rankings across metrics
+├── predictions.csv            # Detailed predictions
+├── benchmark_results.xlsx     # Multi-sheet Excel workbook
+├── results.pkl               # Full Python objects
+├── config_info.json         # Configuration used
+└── benchmark.log            # Detailed execution log
+```
+
+#### Backward Compatibility
+
+The legacy `BenchmarkRunner` is maintained for backward compatibility but shows deprecation warnings:
+
+```python
+# Legacy usage (deprecated but supported)
+from drift_benchmark.benchmark.benchmarks import BenchmarkRunner
+
+# New modular usage (recommended)
+from drift_benchmark.benchmark import BenchmarkRunner
+```
+
+#### Advanced Usage Examples
+
+**Custom Execution Strategy**:
+
+```python
+from drift_benchmark.benchmark import ExecutionStrategy, ExecutionContext
+
+class CustomExecutionStrategy(ExecutionStrategy):
+    def execute_benchmark(self, context: ExecutionContext) -> DriftEvaluationResult:
+        # Custom execution logic
+        pass
+
+runner.set_execution_strategy(CustomExecutionStrategy())
+```
+
+**Programmatic Analysis**:
+
+```python
+# Load and analyze previous results
+from drift_benchmark.benchmark import ResultLoader, EvaluationEngine
+
+results = ResultLoader.load_from_directory(Path("results/benchmark_20241201_143022"))
+engine = EvaluationEngine()
+
+# Generate comparative analysis
+report = engine.generate_performance_report(results)
+robustness = engine.analyze_robustness(results.results)
+
+# Statistical comparisons
+comparison = engine.compare_detectors(
+    results.results, "detector_a", "detector_b", "f1_score"
+)
+```
+
+**Configuration Validation**:
+
+```python
+# Comprehensive validation
+config = BenchmarkConfig.from_toml("benchmark.toml")
+
+# Validate detector compatibility
+issues = config.validate_detector_compatibility()
+if issues:
+    print(f"Configuration issues: {issues}")
+
+# Get configuration summary
+print(f"Total combinations: {config.get_total_combinations()}")
+```
+
+This modular architecture provides **scalability**, **maintainability**, and **extensibility** while maintaining **performance** and **ease of use**.
 
 ### Data Module
 
@@ -927,36 +1193,173 @@ feature_1,feature_2,feature_3,target,timestamp
 
 ### Running Benchmarks
 
-**Programmatic Usage:**
+**Modern Programmatic Usage (Recommended)**:
 
 ```python
-from drift_benchmark import BenchmarkRunner
-from drift_benchmark.benchmark.configuration import BenchmarkConfig
+from drift_benchmark.benchmark import BenchmarkRunner, BenchmarkConfig, SequentialExecutionStrategy, ParallelExecutionStrategy
 
 # Load configuration from TOML file
 config = BenchmarkConfig.from_toml('configurations/my_benchmark.toml')
 
-# Initialize and run benchmark
-runner = BenchmarkRunner(config)
+# Initialize runner with execution strategy
+runner = BenchmarkRunner(config=config)
+
+# Choose execution strategy based on requirements
+runner.set_execution_strategy(SequentialExecutionStrategy())  # Memory efficient
+# or
+runner.set_execution_strategy(ParallelExecutionStrategy(max_workers=4))  # Faster
+
+# Run benchmark with comprehensive analysis
 results = runner.run()
 
-# Analyze results
-results.summary()
-results.visualize()
-results.export('results/my_benchmark_results.json')
+# Access rich results
+print(f"Total evaluations: {len(results.results)}")
+print(f"Best performers: {results.best_performers}")
+print(f"Statistical summaries: {results.statistical_summaries}")
+
+# Results are automatically saved in multiple formats
+# Check the configured output directory for:
+# - CSV files with detailed metrics
+# - JSON files with complete results
+# - Excel workbooks with multiple sheets
+# - Pickle files for Python analysis
 ```
 
-**Command Line Interface:**
+**Advanced Analysis and Comparison**:
+
+```python
+from drift_benchmark.benchmark import EvaluationEngine, ResultLoader
+
+# Load previous benchmark results
+previous_results = ResultLoader.load_from_directory("results/benchmark_20241201_120000")
+current_results = runner.run()
+
+# Perform comprehensive analysis
+engine = EvaluationEngine()
+
+# Generate performance report
+performance_report = engine.generate_performance_report(current_results)
+
+# Analyze robustness across datasets
+robustness_analysis = engine.analyze_robustness(current_results.results)
+
+# Statistical comparison between detectors
+comparison = engine.compare_detectors(
+    current_results.results,
+    "detector_a",
+    "detector_b",
+    metric="f1_score"
+)
+
+print(f"Significance test p-value: {comparison['t_pvalue']}")
+print(f"Effect size (Cohen's d): {comparison['cohens_d']}")
+```
+
+**Configuration-Driven Batch Processing**:
+
+```python
+from pathlib import Path
+from drift_benchmark.benchmark import BenchmarkRunner, ParallelExecutionStrategy
+
+# Process multiple configuration files
+config_dir = Path("configurations")
+results_summary = {}
+
+for config_file in config_dir.glob("*.toml"):
+    config = BenchmarkConfig.from_toml(config_file)
+
+    # Use parallel execution for faster processing
+    runner = BenchmarkRunner(config=config)
+    runner.set_execution_strategy(ParallelExecutionStrategy(max_workers=6))
+
+    # Run and collect results
+    results = runner.run()
+    results_summary[config.metadata.name] = {
+        "best_f1": max(r.metrics.get("f1_score", 0) for r in results.results),
+        "avg_time": sum(p.detection_time for r in results.results for p in r.predictions) /
+                   sum(len(r.predictions) for r in results.results),
+        "total_evaluations": len(results.results)
+    }
+
+# Compare across benchmarks
+for name, summary in results_summary.items():
+    print(f"{name}: F1={summary['best_f1']:.3f}, Time={summary['avg_time']:.3f}s")
+```
+
+**Legacy Command Line Interface** (Deprecated but supported):
 
 ```bash
-# Run single benchmark
+# Run single benchmark (legacy)
 python -m drift_benchmark run configurations/example.toml
 
-# Run multiple benchmarks
+# Run multiple benchmarks (legacy)
 python -m drift_benchmark run configurations/*.toml
 
-# Generate benchmark report
+# Generate benchmark report (legacy)
 python -m drift_benchmark report results/my_benchmark/
+```
+
+**Custom Execution Strategies**:
+
+```python
+from drift_benchmark.benchmark import ExecutionStrategy, ExecutionContext
+
+class GPUAcceleratedStrategy(ExecutionStrategy):
+    """Custom strategy for GPU-accelerated detectors."""
+
+    def execute_benchmark(self, context: ExecutionContext) -> DriftEvaluationResult:
+        # Custom implementation for GPU processing
+        # Handle GPU memory management
+        # Batch operations for efficiency
+        pass
+
+class DistributedStrategy(ExecutionStrategy):
+    """Strategy for distributed computing across multiple nodes."""
+
+    def execute_benchmark(self, context: ExecutionContext) -> DriftEvaluationResult:
+        # Implement distributed execution
+        # Handle node communication
+        # Aggregate results from multiple workers
+        pass
+
+# Use custom strategies
+runner = BenchmarkRunner(config=config)
+runner.set_execution_strategy(GPUAcceleratedStrategy())
+results = runner.run()
+```
+
+**Result Analysis and Visualization**:
+
+```python
+from drift_benchmark.benchmark import ResultLoader, EvaluationEngine
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load results
+results = ResultLoader.load_from_directory("results/latest")
+engine = EvaluationEngine()
+
+# Create performance matrix
+performance_matrix = engine.result_aggregator.create_performance_matrix(
+    results.results, metric="f1_score"
+)
+
+# Visualize performance heatmap
+plt.figure(figsize=(12, 8))
+sns.heatmap(performance_matrix, annot=True, cmap="viridis", fmt=".3f")
+plt.title("Detector Performance Across Datasets (F1 Score)")
+plt.xlabel("Datasets")
+plt.ylabel("Detectors")
+plt.tight_layout()
+plt.savefig("performance_heatmap.png", dpi=300)
+
+# Statistical analysis
+robustness = engine.analyze_robustness(results.results)
+for detector, metrics in robustness.items():
+    print(f"{detector}:")
+    print(f"  Coefficient of Variation: {metrics['cv']:.3f}")
+    print(f"  Consistent Performer: {metrics['consistent_performer']}")
+    print(f"  Performance Range: {metrics['dataset_performance_range']:.3f}")
 ```
 
 ## Benchmark Configuration Files
