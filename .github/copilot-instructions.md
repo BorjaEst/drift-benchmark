@@ -172,7 +172,7 @@ This module contains the core benchmark functionality with a **modular, extensib
 from drift_benchmark.benchmark import (
     # Configuration system
     BenchmarkConfig, DataConfigModel, DatasetModel, DetectorConfigModel,
-    DetectorModel, MetadataModel, OutputModel, EvaluationConfig, MetricConfig,
+    DetectorModel, MetadataModel, OutputModel, EvaluationConfig,
     load_config,
 
     # Execution system
@@ -258,7 +258,8 @@ archive_path = storage.create_archive()
 The configuration system uses **Pydantic v2** for comprehensive validation and type safety:
 
 ```python
-from drift_benchmark.benchmark import BenchmarkConfig, EvaluationConfig, MetricConfig
+from drift_benchmark.benchmark import BenchmarkConfig, EvaluationConfig
+from drift_benchmark.constants.types import MetricConfiguration
 
 config = BenchmarkConfig(
     metadata=MetadataModel(...),
@@ -267,10 +268,10 @@ config = BenchmarkConfig(
     detectors=DetectorConfigModel(...),
     evaluation=EvaluationConfig(
         metrics=[
-            MetricConfig(name="accuracy", enabled=True, weight=1.0),
-            MetricConfig(name="f1_score", enabled=True, weight=2.0),
-            MetricConfig(name="precision", enabled=True, weight=1.0),
-            MetricConfig(name="recall", enabled=True, weight=1.0),
+            MetricConfiguration(name="accuracy", enabled=True, weight=1.0),
+            MetricConfiguration(name="f1_score", enabled=True, weight=2.0),
+            MetricConfiguration(name="precision", enabled=True, weight=1.0),
+            MetricConfiguration(name="recall", enabled=True, weight=1.0),
         ],
         cross_validation=True,
         cv_folds=5,
@@ -369,16 +370,6 @@ results/
 ```
 
 #### Backward Compatibility
-
-The legacy `BenchmarkRunner` is maintained for backward compatibility but shows deprecation warnings:
-
-```python
-# Legacy usage (deprecated but supported)
-from drift_benchmark.benchmark.benchmarks import BenchmarkRunner
-
-# New modular usage (recommended)
-from drift_benchmark.benchmark import BenchmarkRunner
-```
 
 #### Advanced Usage Examples
 
@@ -1288,19 +1279,6 @@ for name, summary in results_summary.items():
     print(f"{name}: F1={summary['best_f1']:.3f}, Time={summary['avg_time']:.3f}s")
 ```
 
-**Legacy Command Line Interface** (Deprecated but supported):
-
-```bash
-# Run single benchmark (legacy)
-python -m drift_benchmark run configurations/example.toml
-
-# Run multiple benchmarks (legacy)
-python -m drift_benchmark run configurations/*.toml
-
-# Generate benchmark report (legacy)
-python -m drift_benchmark report results/my_benchmark/
-```
-
 **Custom Execution Strategies**:
 
 ```python
@@ -1503,7 +1481,6 @@ The `sklearn` type allows you to use built-in scikit-learn datasets as baseline 
 - `wine`: Wine recognition dataset
 - `breast_cancer`: Breast cancer Wisconsin dataset
 - `digits`: Optical recognition of handwritten digits
-- `boston`: Boston housing prices (deprecated in newer sklearn versions)
 
 **Example Configuration:**
 
