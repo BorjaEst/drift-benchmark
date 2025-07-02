@@ -15,6 +15,7 @@ from .literals import (
     ExecutionMode,
     FileFormat,
     ImputationStrategy,
+    Metric,
     OutlierMethod,
     PreprocessingMethod,
     ScalingMethod,
@@ -241,3 +242,68 @@ class DatasetMetadata(BaseModel):
     source: Optional[str] = Field(default=None, description="Source of the dataset")
     creation_time: Optional[str] = Field(default=None, description="When the dataset was created/loaded")
     preprocessing_applied: List[str] = Field(default_factory=list, description="Applied preprocessing steps")
+
+
+class MetricConfiguration(BaseModel):
+    """Configuration for a specific metric."""
+
+    model_config = {"extra": "forbid"}
+
+    name: Metric = Field(..., description="Name of the metric")
+    enabled: bool = Field(default=True, description="Whether this metric is enabled")
+    weight: float = Field(default=1.0, gt=0.0, description="Weight for aggregation")
+    threshold: Optional[float] = Field(default=None, description="Optional threshold for the metric")
+    parameters: Dict[str, Any] = Field(default_factory=dict, description="Metric-specific parameters")
+
+
+class MetricResult(BaseModel):
+    """Result for a single metric calculation."""
+
+    model_config = {"extra": "forbid"}
+
+    name: Metric = Field(..., description="Name of the metric")
+    value: float = Field(..., description="Calculated metric value")
+    confidence_interval: Optional[tuple] = Field(default=None, description="Confidence interval if available")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metric metadata")
+
+
+class MetricSummary(BaseModel):
+    """Summary statistics for a metric across multiple evaluations."""
+
+    model_config = {"extra": "forbid"}
+
+    name: Metric = Field(..., description="Name of the metric")
+    mean: float = Field(..., description="Mean value")
+    std: float = Field(..., description="Standard deviation")
+    min: float = Field(..., description="Minimum value")
+    max: float = Field(..., description="Maximum value")
+    median: float = Field(..., description="Median value")
+    count: int = Field(..., gt=0, description="Number of evaluations")
+
+
+class DriftInfo(BaseModel):
+    """Information about drift characteristics in a dataset."""
+
+    model_config = {"extra": "forbid"}
+
+    has_drift: bool = Field(..., description="Whether the dataset contains drift")
+    drift_points: Optional[List[int]] = Field(default=None, description="Indices where drift occurs")
+    drift_pattern: Optional[DriftPattern] = Field(default=None, description="Type of drift pattern")
+    drift_magnitude: Optional[float] = Field(default=None, description="Magnitude of the drift")
+    drift_characteristics: List[DriftCharacteristic] = Field(
+        default_factory=list, description="Characteristics of the drift"
+    )
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional drift metadata")
+
+
+class DatasetResult(BaseModel):
+    """Result of loading a dataset with all metadata."""
+
+    model_config = {"extra": "forbid"}
+
+    X_ref: Any = Field(..., description="Reference data features")  # Will be DataFrame
+    X_test: Any = Field(..., description="Test data features")  # Will be DataFrame
+    y_ref: Optional[Any] = Field(default=None, description="Reference data targets")  # Will be Series
+    y_test: Optional[Any] = Field(default=None, description="Test data targets")  # Will be Series
+    drift_info: DriftInfo = Field(..., description="Drift information")
+    metadata: DatasetMetadata = Field(..., description="Dataset metadata")
