@@ -145,3 +145,66 @@ LogLevel = Literal[
     "ERROR",  # Error messages
     "CRITICAL",  # Critical error messages
 ]
+
+# Classification metrics for drift detection evaluation
+ClassificationMetric = Literal[
+    "ACCURACY",  # Overall accuracy (TP + TN) / (TP + TN + FP + FN)
+    "PRECISION",  # True positives / (True positives + False positives)
+    "RECALL",  # True positives / (True positives + False negatives)
+    "F1_SCORE",  # Harmonic mean of precision and recall
+    "SPECIFICITY",  # True negatives / (True negatives + False positives)
+    "SENSITIVITY",  # Same as recall/true positive rate
+]
+
+# Rate metrics for drift detection evaluation
+RateMetric = Literal[
+    "TRUE_POSITIVE_RATE",  # Same as recall/sensitivity
+    "TRUE_NEGATIVE_RATE",  # Same as specificity
+    "FALSE_POSITIVE_RATE",  # False positives / (False positives + True negatives)
+    "FALSE_NEGATIVE_RATE",  # False negatives / (False negatives + True positives)
+]
+
+# ROC/AUC metrics for drift detection evaluation
+ROCMetric = Literal[
+    "AUC_ROC",  # Area under the ROC curve
+    "AUC_PR",  # Area under the Precision-Recall curve
+]
+
+# Detection-specific metrics for drift detection evaluation
+DetectionMetric = Literal[
+    "DETECTION_DELAY",  # Average delay in detecting true drift (in windows)
+    "DETECTION_RATE",  # Rate of successful drift detections
+    "MISSED_DETECTION_RATE",  # Rate of missed drift detections
+]
+
+# Performance metrics for drift detection evaluation
+PerformanceMetric = Literal[
+    "COMPUTATION_TIME",  # Average computation time per detection
+    "MEMORY_USAGE",  # Memory usage during detection
+    "THROUGHPUT",  # Number of samples processed per second
+]
+
+# Distance/Score metrics for drift detection evaluation
+ScoreMetric = Literal[
+    "DRIFT_SCORE",  # Generic drift score/distance metric
+    "P_VALUE",  # Statistical significance p-value
+    "CONFIDENCE_SCORE",  # Confidence in drift detection
+]
+
+# Comparative metrics for drift detection evaluation
+ComparativeMetric = Literal[
+    "RELATIVE_ACCURACY",  # Accuracy relative to baseline
+    "IMPROVEMENT_RATIO",  # Performance improvement over baseline
+    "RANKING_SCORE",  # Ranking score across multiple metrics
+]
+
+# All metrics for drift detection evaluation (union of all metric types)
+Metric = (
+    ClassificationMetric
+    | RateMetric
+    | ROCMetric
+    | DetectionMetric
+    | PerformanceMetric
+    | ScoreMetric
+    | ComparativeMetric
+)
