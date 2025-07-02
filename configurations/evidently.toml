@@ -37,21 +37,21 @@
     # Statistical Tests - Univariate Continuous
     [[detectors.algorithms]]
         name              = "Kolmogorov-Smirnov Test"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "kolmogorov_smirnov"
         implementation_id = "ks_evidently"
         parameters        = { threshold = 0.05 }
 
     [[detectors.algorithms]]
         name              = "Anderson-Darling Test"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "anderson_darling"
         implementation_id = "ad_evidently"
         parameters        = { threshold = 0.05 }
 
     [[detectors.algorithms]]
         name              = "Mann-Whitney U-Test"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "mann_whitney"
         implementation_id = "mw_evidently"
         parameters        = { threshold = 0.05 }
@@ -59,21 +59,21 @@
     # Distance-based Methods
     [[detectors.algorithms]]
         name              = "Wasserstein Distance"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "wasserstein_distance"
         implementation_id = "wasserstein_evidently"
         parameters        = { threshold = 0.1 }
 
     [[detectors.algorithms]]
         name              = "Jensen-Shannon Divergence"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "jensen_shannon_divergence"
         implementation_id = "js_evidently"
         parameters        = { threshold = 0.1 }
 
     [[detectors.algorithms]]
         name              = "Kullback-Leibler Divergence"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "kullback_leibler_divergence"
         implementation_id = "kl_evidently"
         parameters        = { threshold = 0.1 }
@@ -81,7 +81,7 @@
     # Statistical Tests - Categorical
     [[detectors.algorithms]]
         name              = "Chi-square Test"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "chi_square"
         implementation_id = "chi_evidently"
         parameters        = { threshold = 0.05 }
@@ -89,7 +89,7 @@
     # Multivariate Drift Detection
     [[detectors.algorithms]]
         name              = "All Features Value Drift"
-        library           = "evidently_adapter"
+        adapter           = "evidently_adapter"
         method_id         = "all_features_drift"
         implementation_id = "all_features_evidently"
         parameters        = { threshold = 0.05 }

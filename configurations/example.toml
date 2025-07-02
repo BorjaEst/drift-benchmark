@@ -40,14 +40,14 @@
     # Statistical test methods
     [[detectors.algorithms]]
         name              = "Kolmogorov-Smirnov Test"
-        library           = "scipy_adapter"
+        adapter           = "scipy_adapter"
         method_id         = "kolmogorov_smirnov"
         implementation_id = "ks_batch"
         parameters        = { threshold = 0.05 }
 
     [[detectors.algorithms]]
         name              = "Anderson-Darling Test"
-        library           = "scipy_adapter"
+        adapter           = "scipy_adapter"
         method_id         = "anderson_darling"
         implementation_id = "ad_batch"
         parameters        = { threshold = 0.05 }
@@ -55,14 +55,14 @@
     # Distance-based methods
     [[detectors.algorithms]]
         name              = "Maximum Mean Discrepancy"
-        library           = "alibi_detect_adapter"
+        adapter           = "alibi_detect_adapter"
         method_id         = "maximum_mean_discrepancy"
         implementation_id = "mmd_batch"
         parameters        = { kernel = "rbf", gamma = "scale", threshold = 0.1 }
 
     [[detectors.algorithms]]
         name              = "Wasserstein Distance"
-        library           = "scipy_adapter"
+        adapter           = "scipy_adapter"
         method_id         = "wasserstein_distance"
         implementation_id = "wasserstein_batch"
         parameters        = { threshold = 0.05 }
