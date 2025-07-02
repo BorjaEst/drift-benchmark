@@ -30,9 +30,11 @@ drift-benchmark/
 │   ├── settings.py              # Configuration settings
 │   ├── benchmark/               # Core functionality
 │   │   ├── __init__.py
-│   │   ├── benchmarks.py        # Benchmark runner
 │   │   ├── configuration.py     # Configuration models to run benchmarks
-│   │   └── metrics.py           # Evaluation metrics
+│   │   ├── evaluation.py        # Results analysis and metrics computation
+│   │   ├── execution.py         # Execution logic for running benchmarks
+│   │   ├── metrics.py           # Evaluation metrics for benchmarks
+│   │   └── storage.py           # Result storage and export functionality for benchmark results
 │   ├── constants/               # Constants and type definitions
 │   │   ├── __init__.py
 │   │   ├── literals.py          # Literal constants
@@ -160,8 +162,8 @@ This module contains the core benchmark functionality with a **modular, extensib
 **Key Architecture Components:**
 
 - **Configuration**: Models and validation for benchmark configuration (Pydantic v2)
-- **Execution**: Core benchmark execution engine with pluggable strategies
 - **Evaluation**: Comprehensive metrics computation and statistical analysis
+- **Execution**: Core benchmark execution engine with pluggable strategies
 - **Storage**: Result persistence, export, and loading functionality
 
 **Module Structure:**
