@@ -134,7 +134,6 @@ ExportFormat = Literal[
     "JSON",  # JavaScript Object Notation
     "PICKLE",  # Python pickle format
     "EXCEL",  # Microsoft Excel format
-    "PARQUET",  # Apache Parquet format
 ]
 
 # Logging levels
