@@ -1,24 +1,28 @@
 """
 Predefined drift scenarios module using scikit-learn datasets.
 
-This module provides convenient access to scikit-learn datasets and predefined
-drift detection scenarios. It builds upon the universal dataset loading
-functionality to create specialized scenarios for testing drift detection
-algorithms with well-known benchmark datasets.
+This module provides dataset-specific drift scenarios tailored to sklearn datasets.
+Each scenario is designed to create meaningful drift patterns that match the
+characteristics and domain of a specific sklearn dataset, preventing misuse
+and ensuring realistic drift detection experiments.
 
 KEY CAPABILITIES:
-1. Direct access to all major scikit-learn datasets
-2. Predefined drift scenarios based on common real-world patterns
-3. Scenario-based testing for drift detection algorithms
-4. Integration with the universal dataset loading system
+1. Dataset-specific drift scenarios (iris, wine, breast_cancer, diabetes, digits)
+2. Multiple drift types: class-based, feature-based, and target-based
+3. Scientifically meaningful drift patterns for each dataset
+4. Type-safe scenario creation with proper validation
 
-The module is designed to complement the datasets.py module by providing
-specialized functionality for research and benchmarking scenarios.
+SCENARIO TYPES:
+- Class-based: Different target classes for reference vs test (e.g., species drift)
+- Feature-based: Feature value ranges for drift (e.g., size-based splits)
+- Target-based: Target value ranges for regression datasets (e.g., progression levels)
+
+The module ensures users cannot apply incompatible scenarios to datasets,
+simplifying the library and preventing common misuse patterns.
 """
 
 import logging
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
@@ -32,11 +36,8 @@ from sklearn.datasets import load_wine as sk_load_wine
 from sklearn.model_selection import train_test_split
 
 from drift_benchmark.constants.literals import DataType
-from drift_benchmark.constants.models import DatasetConfig, DatasetMetadata, DatasetResult, DriftInfo, FileDataConfig, SklearnDataConfig
+from drift_benchmark.constants.models import DatasetConfig, DatasetMetadata, DatasetResult, DriftInfo, SklearnDataConfig
 from drift_benchmark.settings import settings
-
-# Import the universal dataset loading functionality
-from .datasets import load_dataset_with_filters
 
 logger = logging.getLogger(__name__)
 
@@ -54,25 +55,71 @@ SKLEARN_DATASETS = {
     "digits": "Optical recognition of handwritten digits (10 classes, 64 features)",
 }
 
-# Typical drift scenarios for testing
-COMMON_DRIFT_SCENARIOS = {
-    "education_drift": {
-        "description": "Educational level drift - test performance across education levels",
-        "ref_filter": {"education": ["Bachelor", "Master"]},
-        "test_filter": {"education": ["PhD", "Associate"]},
+# Predefined drift scenarios tied to specific sklearn datasets
+SKLEARN_DRIFT_SCENARIOS = {
+    "iris_species_drift": {
+        "dataset": "iris",
+        "description": "Iris species drift - Setosa vs Versicolor/Virginica classification",
+        "ref_classes": [0],  # Setosa only
+        "test_classes": [1, 2],  # Versicolor and Virginica
         "characteristics": ["COVARIATE", "CONCEPT"],
+        "drift_type": "class_based",
     },
-    "geographic_drift": {
-        "description": "Geographic drift - test regional differences",
-        "ref_filter": {"region": ["North", "East"]},
-        "test_filter": {"region": ["South", "West"]},
+    "iris_feature_drift": {
+        "dataset": "iris",
+        "description": "Iris feature drift - samples with smaller vs larger measurements",
+        "ref_condition": "sepal length (cm) <= 5.5",  # Smaller flowers
+        "test_condition": "sepal length (cm) > 6.0",  # Larger flowers
         "characteristics": ["COVARIATE"],
+        "drift_type": "feature_based",
     },
-    "generational_drift": {
-        "description": "Age-based drift - test generational differences",
-        "ref_filter": {"age": (25, 45)},
-        "test_filter": {"age": (46, 65)},
+    "wine_quality_drift": {
+        "dataset": "wine",
+        "description": "Wine quality drift - class 0 vs classes 1&2",
+        "ref_classes": [0],  # Class 0 wines
+        "test_classes": [1, 2],  # Class 1 and 2 wines
         "characteristics": ["COVARIATE", "CONCEPT"],
+        "drift_type": "class_based",
+    },
+    "wine_alcohol_drift": {
+        "dataset": "wine",
+        "description": "Wine alcohol content drift - low vs high alcohol wines",
+        "ref_condition": "alcohol <= 12.5",  # Lower alcohol content
+        "test_condition": "alcohol >= 13.5",  # Higher alcohol content
+        "characteristics": ["COVARIATE"],
+        "drift_type": "feature_based",
+    },
+    "breast_cancer_severity_drift": {
+        "dataset": "breast_cancer",
+        "description": "Breast cancer severity drift - benign vs malignant",
+        "ref_classes": [0],  # Malignant
+        "test_classes": [1],  # Benign
+        "characteristics": ["COVARIATE", "CONCEPT"],
+        "drift_type": "class_based",
+    },
+    "breast_cancer_size_drift": {
+        "dataset": "breast_cancer",
+        "description": "Breast cancer tumor size drift - smaller vs larger tumors",
+        "ref_condition": "mean radius <= 13.0",  # Smaller tumors
+        "test_condition": "mean radius >= 16.0",  # Larger tumors
+        "characteristics": ["COVARIATE"],
+        "drift_type": "feature_based",
+    },
+    "diabetes_progression_drift": {
+        "dataset": "diabetes",
+        "description": "Diabetes progression drift - low vs high progression scores",
+        "ref_condition": "target <= 100",  # Lower progression
+        "test_condition": "target >= 200",  # Higher progression
+        "characteristics": ["CONCEPT"],
+        "drift_type": "target_based",
+    },
+    "digits_complexity_drift": {
+        "dataset": "digits",
+        "description": "Digits complexity drift - simple vs complex digits",
+        "ref_classes": [0, 1],  # Simple digits (0, 1)
+        "test_classes": [8, 9],  # Complex digits (8, 9)
+        "characteristics": ["COVARIATE", "CONCEPT"],
+        "drift_type": "class_based",
     },
 }
 
@@ -82,99 +129,115 @@ COMMON_DRIFT_SCENARIOS = {
 # =============================================================================
 
 
-def create_drift_scenario(
-    file_path: str,
-    scenario_name: str,
-    target_column: Optional[str] = None,
-    custom_ref_filter: Optional[Dict[str, Any]] = None,
-    custom_test_filter: Optional[Dict[str, Any]] = None,
-    name: Optional[str] = None,
-) -> DatasetResult:
+def create_sklearn_drift_scenario(scenario_name: str, random_state: int = 42, name: Optional[str] = None) -> DatasetResult:
     """
-    Create a predefined drift detection scenario from a dataset.
+    Create a predefined drift detection scenario using sklearn datasets.
 
-    This function simplifies drift detection experiments by providing common
-    drift scenarios that can be applied to any dataset with appropriate features.
-    It's designed for datasets with demographic or categorical features that
-    naturally create different populations.
+    This function creates specific drift scenarios that are tailored to each
+    sklearn dataset's characteristics, ensuring meaningful and realistic drift
+    patterns that match the dataset's structure and domain.
 
     Args:
-        file_path: Path to the CSV file
-        scenario_name: Name of predefined scenario or "custom"
-        target_column: Name of the target column
-        custom_ref_filter: Custom reference filter (for scenario_name="custom")
-        custom_test_filter: Custom test filter (for scenario_name="custom")
-        name: Custom name for the dataset
+        scenario_name: Name of predefined scenario (must match SKLEARN_DRIFT_SCENARIOS)
+        random_state: Random state for reproducible splits
+        name: Custom name for the dataset result
 
     Returns:
-        DatasetResult with filtered datasets and drift metadata
+        DatasetResult with reference and test sets exhibiting the specified drift
 
     Available Scenarios:
-        - "education_drift": Bachelor/Master vs PhD/Associate
-        - "geographic_drift": North/East vs South/West
-        - "generational_drift": Ages 25-45 vs 46-65
-        - "custom": Use custom_ref_filter and custom_test_filter
+        - "iris_species_drift": Setosa vs Versicolor/Virginica
+        - "iris_feature_drift": Small vs large flowers (sepal length)
+        - "wine_quality_drift": Class 0 vs classes 1&2
+        - "wine_alcohol_drift": Low vs high alcohol content
+        - "breast_cancer_severity_drift": Malignant vs benign
+        - "breast_cancer_size_drift": Small vs large tumors
+        - "diabetes_progression_drift": Low vs high progression scores
+        - "digits_complexity_drift": Simple (0,1) vs complex (8,9) digits
 
     Examples:
-        # Use predefined education drift scenario
-        result = create_drift_scenario(
-            "employee_data.csv",
-            scenario_name="education_drift",
-            target_column="salary"
-        )
+        # Create iris species drift scenario
+        result = create_sklearn_drift_scenario("iris_species_drift")
 
-        # Create custom drift scenario
-        result = create_drift_scenario(
-            "customer_data.csv",
-            scenario_name="custom",
-            custom_ref_filter={"segment": ["Premium", "Gold"]},
-            custom_test_filter={"segment": ["Basic", "Silver"]},
-            target_column="purchase_amount"
-        )
+        # Create wine alcohol content drift scenario
+        result = create_sklearn_drift_scenario("wine_alcohol_drift", random_state=123)
     """
-    if scenario_name == "custom":
-        if not custom_ref_filter or not custom_test_filter:
-            raise ValueError("custom_ref_filter and custom_test_filter required for scenario_name='custom'")
-        ref_filter = custom_ref_filter
-        test_filter = custom_test_filter
-        drift_characteristics = ["COVARIATE"]  # Default for custom scenarios
-    elif scenario_name in COMMON_DRIFT_SCENARIOS:
-        scenario = COMMON_DRIFT_SCENARIOS[scenario_name]
-        ref_filter = scenario["ref_filter"]
-        test_filter = scenario["test_filter"]
-        drift_characteristics = scenario["characteristics"]
-    else:
-        available = list(COMMON_DRIFT_SCENARIOS.keys()) + ["custom"]
+    if scenario_name not in SKLEARN_DRIFT_SCENARIOS:
+        available = list(SKLEARN_DRIFT_SCENARIOS.keys())
         raise ValueError(f"Unknown scenario '{scenario_name}'. Available: {available}")
 
+    scenario = SKLEARN_DRIFT_SCENARIOS[scenario_name]
+    dataset_name = scenario["dataset"]
+
     if name is None:
-        name = f"{scenario_name}_{Path(file_path).stem}"
+        name = scenario_name
 
-    logger.info(f"Creating {scenario_name} drift scenario from {file_path}")
-    logger.info(f"Reference filter: {ref_filter}")
-    logger.info(f"Test filter: {test_filter}")
+    logger.info(f"Creating sklearn drift scenario: {scenario_name}")
+    logger.info(f"Dataset: {dataset_name}, Drift type: {scenario['drift_type']}")
 
-    # Use the universal dataset loading with filters
-    result = load_dataset_with_filters(
-        file_path=file_path,
-        ref_filter=ref_filter,
-        test_filter=test_filter,
-        target_column=target_column,
-        filter_mode="include",
-        name=name,
+    # Load the base sklearn dataset
+    base_result = load_sklearn_dataset(dataset_name)
+
+    # Combine reference and test data for filtering
+    X_full = np.vstack([base_result.X_ref, base_result.X_test])
+    y_full = np.hstack([base_result.y_ref, base_result.y_test])
+
+    # Apply scenario-specific filtering
+    if scenario["drift_type"] == "class_based":
+        X_ref, y_ref = _filter_by_classes(X_full, y_full, scenario["ref_classes"])
+        X_test, y_test = _filter_by_classes(X_full, y_full, scenario["test_classes"])
+    elif scenario["drift_type"] == "feature_based":
+        X_ref, y_ref = _filter_by_feature_condition(X_full, y_full, scenario["ref_condition"], base_result.metadata["feature_names"])
+        X_test, y_test = _filter_by_feature_condition(X_full, y_full, scenario["test_condition"], base_result.metadata["feature_names"])
+    elif scenario["drift_type"] == "target_based":
+        X_ref, y_ref = _filter_by_target_condition(X_full, y_full, scenario["ref_condition"])
+        X_test, y_test = _filter_by_target_condition(X_full, y_full, scenario["test_condition"])
+    else:
+        raise ValueError(f"Unknown drift type: {scenario['drift_type']}")
+
+    # Ensure we have enough samples
+    if len(X_ref) == 0 or len(X_test) == 0:
+        raise ValueError(f"Scenario '{scenario_name}' resulted in empty reference or test set")
+
+    # Create drift info
+    drift_info = DriftInfo(
+        has_drift=True,
+        drift_points=[len(X_ref)],  # Drift occurs at boundary between ref and test
+        drift_pattern="sudden",
+        drift_magnitude=0.5,  # Moderate drift
+        drift_characteristics=scenario["characteristics"],
+        metadata={
+            "scenario_name": scenario_name,
+            "dataset": dataset_name,
+            "drift_type": scenario["drift_type"],
+            "description": scenario["description"],
+        },
     )
 
-    # Update drift info with scenario-specific characteristics
-    if hasattr(result.drift_info, "drift_characteristics"):
-        result.drift_info.drift_characteristics = drift_characteristics
+    # Create updated metadata
+    metadata = base_result.metadata.copy()
+    metadata.update(
+        {
+            "name": name,
+            "n_samples": len(X_ref) + len(X_test),
+            "has_drift": True,
+            "drift_scenario": scenario_name,
+            "drift_points": [len(X_ref)],
+            "source": f"sklearn.{dataset_name}.{scenario_name}",
+            "creation_time": datetime.now().isoformat(),
+        }
+    )
 
-    # Add scenario metadata
-    if result.metadata:
-        result.metadata["drift_scenario"] = scenario_name
-        result.metadata["ref_filter"] = ref_filter
-        result.metadata["test_filter"] = test_filter
+    logger.info(f"Scenario created: {len(X_ref)} ref + {len(X_test)} test samples")
 
-    return result
+    return DatasetResult(
+        X_ref=X_ref,
+        X_test=X_test,
+        y_ref=y_ref,
+        y_test=y_test,
+        drift_info=drift_info,
+        metadata=metadata,
+    )
 
 
 def load_sklearn_dataset(config: Union[str, Dict, DatasetConfig]) -> DatasetResult:
@@ -446,12 +509,12 @@ def load_digits(test_size: float = 0.3, random_state: int = 42) -> DatasetResult
 
 def list_available_scenarios() -> Dict[str, str]:
     """
-    List all available predefined drift scenarios.
+    List all available predefined sklearn drift scenarios.
 
     Returns:
         Dictionary mapping scenario names to their descriptions
     """
-    return {name: scenario["description"] for name, scenario in COMMON_DRIFT_SCENARIOS.items()}
+    return {name: scenario["description"] for name, scenario in SKLEARN_DRIFT_SCENARIOS.items()}
 
 
 def list_sklearn_datasets() -> List[str]:
@@ -466,73 +529,88 @@ def describe_sklearn_datasets() -> Dict[str, str]:
 
 def get_scenario_details(scenario_name: str) -> Dict[str, Any]:
     """
-    Get detailed information about a specific drift scenario.
+    Get detailed information about a specific sklearn drift scenario.
 
     Args:
         scenario_name: Name of the scenario to describe
 
     Returns:
-        Dictionary with scenario details including filters and characteristics
+        Dictionary with scenario details including dataset, drift type, and characteristics
 
     Raises:
         ValueError: If scenario_name is not found
     """
-    if scenario_name not in COMMON_DRIFT_SCENARIOS:
-        available = list(COMMON_DRIFT_SCENARIOS.keys())
+    if scenario_name not in SKLEARN_DRIFT_SCENARIOS:
+        available = list(SKLEARN_DRIFT_SCENARIOS.keys())
         raise ValueError(f"Unknown scenario '{scenario_name}'. Available: {available}")
 
-    return COMMON_DRIFT_SCENARIOS[scenario_name].copy()
+    return SKLEARN_DRIFT_SCENARIOS[scenario_name].copy()
 
 
-def suggest_scenarios_for_dataset(file_path: str) -> List[str]:
+def suggest_scenarios_for_sklearn_dataset(dataset_name: str) -> List[str]:
     """
-    Suggest appropriate drift scenarios for a given CSV dataset.
-
-    Analyzes the dataset's columns to suggest which predefined scenarios
-    might be applicable based on common feature patterns.
+    Suggest appropriate drift scenarios for a given sklearn dataset.
 
     Args:
-        file_path: Path to the CSV file to analyze
+        dataset_name: Name of the sklearn dataset
 
     Returns:
         List of suggested scenario names
 
     Example:
-        suggestions = suggest_scenarios_for_dataset("employee_data.csv")
-        # Might return: ["education_drift", "generational_drift"]
+        suggestions = suggest_scenarios_for_sklearn_dataset("iris")
+        # Returns: ["iris_species_drift", "iris_feature_drift"]
     """
-    # Import here to avoid circular imports
-    from .datasets import validate_dataset_for_drift_detection
+    if dataset_name not in SKLEARN_DATASETS:
+        logger.warning(f"Unknown sklearn dataset: {dataset_name}")
+        return []
+
+    # Find all scenarios for the specified dataset
+    suggested_scenarios = [
+        scenario_name for scenario_name, scenario in SKLEARN_DRIFT_SCENARIOS.items() if scenario["dataset"] == dataset_name
+    ]
+
+    return suggested_scenarios
+
+
+# =============================================================================
+# HELPER FUNCTIONS FOR SKLEARN SCENARIO FILTERING
+# =============================================================================
+
+
+def _filter_by_classes(X: np.ndarray, y: np.ndarray, target_classes: List[int]) -> tuple[np.ndarray, np.ndarray]:
+    """Filter dataset to include only specified target classes."""
+    mask = np.isin(y, target_classes)
+    return X[mask], y[mask]
+
+
+def _filter_by_feature_condition(X: np.ndarray, y: np.ndarray, condition: str, feature_names: List[str]) -> tuple[np.ndarray, np.ndarray]:
+    """Filter dataset based on feature conditions (e.g., 'sepal_length <= 5.5')."""
+    # Convert to DataFrame for easier condition evaluation
+    df = pd.DataFrame(X, columns=feature_names)
+    df["target"] = y
+
+    # Parse and evaluate condition
+    # Replace feature names with column references
+    eval_condition = condition
+    for feature in feature_names:
+        eval_condition = eval_condition.replace(feature, f"df['{feature}']")
 
     try:
-        # Get basic validation from datasets module
-        validation = validate_dataset_for_drift_detection(file_path)
-        
-        # Load data for scenario-specific analysis
-        # Resolve path
-        if not Path(file_path).is_absolute():
-            file_path = str(Path(settings.datasets_dir) / file_path)
-        
-        data = pd.read_csv(file_path)
-        
-        suggested_scenarios = []
-        
-        # Analyze features for scenario suggestions
-        for col in data.columns:
-            if data[col].dtype == "object" or data[col].nunique() <= 10:
-                # Check for common drift scenario features
-                if col.lower() in ["education", "education_level"]:
-                    suggested_scenarios.append("education_drift")
-                elif col.lower() in ["region", "geography", "location"]:
-                    suggested_scenarios.append("geographic_drift")
-            else:
-                # Check if age-like feature
-                if col.lower() in ["age", "years", "experience"] and data[col].max() <= 150:
-                    suggested_scenarios.append("generational_drift")
-        
-        # Remove duplicates and return
-        return list(set(suggested_scenarios))
-        
+        mask = eval(eval_condition)
+        filtered_df = df[mask]
+        return filtered_df[feature_names].values, filtered_df["target"].values
     except Exception as e:
-        logger.warning(f"Could not analyze dataset {file_path}: {e}")
-        return []
+        raise ValueError(f"Invalid condition '{condition}': {e}")
+
+
+def _filter_by_target_condition(X: np.ndarray, y: np.ndarray, condition: str) -> tuple[np.ndarray, np.ndarray]:
+    """Filter dataset based on target conditions (e.g., 'target <= 100')."""
+    # Replace 'target' with actual target values
+    eval_condition = condition.replace("target", "y")
+
+    try:
+        mask = eval(eval_condition)
+        return X[mask], y[mask]
+    except Exception as e:
+        raise ValueError(f"Invalid target condition '{condition}': {e}")

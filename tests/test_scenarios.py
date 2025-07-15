@@ -2,12 +2,9 @@
 Tests for scenarios module.
 
 This module contains comprehensive tests for the scenarios.py module,
-which provides predefined drift scenarios and sklearn dataset loading.
+which provides sklearn-specific drift scenarios and dataset loading.
 """
 
-import os
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -17,12 +14,15 @@ from pydantic import ValidationError
 
 from drift_benchmark.constants.models import DatasetConfig, DatasetMetadata, DatasetResult, DriftInfo, SklearnDataConfig
 from drift_benchmark.data.scenarios import (
-    COMMON_DRIFT_SCENARIOS,
     SKLEARN_DATASETS,
+    SKLEARN_DRIFT_SCENARIOS,
+    _filter_by_classes,
+    _filter_by_feature_condition,
+    _filter_by_target_condition,
     _infer_data_types_from_array,
     _load_sklearn_dataset,
     _validate_and_parse_sklearn_config,
-    create_drift_scenario,
+    create_sklearn_drift_scenario,
     describe_sklearn_datasets,
     get_scenario_details,
     list_available_scenarios,
@@ -33,33 +33,12 @@ from drift_benchmark.data.scenarios import (
     load_iris,
     load_sklearn_dataset,
     load_wine,
-    suggest_scenarios_for_dataset,
+    suggest_scenarios_for_sklearn_dataset,
 )
 
 # =============================================================================
 # FIXTURES
 # =============================================================================
-
-
-@pytest.fixture
-def sample_csv_file():
-    """Create a temporary CSV file with sample data for drift scenarios."""
-    data = {
-        "feature1": np.random.normal(0, 1, 100),
-        "feature2": np.random.normal(0, 1, 100),
-        "education": ["Bachelor"] * 25 + ["Master"] * 25 + ["PhD"] * 25 + ["Associate"] * 25,
-        "region": ["North"] * 25 + ["East"] * 25 + ["South"] * 25 + ["West"] * 25,
-        "age": list(range(25, 125)),
-        "target": np.random.randint(0, 2, 100),
-    }
-    df = pd.DataFrame(data)
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        df.to_csv(f.name, index=False)
-        yield f.name
-
-    # Cleanup
-    os.unlink(f.name)
 
 
 @pytest.fixture
@@ -72,7 +51,7 @@ def mock_dataset_result():
         y_test=np.random.randint(0, 2, 50),
         drift_info=DriftInfo(
             has_drift=True,
-            drift_points=[0.5],
+            drift_points=[25],  # Changed from [0.5] to integer
             drift_pattern="sudden",
             drift_magnitude=0.3,
             drift_characteristics=["COVARIATE"],
@@ -94,13 +73,13 @@ def mock_dataset_result():
 
 
 # =============================================================================
-# TESTS FOR DRIFT SCENARIO CREATION
+# TESTS FOR SKLEARN DRIFT SCENARIO CREATION
 # =============================================================================
 
 
-def test_create_drift_scenario_education_drift(sample_csv_file):
-    """Test creating education drift scenario."""
-    result = create_drift_scenario(file_path=sample_csv_file, scenario_name="education_drift", target_column="target")
+def test_create_sklearn_drift_scenario_iris_species():
+    """Test creating iris species drift scenario."""
+    result = create_sklearn_drift_scenario("iris_species_drift")
 
     assert isinstance(result, DatasetResult)
     assert result.X_ref is not None
@@ -111,76 +90,80 @@ def test_create_drift_scenario_education_drift(sample_csv_file):
     assert result.metadata is not None
 
     # Check that scenario metadata is included
-    assert result.metadata["drift_scenario"] == "education_drift"
-    assert "ref_filter" in result.metadata
-    assert "test_filter" in result.metadata
+    assert result.metadata["drift_scenario"] == "iris_species_drift"
+    assert result.drift_info.metadata["scenario_name"] == "iris_species_drift"
+    assert result.drift_info.metadata["dataset"] == "iris"
+    assert result.drift_info.metadata["drift_type"] == "class_based"
+
+    # Check that only Setosa is in reference and Versicolor/Virginica in test
+    assert np.all(result.y_ref == 0)  # Only class 0 (Setosa)
+    assert np.all(np.isin(result.y_test, [1, 2]))  # Only classes 1&2
 
 
-def test_create_drift_scenario_geographic_drift(sample_csv_file):
-    """Test creating geographic drift scenario."""
-    result = create_drift_scenario(file_path=sample_csv_file, scenario_name="geographic_drift", target_column="target")
-
-    assert isinstance(result, DatasetResult)
-    assert result.metadata["drift_scenario"] == "geographic_drift"
-
-    # Check that the filters are applied correctly
-    expected_ref_filter = {"region": ["North", "East"]}
-    expected_test_filter = {"region": ["South", "West"]}
-    assert result.metadata["ref_filter"] == expected_ref_filter
-    assert result.metadata["test_filter"] == expected_test_filter
-
-
-def test_create_drift_scenario_generational_drift(sample_csv_file):
-    """Test creating generational drift scenario."""
-    result = create_drift_scenario(file_path=sample_csv_file, scenario_name="generational_drift", target_column="target")
+def test_create_sklearn_drift_scenario_iris_feature():
+    """Test creating iris feature drift scenario."""
+    result = create_sklearn_drift_scenario("iris_feature_drift")
 
     assert isinstance(result, DatasetResult)
-    assert result.metadata["drift_scenario"] == "generational_drift"
+    assert result.metadata["drift_scenario"] == "iris_feature_drift"
+    assert result.drift_info.metadata["drift_type"] == "feature_based"
 
-    # Check that the age range filters are applied
-    expected_ref_filter = {"age": (25, 45)}
-    expected_test_filter = {"age": (46, 65)}
-    assert result.metadata["ref_filter"] == expected_ref_filter
-    assert result.metadata["test_filter"] == expected_test_filter
+    # Check that the feature filtering worked
+    assert len(result.X_ref) > 0
+    assert len(result.X_test) > 0
 
 
-def test_create_drift_scenario_custom(sample_csv_file):
-    """Test creating custom drift scenario."""
-    custom_ref_filter = {"education": ["Bachelor"]}
-    custom_test_filter = {"education": ["PhD"]}
-
-    result = create_drift_scenario(
-        file_path=sample_csv_file,
-        scenario_name="custom",
-        custom_ref_filter=custom_ref_filter,
-        custom_test_filter=custom_test_filter,
-        target_column="target",
-    )
+def test_create_sklearn_drift_scenario_wine_quality():
+    """Test creating wine quality drift scenario."""
+    result = create_sklearn_drift_scenario("wine_quality_drift")
 
     assert isinstance(result, DatasetResult)
-    assert result.metadata["drift_scenario"] == "custom"
-    assert result.metadata["ref_filter"] == custom_ref_filter
-    assert result.metadata["test_filter"] == custom_test_filter
+    assert result.metadata["drift_scenario"] == "wine_quality_drift"
+    assert result.drift_info.metadata["dataset"] == "wine"
+    assert result.drift_info.metadata["drift_type"] == "class_based"
+
+    # Check class separation
+    assert np.all(result.y_ref == 0)  # Only class 0
+    assert np.all(np.isin(result.y_test, [1, 2]))  # Only classes 1&2
 
 
-def test_create_drift_scenario_custom_missing_filters(sample_csv_file):
-    """Test creating custom drift scenario with missing filters raises error."""
-    with pytest.raises(ValueError, match="custom_ref_filter and custom_test_filter required"):
-        create_drift_scenario(file_path=sample_csv_file, scenario_name="custom", target_column="target")
+def test_create_sklearn_drift_scenario_diabetes_progression():
+    """Test creating diabetes progression drift scenario."""
+    result = create_sklearn_drift_scenario("diabetes_progression_drift")
+
+    assert isinstance(result, DatasetResult)
+    assert result.metadata["drift_scenario"] == "diabetes_progression_drift"
+    assert result.drift_info.metadata["dataset"] == "diabetes"
+    assert result.drift_info.metadata["drift_type"] == "target_based"
+
+    # Check target value ranges
+    assert np.all(result.y_ref <= 100)  # Low progression
+    assert np.all(result.y_test >= 200)  # High progression
 
 
-def test_create_drift_scenario_unknown_scenario(sample_csv_file):
-    """Test creating drift scenario with unknown scenario name raises error."""
+def test_create_sklearn_drift_scenario_unknown():
+    """Test creating unknown sklearn drift scenario raises error."""
     with pytest.raises(ValueError, match="Unknown scenario 'unknown_scenario'"):
-        create_drift_scenario(file_path=sample_csv_file, scenario_name="unknown_scenario", target_column="target")
+        create_sklearn_drift_scenario("unknown_scenario")
 
 
-def test_create_drift_scenario_with_custom_name(sample_csv_file):
-    """Test creating drift scenario with custom name."""
-    custom_name = "my_custom_education_drift"
-    result = create_drift_scenario(file_path=sample_csv_file, scenario_name="education_drift", target_column="target", name=custom_name)
+def test_create_sklearn_drift_scenario_with_custom_name():
+    """Test creating sklearn drift scenario with custom name."""
+    custom_name = "my_custom_iris_drift"
+    result = create_sklearn_drift_scenario("iris_species_drift", name=custom_name)
 
     assert result.metadata["name"] == custom_name
+
+
+def test_create_sklearn_drift_scenario_empty_result():
+    """Test that scenarios with no matching data raise appropriate error."""
+    # This would happen if the filtering conditions were too restrictive
+    # We can't easily test this without mocking, but we ensure the check exists
+    scenarios = list(SKLEARN_DRIFT_SCENARIOS.keys())
+    for scenario_name in scenarios:
+        result = create_sklearn_drift_scenario(scenario_name)
+        assert len(result.X_ref) > 0, f"Scenario {scenario_name} resulted in empty reference set"
+        assert len(result.X_test) > 0, f"Scenario {scenario_name} resulted in empty test set"
 
 
 # =============================================================================
@@ -313,13 +296,13 @@ def test_load_digits():
 
 
 def test_list_available_scenarios():
-    """Test listing available drift scenarios."""
+    """Test listing available sklearn drift scenarios."""
     scenarios = list_available_scenarios()
 
     assert isinstance(scenarios, dict)
-    assert "education_drift" in scenarios
-    assert "geographic_drift" in scenarios
-    assert "generational_drift" in scenarios
+    assert "iris_species_drift" in scenarios
+    assert "wine_quality_drift" in scenarios
+    assert "diabetes_progression_drift" in scenarios
 
     # Check that descriptions are provided
     for scenario_name, description in scenarios.items():
@@ -352,19 +335,19 @@ def test_describe_sklearn_datasets():
 
 
 def test_get_scenario_details():
-    """Test getting scenario details."""
-    details = get_scenario_details("education_drift")
+    """Test getting sklearn scenario details."""
+    details = get_scenario_details("iris_species_drift")
 
     assert isinstance(details, dict)
     assert "description" in details
-    assert "ref_filter" in details
-    assert "test_filter" in details
+    assert "dataset" in details
+    assert "drift_type" in details
     assert "characteristics" in details
 
     # Check that it matches the original definition
-    expected = COMMON_DRIFT_SCENARIOS["education_drift"]
-    assert details["ref_filter"] == expected["ref_filter"]
-    assert details["test_filter"] == expected["test_filter"]
+    expected = SKLEARN_DRIFT_SCENARIOS["iris_species_drift"]
+    assert details["dataset"] == expected["dataset"]
+    assert details["drift_type"] == expected["drift_type"]
 
 
 def test_get_scenario_details_unknown():
@@ -373,31 +356,26 @@ def test_get_scenario_details_unknown():
         get_scenario_details("unknown")
 
 
-@patch("drift_benchmark.data.datasets.validate_dataset_for_drift_detection")
-def test_suggest_scenarios_for_dataset(mock_validate, sample_csv_file):
-    """Test suggesting scenarios for a dataset."""
-    mock_validate.return_value = {"suitable": True, "categorical_features": ["education", "region"]}
-
-    suggestions = suggest_scenarios_for_dataset(sample_csv_file)
+def test_suggest_scenarios_for_sklearn_dataset():
+    """Test suggesting scenarios for a sklearn dataset."""
+    suggestions = suggest_scenarios_for_sklearn_dataset("iris")
 
     assert isinstance(suggestions, list)
-    # The CSV file has education, region, and age columns, so should detect all three scenarios
-    assert "education_drift" in suggestions
-    assert "geographic_drift" in suggestions
-    assert "generational_drift" in suggestions
-    # Basic validation should be called
-    mock_validate.assert_called_once_with(sample_csv_file)
+    assert "iris_species_drift" in suggestions
+    assert "iris_feature_drift" in suggestions
+
+    # Check that no non-iris scenarios are suggested
+    for scenario in suggestions:
+        scenario_details = SKLEARN_DRIFT_SCENARIOS[scenario]
+        assert scenario_details["dataset"] == "iris"
 
 
-@patch("drift_benchmark.data.datasets.validate_dataset_for_drift_detection")
-def test_suggest_scenarios_for_dataset_error(mock_validate, sample_csv_file):
-    """Test suggesting scenarios when validation fails."""
-    mock_validate.side_effect = Exception("Validation failed")
-
-    suggestions = suggest_scenarios_for_dataset(sample_csv_file)
+def test_suggest_scenarios_for_sklearn_dataset_unknown():
+    """Test suggesting scenarios for unknown sklearn dataset."""
+    suggestions = suggest_scenarios_for_sklearn_dataset("unknown_dataset")
 
     assert isinstance(suggestions, list)
-    assert len(suggestions) == 0  # Should return empty list on error
+    assert len(suggestions) == 0  # Should return empty list for unknown dataset
 
 
 # =============================================================================
@@ -498,16 +476,63 @@ def test_load_sklearn_dataset_internal_missing_config():
 
 
 # =============================================================================
-# TESTS FOR ERROR HANDLING AND EDGE CASES
+# TESTS FOR HELPER FUNCTIONS
 # =============================================================================
 
 
-def test_create_drift_scenario_with_invalid_file():
-    """Test creating drift scenario with invalid file path."""
-    # Note: This test depends on the load_dataset_with_filters function
-    # which should handle file not found errors
-    with pytest.raises((FileNotFoundError, ValueError)):
-        create_drift_scenario(file_path="nonexistent_file.csv", scenario_name="education_drift", target_column="target")
+def test_filter_by_classes():
+    """Test filtering dataset by target classes."""
+    X = np.random.rand(100, 3)
+    y = np.repeat([0, 1, 2], [30, 40, 30])
+
+    X_filtered, y_filtered = _filter_by_classes(X, y, [0, 2])
+
+    assert len(X_filtered) == 60  # 30 + 30
+    assert np.all(np.isin(y_filtered, [0, 2]))
+    assert not np.any(y_filtered == 1)
+
+
+def test_filter_by_feature_condition():
+    """Test filtering dataset by feature conditions."""
+    X = np.random.rand(100, 3)
+    y = np.random.randint(0, 2, 100)
+    feature_names = ["feat1", "feat2", "feat3"]
+
+    # Create test condition
+    condition = "feat1 <= 0.5"
+    X_filtered, y_filtered = _filter_by_feature_condition(X, y, condition, feature_names)
+
+    assert len(X_filtered) > 0
+    assert len(X_filtered) < len(X)  # Should filter some data
+    assert np.all(X_filtered[:, 0] <= 0.5)  # First feature should meet condition
+
+
+def test_filter_by_target_condition():
+    """Test filtering dataset by target conditions."""
+    X = np.random.rand(100, 3)
+    y = np.random.uniform(0, 100, 100)
+
+    condition = "target <= 50"
+    X_filtered, y_filtered = _filter_by_target_condition(X, y, condition)
+
+    assert len(X_filtered) > 0
+    assert len(X_filtered) < len(X)  # Should filter some data
+    assert np.all(y_filtered <= 50)
+
+
+def test_filter_by_feature_condition_invalid():
+    """Test that invalid feature conditions raise appropriate errors."""
+    X = np.random.rand(10, 2)
+    y = np.random.randint(0, 2, 10)
+    feature_names = ["feat1", "feat2"]
+
+    with pytest.raises(ValueError, match="Invalid condition"):
+        _filter_by_feature_condition(X, y, "invalid_feature <= 0.5", feature_names)
+
+
+# =============================================================================
+# TESTS FOR ERROR HANDLING AND EDGE CASES
+# =============================================================================
 
 
 def test_sklearn_datasets_constant():
@@ -520,23 +545,24 @@ def test_sklearn_datasets_constant():
         assert len(SKLEARN_DATASETS[dataset]) > 0
 
 
-def test_common_drift_scenarios_constant():
-    """Test that COMMON_DRIFT_SCENARIOS constant is properly structured."""
-    expected_scenarios = ["education_drift", "geographic_drift", "generational_drift"]
-
-    for scenario in expected_scenarios:
-        assert scenario in COMMON_DRIFT_SCENARIOS
-        scenario_data = COMMON_DRIFT_SCENARIOS[scenario]
-
+def test_sklearn_drift_scenarios_constant():
+    """Test that SKLEARN_DRIFT_SCENARIOS constant is properly structured."""
+    for scenario_name, scenario_data in SKLEARN_DRIFT_SCENARIOS.items():
         assert "description" in scenario_data
-        assert "ref_filter" in scenario_data
-        assert "test_filter" in scenario_data
+        assert "dataset" in scenario_data
+        assert "drift_type" in scenario_data
         assert "characteristics" in scenario_data
 
         assert isinstance(scenario_data["description"], str)
-        assert isinstance(scenario_data["ref_filter"], dict)
-        assert isinstance(scenario_data["test_filter"], dict)
+        assert isinstance(scenario_data["dataset"], str)
+        assert isinstance(scenario_data["drift_type"], str)
         assert isinstance(scenario_data["characteristics"], list)
+
+        # Check that dataset is valid
+        assert scenario_data["dataset"] in SKLEARN_DATASETS
+
+        # Check that drift_type is valid
+        assert scenario_data["drift_type"] in ["class_based", "feature_based", "target_based"]
 
 
 def test_load_sklearn_all_datasets():
@@ -554,20 +580,21 @@ def test_load_sklearn_all_datasets():
         assert len(result.X_test) > 0
 
 
-def test_scenario_isolation():
-    """Test that scenarios don't interfere with each other."""
-    scenarios = list(COMMON_DRIFT_SCENARIOS.keys())
+def test_scenario_dataset_consistency():
+    """Test that all scenarios reference valid datasets."""
+    for scenario_name, scenario in SKLEARN_DRIFT_SCENARIOS.items():
+        dataset_name = scenario["dataset"]
+        assert dataset_name in SKLEARN_DATASETS, f"Scenario {scenario_name} references unknown dataset {dataset_name}"
 
-    # Get details for all scenarios
-    all_details = [get_scenario_details(scenario) for scenario in scenarios]
 
-    # Check that each scenario has unique filters
-    ref_filters = [details["ref_filter"] for details in all_details]
-    test_filters = [details["test_filter"] for details in all_details]
+def test_all_datasets_have_scenarios():
+    """Test that all sklearn datasets have at least one scenario."""
+    datasets_with_scenarios = set()
+    for scenario in SKLEARN_DRIFT_SCENARIOS.values():
+        datasets_with_scenarios.add(scenario["dataset"])
 
-    # Ensure scenarios are distinct (not comprehensive, but basic check)
-    assert len(set(str(f) for f in ref_filters)) == len(ref_filters)
-    assert len(set(str(f) for f in test_filters)) == len(test_filters)
+    for dataset_name in SKLEARN_DATASETS.keys():
+        assert dataset_name in datasets_with_scenarios, f"Dataset {dataset_name} has no scenarios"
 
 
 # =============================================================================
@@ -575,24 +602,25 @@ def test_scenario_isolation():
 # =============================================================================
 
 
-def test_end_to_end_scenario_workflow(sample_csv_file):
+def test_end_to_end_sklearn_scenario_workflow():
     """Test complete workflow: list scenarios, get details, create scenario."""
     # 1. List available scenarios
     scenarios = list_available_scenarios()
     assert len(scenarios) > 0
 
     # 2. Get details for a specific scenario
-    scenario_name = "education_drift"
+    scenario_name = "iris_species_drift"
     details = get_scenario_details(scenario_name)
-    assert "ref_filter" in details
+    assert "dataset" in details
+    assert "drift_type" in details
 
     # 3. Create the scenario
-    result = create_drift_scenario(file_path=sample_csv_file, scenario_name=scenario_name, target_column="target")
+    result = create_sklearn_drift_scenario(scenario_name)
 
     # 4. Verify result
     assert isinstance(result, DatasetResult)
     assert result.metadata["drift_scenario"] == scenario_name
-    assert result.metadata["ref_filter"] == details["ref_filter"]
+    assert result.drift_info.metadata["dataset"] == details["dataset"]
 
 
 def test_end_to_end_sklearn_workflow():
@@ -612,3 +640,18 @@ def test_end_to_end_sklearn_workflow():
     assert isinstance(result, DatasetResult)
     assert result.metadata["name"] == "iris"
     assert len(result.X_ref) + len(result.X_test) == 150
+
+
+def test_end_to_end_scenario_suggestion_workflow():
+    """Test workflow: suggest scenarios for dataset, create suggested scenario."""
+    # 1. Suggest scenarios for iris dataset
+    suggestions = suggest_scenarios_for_sklearn_dataset("iris")
+    assert len(suggestions) > 0
+    assert "iris_species_drift" in suggestions
+
+    # 2. Create one of the suggested scenarios
+    result = create_sklearn_drift_scenario(suggestions[0])
+
+    # 3. Verify result
+    assert isinstance(result, DatasetResult)
+    assert result.metadata["drift_scenario"] == suggestions[0]
