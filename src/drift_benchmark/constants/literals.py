@@ -206,4 +206,12 @@ Metric = (
     | PerformanceMetric
     | ScoreMetric
     | ComparativeMetric
-)
+)  # fmt: skip
+
+
+DetectionResult = Literal[
+    "true_positive",  # Correctly detected drift
+    "true_negative",  # Correctly identified no drift
+    "false_positive",  # Incorrectly detected drift (Type I error)
+    "false_negative",  # Missed drift (Type II error)
+]
