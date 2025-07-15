@@ -159,13 +159,13 @@
 
 [chi_square]
     name            = "Chi-square Test"
-    description     = "Statistical test that determines whether there is a significant difference between observed and expected frequencies."
+    description     = "Statistical test that determines whether there is a significant difference between the expected and observed frequencies in one or more categories."
     drift_types     = ["COVARIATE"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CATEGORICAL"]
     requires_labels = false
-    references      = ["https://doi.org/10.1080/14786440009463897", "Pearson (1900)"]
+    references      = ["https://doi.org/10.1080/01621459.1900.10477909", "Pearson (1900)"]
 
     [chi_square.implementations.chi_batch]
         name            = "Batch Chi-square Test"
@@ -173,225 +173,15 @@
         hyperparameters = ["threshold"]
         references      = []
 
-[fisher_exact]
-    name            = "Fisher Exact Test"
-    description     = "Exact test for categorical data analysis when sample sizes are small."
-    drift_types     = ["COVARIATE"]
-    family          = "STATISTICAL_TEST"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CATEGORICAL"]
-    requires_labels = false
-    references      = ["https://en.wikipedia.org/wiki/Fisher%27s_exact_test"]
-
-    [fisher_exact.implementations.fisher_batch]
-        name            = "Batch Fisher Exact Test"
+    [chi_square.implementations.chi_evidently]
+        name            = "Evidently Chi-square Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
-        references      = []
-
-    [fisher_exact.implementations.fisher_online]
-        name            = "Online Fisher Exact Test"
-        execution_mode  = "STREAMING"
-        hyperparameters = ["threshold", "window_size"]
-        references      = ["https://en.wikipedia.org/wiki/Fisher%27s_exact_test"]
-
-[g_test]
-    name            = "G-Test"
-    description     = "Log-likelihood ratio test that compares observed frequencies to expected frequencies."
-    drift_types     = ["COVARIATE"]
-    family          = "STATISTICAL_TEST"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CATEGORICAL"]
-    requires_labels = false
-    references      = ["https://en.wikipedia.org/wiki/G-test"]
-
-    [g_test.implementations.g_batch]
-        name            = "Batch G-Test"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-[z_test]
-    name            = "Z-Test"
-    description     = "Statistical test used to determine whether two population means are different when variances are known."
-    drift_types     = ["COVARIATE"]
-    family          = "STATISTICAL_TEST"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CATEGORICAL"]
-    requires_labels = false
-    references      = ["https://en.wikipedia.org/wiki/Z-test"]
-
-    [z_test.implementations.z_batch]
-        name            = "Batch Z-Test"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-[maximum_mean_discrepancy]
-    name            = "Maximum Mean Discrepancy"
-    description     = "Kernel-based method that measures the distance between distributions in a reproducing kernel Hilbert space."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "MULTIVARIATE"
-    data_types      = ["CONTINUOUS"]
-    requires_labels = false
-    references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
-
-    [maximum_mean_discrepancy.implementations.mmd_batch]
-        name            = "Batch Maximum Mean Discrepancy"
-        execution_mode  = "BATCH"
-        hyperparameters = ["kernel", "gamma", "threshold"]
-        references      = []
-
-    [maximum_mean_discrepancy.implementations.mmd_online]
-        name            = "Online Maximum Mean Discrepancy"
-        execution_mode  = "STREAMING"
-        hyperparameters = ["kernel", "gamma", "threshold", "window_size"]
-        references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
-
-    [maximum_mean_discrepancy.implementations.mmd_empirical]
-        name            = "Empirical Maximum Mean Discrepancy"
-        execution_mode  = "BATCH"
-        hyperparameters = ["kernel", "gamma", "threshold"]
-        references      = ["https://dl.acm.org/doi/10.5555/2188385.2188410", "Gretton et al. (2012)"]
-
-[wasserstein_distance]
-    name            = "Wasserstein Distance"
-    description     = "Metric that measures the distance between probability distributions, also known as Earth Mover's Distance."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CONTINUOUS"]
-    requires_labels = false
-    references      = ["https://doi.org/10.1023/A:1026543900054", "Rubner et al. (2000)"]
-
-    [wasserstein_distance.implementations.wasserstein_batch]
-        name            = "Batch Wasserstein Distance"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-    [wasserstein_distance.implementations.earth_mover_distance]
-        name            = "Earth Mover's Distance"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = ["https://doi.org/10.1023/A:1026543900054", "Rubner et al. (2000)"]
-
-[energy_distance]
-    name            = "Energy Distance"
-    description     = "Distance between distributions based on statistical energy, sensitive to any type of distributional difference."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CONTINUOUS"]
-    requires_labels = false
-    references      = ["https://doi.org/10.1016/j.jspi.2013.03.018", "Székely et al. (2013)"]
-
-    [energy_distance.implementations.energy_batch]
-        name            = "Batch Energy Distance"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-[hellinger_distance]
-    name            = "Hellinger Distance"
-    description     = "Measure of similarity between two probability distributions, related to the Bhattacharyya distance."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CONTINUOUS", "CATEGORICAL"]
-    requires_labels = false
-    references      = ["https://doi.org/10.1515/CRLL.1909.136.210", "Hellinger (1909)"]
-
-    [hellinger_distance.implementations.hellinger_batch]
-        name            = "Batch Hellinger Distance"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-[bhattacharyya_distance]
-    name            = "Bhattacharyya Distance"
-    description     = "Measure of similarity between two probability distributions, closely related to the Hellinger distance."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CONTINUOUS"]
-    requires_labels = false
-    references      = ["https://www.jstor.org/stable/25047882", "Bhattacharyya (1946)"]
-
-    [bhattacharyya_distance.implementations.bhattacharyya_batch]
-        name            = "Batch Bhattacharyya Distance"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-[total_variation_distance]
-    name            = "Total Variation Distance"
-    description     = "Maximum difference between the probabilities assigned by two distributions."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CATEGORICAL"]
-    requires_labels = false
-    references      = ["https://en.wikipedia.org/wiki/Total_variation_distance_of_probability_measures"]
-
-    [total_variation_distance.implementations.tvd_batch]
-        name            = "Batch Total Variation Distance"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-[l_infinity_distance]
-    name            = "L-Infinity Distance"
-    description     = "Maximum absolute difference between corresponding elements of two distributions, also known as Supremum norm."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CONTINUOUS"]
-    requires_labels = false
-    references      = ["https://en.wikipedia.org/wiki/Chebyshev_distance"]
-
-    [l_infinity_distance.implementations.linf_batch]
-        name            = "Batch L-Infinity Distance"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold"]
-        references      = []
-
-[histogram_intersection_normalized_complement]
-    name            = "Histogram Intersection Normalized Complement"
-    description     = "Measures dissimilarity between histograms by calculating complement of their intersection."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CONTINUOUS", "CATEGORICAL"]
-    requires_labels = false
-    references      = ["https://doi.org/10.1007/BF00130487", "Swain and Ballard (1991)"]
-
-    [histogram_intersection_normalized_complement.implementations.hist_inter_batch]
-        name            = "Batch Histogram Intersection Normalized Complement"
-        execution_mode  = "BATCH"
-        hyperparameters = ["bins", "threshold"]
-        references      = []
-
-[kullback_leibler_divergence]
-    name            = "Kullback-Leibler Divergence Drift Detection"
-    description     = "Measures the difference between two probability distributions using KL divergence."
-    drift_types     = ["COVARIATE"]
-    family          = "DISTANCE_BASED"
-    data_dimension  = "UNIVARIATE"
-    data_types      = ["CONTINUOUS", "CATEGORICAL"]
-    requires_labels = false
-    references      = ["https://doi.org/10.1214/aoms/1177729694", "Kullback and Leibler (1951)"]
-
-    [kullback_leibler_divergence.implementations.kl_batch]
-        name            = "Batch Kullback-Leibler Divergence"
-        execution_mode  = "BATCH"
-        hyperparameters = ["threshold", "bins"]
         references      = []
 
 [jensen_shannon_divergence]
-    name            = "Jensen-Shannon Divergence Drift Detection"
-    description     = "Symmetrized and smoothed version of KL divergence for measuring distribution difference."
+    name            = "Jensen-Shannon Divergence"
+    description     = "Method for measuring the similarity between two probability distributions based on the Kullback-Leibler divergence."
     drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
@@ -402,23 +192,57 @@
     [jensen_shannon_divergence.implementations.js_batch]
         name            = "Batch Jensen-Shannon Divergence"
         execution_mode  = "BATCH"
-        hyperparameters = ["threshold", "bins"]
+        hyperparameters = ["threshold"]
         references      = []
 
-[population_stability_index]
-    name            = "Population Stability Index"
-    description     = "Measures the stability of a distribution over time, based on KL divergence."
+    [jensen_shannon_divergence.implementations.js_evidently]
+        name            = "Evidently Jensen-Shannon Divergence"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
+
+[kullback_leibler_divergence]
+    name            = "Kullback-Leibler Divergence"
+    description     = "Measure of how one probability distribution diverges from a second, expected probability distribution."
     drift_types     = ["COVARIATE"]
     family          = "DISTANCE_BASED"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
     requires_labels = false
-    references      = ["https://doi.org/10.1057/jors.2008.144", "Wu and Olson (2010)"]
+    references      = ["https://doi.org/10.1214/aoms/1177729694", "Kullback and Leibler (1951)"]
 
-    [population_stability_index.implementations.psi_batch]
-        name            = "Batch Population Stability Index"
+    [kullback_leibler_divergence.implementations.kl_batch]
+        name            = "Batch Kullback-Leibler Divergence"
         execution_mode  = "BATCH"
-        hyperparameters = ["threshold", "bins"]
+        hyperparameters = ["threshold"]
+        references      = []
+
+    [kullback_leibler_divergence.implementations.kl_evidently]
+        name            = "Evidently Kullback-Leibler Divergence"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
+
+[all_features_drift]
+    name            = "All Features Value Drift"
+    description     = "Comprehensive drift detection across all features in the dataset using statistical tests."
+    drift_types     = ["COVARIATE"]
+    family          = "STATISTICAL_TEST"
+    data_dimension  = "MULTIVARIATE"
+    data_types      = ["CONTINUOUS", "CATEGORICAL"]
+    requires_labels = false
+    references      = []
+
+    [all_features_drift.implementations.all_features_batch]
+        name            = "Batch All Features Drift"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold", "stattest"]
+        references      = []
+
+    [all_features_drift.implementations.all_features_evidently]
+        name            = "Evidently All Features Drift"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold", "stattest"]
         references      = []
 
 [drift_detection_method]
@@ -599,6 +423,24 @@
         execution_mode  = "STREAMING"
         hyperparameters = ["alpha", "window_size"]
         references      = []
+
+
+[wasserstein_distance]
+    name            = "Wasserstein Distance"
+    description     = "The Wasserstein distance measures the minimum cost to transform one distribution into another."
+    drift_types     = ["COVARIATE"]
+    family          = "DISTANCE_BASED"
+    data_dimension  = "UNIVARIATE"
+    data_types      = ["CONTINUOUS"]
+    requires_labels = false
+    references      = ["https://doi.org/10.1007/s10208-011-9093-5", "Wasserstein (1969)"]
+
+    [wasserstein_distance.implementations.wasserstein_batch]
+        name            = "Batch Wasserstein Distance"
+        execution_mode  = "BATCH"
+        hyperparameters = ["threshold"]
+        references      = []
+
 
 [periodic_trigger]
     name            = "Periodic Trigger Detector"
