@@ -60,8 +60,8 @@ def load_dataset(config: Union[str, Dict, DatasetConfig]) -> DatasetResult:
             - DatasetConfig: Pydantic model with full configuration
 
     Returns:
-        DatasetResult: Complete dataset with X_ref, X_test, y_ref, y_test,
-                      drift_info, and metadata
+        DatasetResult: Complete dataset with X_ref, X_test (pandas DataFrames),
+                      y_ref, y_test (pandas Series), drift_info, and metadata
 
     Raises:
         ValueError: If the dataset cannot be loaded or configuration is invalid
@@ -134,7 +134,7 @@ def load_dataset_with_filters(
         name: Name for the dataset
 
     Returns:
-        DatasetResult with filtered reference and test sets
+        DatasetResult with filtered reference and test sets as pandas DataFrames/Series
 
     Example:
         # Load data, train on certain categories, test on others
@@ -201,13 +201,13 @@ def _load_file_dataset(config: DatasetConfig) -> DatasetResult:
             target_column = data.columns[-1]
 
         if target_column in data.columns:
-            X = data.drop(columns=[target_column]).values
-            y = data[target_column].values
-            feature_names = data.drop(columns=[target_column]).columns.tolist()
+            X_df = data.drop(columns=[target_column])
+            y_series = data[target_column]
+            feature_names = X_df.columns.tolist()
         else:
             # No target column found, treat as unsupervised
-            X = data.values
-            y = None
+            X_df = data
+            y_series = None
             feature_names = data.columns.tolist()
             target_column = None
 
@@ -218,14 +218,14 @@ def _load_file_dataset(config: DatasetConfig) -> DatasetResult:
         else:
             # Use traditional random split
             test_split = file_config.test_split or 0.3
-            X_ref, X_test, y_ref, y_test = _create_random_split_datasets(X, y, test_split)
+            X_ref, X_test, y_ref, y_test = _create_random_split_datasets(X_df, y_series, test_split)
 
         # Create dataset metadata
         has_filtering_drift = bool(file_config.ref_filter or file_config.test_filter)
         metadata = DatasetMetadata(
             name=config.name,
-            n_samples=len(X),
-            n_features=X.shape[1],
+            n_samples=len(X_df),
+            n_features=X_df.shape[1],
             feature_names=feature_names,
             target_name=target_column,
             data_types=_infer_data_types(data.drop(columns=[target_column]) if target_column in data.columns else data),
@@ -260,7 +260,7 @@ def _load_file_dataset(config: DatasetConfig) -> DatasetResult:
             metadata=metadata.drift_metadata,
         )
 
-        logger.info(f"CSV dataset loaded: {len(X_ref)} ref + {len(X_test)} test samples, {X.shape[1]} features")
+        logger.info(f"CSV dataset loaded: {len(X_ref)} ref + {len(X_test)} test samples, {X_df.shape[1]} features")
 
         return DatasetResult(X_ref=X_ref, X_test=X_test, y_ref=y_ref, y_test=y_test, drift_info=drift_info, metadata=metadata.model_dump())
 
@@ -418,26 +418,26 @@ def _create_filtered_datasets(data: pd.DataFrame, file_config: FileDataConfig, t
 
     # Extract features and targets
     if target_column and target_column in data.columns:
-        X_ref = ref_data.drop(columns=[target_column]).values
-        y_ref = ref_data[target_column].values if len(ref_data) > 0 else np.array([])
-        X_test = test_data.drop(columns=[target_column]).values
-        y_test = test_data[target_column].values if len(test_data) > 0 else np.array([])
+        X_ref = ref_data.drop(columns=[target_column])
+        y_ref = ref_data[target_column] if len(ref_data) > 0 else pd.Series([], dtype=data[target_column].dtype)
+        X_test = test_data.drop(columns=[target_column])
+        y_test = test_data[target_column] if len(test_data) > 0 else pd.Series([], dtype=data[target_column].dtype)
     else:
-        X_ref = ref_data.values
+        X_ref = ref_data
         y_ref = None
-        X_test = test_data.values
+        X_test = test_data
         y_test = None
 
     return X_ref, X_test, y_ref, y_test
 
 
-def _create_random_split_datasets(X: np.ndarray, y: Optional[np.ndarray], test_split: float) -> tuple:
+def _create_random_split_datasets(X: pd.DataFrame, y: Optional[pd.Series], test_split: float) -> tuple:
     """
     Create reference and test datasets using traditional random split.
 
     Args:
-        X: Feature matrix
-        y: Target vector (optional)
+        X: Feature DataFrame
+        y: Target Series (optional)
         test_split: Fraction of data to use for test set
 
     Returns:
@@ -449,7 +449,7 @@ def _create_random_split_datasets(X: np.ndarray, y: Optional[np.ndarray], test_s
 
     if y is not None:
         # Use stratification if target has reasonable number of classes
-        stratify = y if len(np.unique(y)) > 1 and len(np.unique(y)) < len(y) // 10 else None
+        stratify = y if len(y.unique()) > 1 and len(y.unique()) < len(y) // 10 else None
         X_ref, X_test, y_ref, y_test = train_test_split(X, y, test_size=test_split, random_state=42, stratify=stratify)
     else:
         X_ref, X_test = train_test_split(X, test_size=test_split, random_state=42)
