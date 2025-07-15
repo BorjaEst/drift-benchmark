@@ -55,6 +55,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import tomli
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -92,6 +93,7 @@ class BaseDriftBenchmarkModel(BaseModel):
         extra="forbid",
         validate_assignment=True,
         use_enum_values=True,
+        arbitrary_types_allowed=True,
     )
 
 
@@ -389,48 +391,8 @@ class SklearnDataConfig(BaseDriftBenchmarkModel):
     )
 
 
-class DatasetConfig(NamedModel):
-    """Unified dataset configuration supporting multiple data types."""
-
-    type: DatasetType = Field(
-        ...,
-        description="Type of dataset",
-    )
-
-    # Preprocessing configuration
-    preprocessing: List["PreprocessingConfig"] = Field(
-        default_factory=list,
-        description="List of preprocessing steps",
-    )
-
-    # Type-specific configurations (only one should be set based on type)
-    synthetic_config: Optional[SyntheticDataConfig] = Field(
-        default=None,
-        description="Synthetic data configuration",
-    )
-    file_config: Optional[FileDataConfig] = Field(
-        default=None,
-        description="File data configuration",
-    )
-    sklearn_config: Optional[SklearnDataConfig] = Field(
-        default=None,
-        description="Sklearn data configuration",
-    )
-
-    def get_config(self) -> Union[SyntheticDataConfig, FileDataConfig, SklearnDataConfig]:
-        """Get the appropriate configuration based on dataset type."""
-        if self.type == "SYNTHETIC" and self.synthetic_config:
-            return self.synthetic_config
-        elif self.type == "FILE" and self.file_config:
-            return self.file_config
-        elif self.type in ["SKLEARN", "BUILTIN"] and self.sklearn_config:
-            return self.sklearn_config
-        else:
-            raise ValueError(f"Missing configuration for dataset type: {self.type}")
-
-
 # =============================================================================
-# 4. PREPROCESSING CONFIGURATION MODELS
+# 3. PREPROCESSING CONFIGURATION MODELS
 # =============================================================================
 
 
@@ -505,6 +467,111 @@ class OutlierConfig(PreprocessingConfig):
         default=None,
         description="Threshold for outlier detection",
     )
+
+
+# =============================================================================
+# 4. DATA CONFIGURATION MODELS
+# =============================================================================
+
+
+class ScalingConfig(PreprocessingConfig):
+    """Configuration for feature scaling."""
+
+    method: ScalingMethod = Field(
+        ...,
+        description="Scaling method to use",
+    )
+    feature_range: Optional[Tuple[float, float]] = Field(
+        default=None,
+        description="Feature range for MinMaxScaler",
+    )
+
+
+class ImputationConfig(PreprocessingConfig):
+    """Configuration for missing value imputation."""
+
+    strategy: ImputationStrategy = Field(
+        ...,
+        description="Imputation strategy to use",
+    )
+    fill_value: Optional[Union[str, float, int]] = Field(
+        default=None,
+        description="Fill value for constant strategy",
+    )
+
+
+class EncodingConfig(PreprocessingConfig):
+    """Configuration for categorical encoding."""
+
+    method: EncodingMethod = Field(
+        ...,
+        description="Encoding method to use",
+    )
+    drop_first: bool = Field(
+        default=False,
+        description="Drop first category for one-hot encoding",
+    )
+    handle_unknown: str = Field(
+        default="error",
+        description="How to handle unknown categories",
+    )
+
+
+class OutlierConfig(PreprocessingConfig):
+    """Configuration for outlier detection and removal."""
+
+    method: OutlierMethod = Field(
+        ...,
+        description="Outlier detection method",
+    )
+    contamination: float = Field(
+        default=0.1,
+        description="Expected proportion of outliers",
+    )
+    threshold: Optional[float] = Field(
+        default=None,
+        description="Threshold for outlier detection",
+    )
+
+
+class DatasetConfig(NamedModel):
+    """Unified dataset configuration supporting multiple data types."""
+
+    type: DatasetType = Field(
+        ...,
+        description="Type of dataset",
+    )
+
+    # Preprocessing configuration
+    preprocessing: List[PreprocessingConfig] = Field(
+        default_factory=list,
+        description="List of preprocessing steps",
+    )
+
+    # Type-specific configurations (only one should be set based on type)
+    synthetic_config: Optional[SyntheticDataConfig] = Field(
+        default=None,
+        description="Synthetic data configuration",
+    )
+    file_config: Optional[FileDataConfig] = Field(
+        default=None,
+        description="File data configuration",
+    )
+    sklearn_config: Optional[SklearnDataConfig] = Field(
+        default=None,
+        description="Sklearn data configuration",
+    )
+
+    def get_config(self) -> Union[SyntheticDataConfig, FileDataConfig, SklearnDataConfig]:
+        """Get the appropriate configuration based on dataset type."""
+        if self.type == "SYNTHETIC" and self.synthetic_config:
+            return self.synthetic_config
+        elif self.type == "FILE" and self.file_config:
+            return self.file_config
+        elif self.type in ["SKLEARN", "BUILTIN"] and self.sklearn_config:
+            return self.sklearn_config
+        else:
+            raise ValueError(f"Missing configuration for dataset type: {self.type}")
 
 
 # =============================================================================
@@ -676,10 +743,40 @@ class DetectorConfigModel(BaseDriftBenchmarkModel):
     )
 
 
+class MetricConfiguration(ParametrizedModel):
+    """Configuration for a specific metric."""
+
+    name: Metric = Field(
+        ...,
+        description="Name of the metric",
+    )
+    enabled: bool = Field(
+        default=True,
+        description="Whether this metric is enabled",
+    )
+    weight: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="Weight for aggregation",
+    )
+    threshold: Optional[float] = Field(
+        default=None,
+        description="Optional threshold for the metric",
+    )
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def normalize_metric_name(cls, v: str) -> str:
+        """Convert lowercase metric names to uppercase for backward compatibility."""
+        if isinstance(v, str):
+            return v.upper()
+        return v
+
+
 class EvaluationConfig(BaseDriftBenchmarkModel):
     """Configuration for evaluation settings."""
 
-    metrics: List["MetricConfiguration"] = Field(
+    metrics: List[MetricConfiguration] = Field(
         default_factory=lambda: [
             MetricConfiguration(name="ACCURACY"),
             MetricConfiguration(name="PRECISION"),
@@ -1085,36 +1182,6 @@ class DriftEvaluationResult(BaseDriftBenchmarkModel):
 # =============================================================================
 
 
-class MetricConfiguration(ParametrizedModel):
-    """Configuration for a specific metric."""
-
-    name: Metric = Field(
-        ...,
-        description="Name of the metric",
-    )
-    enabled: bool = Field(
-        default=True,
-        description="Whether this metric is enabled",
-    )
-    weight: float = Field(
-        default=1.0,
-        gt=0.0,
-        description="Weight for aggregation",
-    )
-    threshold: Optional[float] = Field(
-        default=None,
-        description="Optional threshold for the metric",
-    )
-
-    @field_validator("name", mode="before")
-    @classmethod
-    def normalize_metric_name(cls, v: str) -> str:
-        """Convert lowercase metric names to uppercase for backward compatibility."""
-        if isinstance(v, str):
-            return v.upper()
-        return v
-
-
 class MetricResult(BaseDriftBenchmarkModel):
     """Result for a single metric calculation."""
 
@@ -1260,22 +1327,22 @@ class DatasetMetadata(NamedModel):
 class DatasetResult(BaseDriftBenchmarkModel):
     """Result of loading a dataset with all metadata."""
 
-    # Data arrays (Any type to support DataFrame/Series)
-    X_ref: Any = Field(
+    # Data arrays stored as pandas DataFrames
+    X_ref: pd.DataFrame = Field(
         ...,
-        description="Reference data features",
+        description="Reference data features as pandas DataFrame",
     )
-    X_test: Any = Field(
+    X_test: pd.DataFrame = Field(
         ...,
-        description="Test data features",
+        description="Test data features as pandas DataFrame",
     )
-    y_ref: Optional[Any] = Field(
+    y_ref: Optional[pd.Series] = Field(
         default=None,
-        description="Reference data targets",
+        description="Reference data targets as pandas Series",
     )
-    y_test: Optional[Any] = Field(
+    y_test: Optional[pd.Series] = Field(
         default=None,
-        description="Test data targets",
+        description="Test data targets as pandas Series",
     )
 
     # Metadata
@@ -1287,13 +1354,3 @@ class DatasetResult(BaseDriftBenchmarkModel):
         default_factory=dict,
         description="Dataset metadata",
     )
-
-
-# =============================================================================
-# MODEL EXPORTS AND FORWARD REFERENCES
-# =============================================================================
-
-
-# Update forward references after all models are defined
-DatasetConfig.model_rebuild()
-EvaluationConfig.model_rebuild()
