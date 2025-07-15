@@ -376,13 +376,16 @@ def test_get_scenario_details_unknown():
 @patch("drift_benchmark.data.datasets.validate_dataset_for_drift_detection")
 def test_suggest_scenarios_for_dataset(mock_validate, sample_csv_file):
     """Test suggesting scenarios for a dataset."""
-    mock_validate.return_value = {"suggested_scenarios": ["education_drift", "generational_drift"]}
+    mock_validate.return_value = {"suitable": True, "categorical_features": ["education", "region"]}
 
     suggestions = suggest_scenarios_for_dataset(sample_csv_file)
 
     assert isinstance(suggestions, list)
+    # The CSV file has education, region, and age columns, so should detect all three scenarios
     assert "education_drift" in suggestions
+    assert "geographic_drift" in suggestions
     assert "generational_drift" in suggestions
+    # Basic validation should be called
     mock_validate.assert_called_once_with(sample_csv_file)
 
 

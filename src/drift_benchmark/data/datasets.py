@@ -1,515 +1,590 @@
 """
-Data loading and preprocessing module for drift-benchmark.
+Universal dataset loading module for drift-benchmark.
 
-This module provides utilities for loading datasets from various sources including:
-- Synthetic data generation with drift patterns
-- File-based datasets (CSV, Parquet, Excel, etc.)
-- Built-in scikit-learn datasets
-- Custom datasets with preprocessing pipelines
+This module provides core dataset loading utilities with support for CSV files
+and basic data processing. It focuses on the fundamental functionality needed
+to load datasets from various sources and apply filtering for drift detection.
 
-The module follows a standardized interface for consistent data handling across
-the drift-benchmark library.
+KEY CAPABILITIES:
+1. Load datasets from CSV files with flexible configuration
+2. Support custom filtering for reference/test splits
+3. Automatic data type inference and validation
+4. Robust error handling and logging
+5. Integration with Pydantic models for type safety
+
+The module is designed to be the core dataset loading engine that other modules
+can build upon for more specialized functionality.
 """
 
 import logging
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import fetch_openml, load_breast_cancer, load_diabetes, load_digits, load_iris, load_wine
-from sklearn.model_selection import train_test_split
+from pydantic import ValidationError
 
-from drift_benchmark.constants import (
-    DatasetConfig,
-    DatasetMetadata,
-    DatasetType,
-    FileDataConfig,
-    SklearnDataConfig,
-    SyntheticDataConfig,
-)
-from drift_benchmark.data.drift_generators import generate_synthetic_data
-from drift_benchmark.data.preprocessing import apply_preprocessing_pipeline
+from drift_benchmark.constants.literals import DatasetType, DataType
+from drift_benchmark.constants.models import DatasetConfig, DatasetMetadata, DatasetResult, DriftInfo, FileDataConfig
 from drift_benchmark.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# Type alias for dataset return format
-DatasetTuple = Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], DatasetMetadata]
+
+# =============================================================================
+# CONSTANTS FOR DATA PROCESSING
+# =============================================================================
+
+# Data type inference thresholds for categorical detection
+CATEGORICAL_UNIQUE_THRESHOLD = 10  # Max unique values to consider categorical
+CATEGORICAL_RATIO_THRESHOLD = 0.5  # Max ratio of unique/total values for categorical
 
 
-def load_dataset(config: Union[str, Dict[str, Any], DatasetConfig]) -> DatasetTuple:
+# =============================================================================
+# MAIN API FUNCTIONS
+# =============================================================================
+
+
+def load_dataset(config: Union[str, Dict, DatasetConfig]) -> DatasetResult:
     """
-    Load a dataset based on the provided configuration.
+    Load a dataset with support for basic data filtering.
 
-    This is the main entry point for loading datasets in drift-benchmark.
-    It supports multiple data sources and returns standardized outputs.
+    This is the main entry point for loading datasets. Currently supports
+    CSV files with flexible filtering options.
 
     Args:
         config: Dataset configuration. Can be:
-            - String: dataset name for built-in datasets
+            - String: CSV filename (looked up in datasets directory)
             - Dictionary: configuration parameters
             - DatasetConfig: Pydantic model with full configuration
 
     Returns:
-        Tuple containing:
-            - X_ref: Reference data features (numpy array)
-            - X_test: Test data features (numpy array)
-            - y_ref: Reference data labels (numpy array or None)
-            - y_test: Test data labels (numpy array or None)
-            - metadata: Dataset metadata information
+        DatasetResult: Complete dataset with X_ref, X_test, y_ref, y_test,
+                      drift_info, and metadata
 
     Raises:
         ValueError: If the dataset cannot be loaded or configuration is invalid
-        FileNotFoundError: If a specified file path doesn't exist
+        FileNotFoundError: If a specified file doesn't exist
+
+    Examples:
+        # Load CSV dataset by name
+        result = load_dataset("my_data.csv")
+
+        # Load with filtering for custom data splits
+        result = load_dataset({
+            "name": "custom_split",
+            "type": "FILE",
+            "file_config": {
+                "file_path": "data.csv",
+                "target_column": "target",
+                "ref_filter": {"category": ["A", "B"]},
+                "test_filter": {"category": ["C"]}
+            }
+        })
     """
-    # Convert input to DatasetConfig
-    if isinstance(config, str):
-        # Simple string name - assume it's a sklearn dataset
-        config = DatasetConfig(name=config, type="SKLEARN", sklearn_config=SklearnDataConfig(dataset_name=config))
-    elif isinstance(config, dict):
-        config = DatasetConfig(**config)
-    elif not isinstance(config, DatasetConfig):
-        raise ValueError(f"Invalid config type: {type(config)}")
+    try:
+        # Validate and parse configuration
+        dataset_config = _validate_and_parse_config(config)
 
-    logger.info(f"Loading dataset: {config.name} (type: {config.type})")
+        logger.info(f"Loading dataset: {dataset_config.name} (type: {dataset_config.type})")
 
-    # Route to appropriate loader based on dataset type
-    if config.type == "SYNTHETIC":
-        return _load_synthetic_dataset(config)
-    elif config.type == "FILE":
-        return _load_file_dataset(config)
-    elif config.type in ["SKLEARN", "BUILTIN"]:
-        return _load_sklearn_dataset(config)
-    else:
-        raise ValueError(f"Unsupported dataset type: {config.type}")
+        # Route to appropriate loader based on dataset type
+        if dataset_config.type == "FILE":
+            return _load_file_dataset(dataset_config)
+        else:
+            raise ValueError(f"Unsupported dataset type: {dataset_config.type}. Use 'scenarios' module for sklearn datasets.")
+
+    except ValidationError as e:
+        # Handle Pydantic validation errors
+        error_msg = str(e)
+        if "type" in error_msg and "Input should be" in error_msg:
+            raise ValueError("Unsupported dataset type")
+        else:
+            raise ValueError(f"Invalid dataset configuration: {e}")
+    except Exception as e:
+        # Re-raise ValueError as-is, wrap other exceptions
+        if isinstance(e, ValueError):
+            raise
+        else:
+            raise ValueError(f"Failed to load dataset: {e}")
 
 
-def _load_synthetic_dataset(config: DatasetConfig) -> DatasetTuple:
+def load_dataset_with_filters(
+    file_path: str,
+    ref_filter: Optional[Dict[str, Any]] = None,
+    test_filter: Optional[Dict[str, Any]] = None,
+    target_column: Optional[str] = None,
+    filter_mode: str = "include",
+    name: Optional[str] = None,
+) -> DatasetResult:
     """
-    Load a synthetic dataset with drift patterns.
+    Load a dataset with filtering for custom data splits.
+
+    This function makes it easy to create reference and test sets based on
+    feature criteria rather than random splits, which is useful for creating
+    controlled data splits based on specific conditions.
 
     Args:
-        config: Dataset configuration with synthetic_config
+        file_path: Path to the CSV file
+        ref_filter: Filter criteria for reference/training data
+        test_filter: Filter criteria for test/validation data
+        target_column: Name of the target column
+        filter_mode: "include" to keep matching rows, "exclude" to remove them
+        name: Name for the dataset
 
     Returns:
-        Tuple of (X_ref, X_test, y_ref, y_test, metadata)
+        DatasetResult with filtered reference and test sets
+
+    Example:
+        # Load data, train on certain categories, test on others
+        result = load_dataset_with_filters(
+            "data.csv",
+            ref_filter={"category": ["A", "B"]},
+            test_filter={"category": ["C", "D"]},
+            target_column="target"
+        )
+
+        # Load data filtering by value ranges
+        result = load_dataset_with_filters(
+            "data.csv",
+            ref_filter={"score": (0, 50), "type": ["premium"]},
+            test_filter={"score": (51, 100), "type": ["basic"]},
+            target_column="outcome"
+        )
     """
-    if not config.synthetic_config:
-        raise ValueError("Synthetic dataset configuration missing")
+    if name is None:
+        name = f"filtered_{Path(file_path).stem}"
 
-    synthetic_config = config.synthetic_config
-    logger.debug(f"Generating synthetic data with generator: {synthetic_config.generator_name}")
-
-    # Generate synthetic data with drift
-    X_ref, X_test, y_ref, y_test, drift_info = generate_synthetic_data(
-        generator_name=synthetic_config.generator_name,
-        n_samples=synthetic_config.n_samples,
-        n_features=synthetic_config.n_features,
-        drift_pattern=synthetic_config.drift_pattern,
-        drift_characteristic=synthetic_config.drift_characteristic,
-        drift_magnitude=synthetic_config.drift_magnitude,
-        drift_position=synthetic_config.drift_position,
-        drift_duration=synthetic_config.drift_duration,
-        drift_affected_features=synthetic_config.drift_affected_features,
-        noise=synthetic_config.noise,
-        categorical_features=synthetic_config.categorical_features,
-        random_state=synthetic_config.random_state,
-        **synthetic_config.generator_params,
+    config = DatasetConfig(
+        name=name,
+        type="FILE",
+        file_config=FileDataConfig(
+            file_path=file_path, target_column=target_column, ref_filter=ref_filter, test_filter=test_filter, filter_mode=filter_mode
+        ),
     )
 
-    # Apply preprocessing if specified
-    if config.preprocessing:
-        X_ref = apply_preprocessing_pipeline(X_ref, config.preprocessing, fit=True)
-        X_test = apply_preprocessing_pipeline(X_test, config.preprocessing, fit=False)
-        preprocessing_applied = [step.method for step in config.preprocessing]
-    else:
-        preprocessing_applied = []
-
-    # Create metadata
-    metadata = DatasetMetadata(
-        name=config.name,
-        n_samples=len(X_ref) + len(X_test),
-        n_features=X_ref.shape[1],
-        feature_names=[f"feature_{i}" for i in range(X_ref.shape[1])],
-        target_name="target" if y_ref is not None else None,
-        data_types=_infer_data_types(X_ref),
-        has_drift=True,
-        drift_points=[int(synthetic_config.drift_position * len(X_test))],
-        drift_metadata=drift_info,
-        source="synthetic",
-        creation_time=datetime.now().isoformat(),
-        preprocessing_applied=preprocessing_applied,
-    )
-
-    logger.info(f"Generated synthetic dataset: {metadata.n_samples} samples, {metadata.n_features} features")
-
-    return X_ref, X_test, y_ref, y_test, metadata
+    return load_dataset(config)
 
 
-def _load_file_dataset(config: DatasetConfig) -> DatasetTuple:
-    """
-    Load a dataset from file(s).
+# =============================================================================
+# INTERNAL DATASET LOADING FUNCTIONS
+# =============================================================================
 
-    Args:
-        config: Dataset configuration with file_config
 
-    Returns:
-        Tuple of (X_ref, X_test, y_ref, y_test, metadata)
-    """
+def _load_file_dataset(config: DatasetConfig) -> DatasetResult:
+    """Load a dataset from CSV file using proper configuration."""
     if not config.file_config:
         raise ValueError("File dataset configuration missing")
 
     file_config = config.file_config
-
-    # Resolve file path
     file_path = Path(file_config.file_path)
+
+    # Resolve relative paths
     if not file_path.is_absolute():
         file_path = Path(settings.datasets_dir) / file_path
 
     if not file_path.exists():
         raise FileNotFoundError(f"Dataset file not found: {file_path}")
 
-    logger.debug(f"Loading file dataset from: {file_path}")
+    logger.debug(f"Loading CSV dataset from: {file_path}")
 
-    # Load data based on file format
-    data = _load_file_data(file_path, file_config)
+    try:
+        # Load CSV data
+        data = pd.read_csv(file_path, sep=file_config.separator, header=file_config.header, encoding=file_config.encoding)
+        logger.info(f"Loaded CSV with shape: {data.shape}")
 
-    # Extract features and target
-    X, y, feature_names = _extract_features_and_target(data, file_config)
+        # Extract features and target
+        target_column = file_config.target_column
+        if target_column is None:
+            # Use last column as target if not specified
+            target_column = data.columns[-1]
 
-    # Handle drift information
-    drift_labels, drift_points = _extract_drift_information(data, file_config)
-
-    # Split data into reference and test sets
-    X_ref, X_test, y_ref, y_test = _split_data(X, y, file_config, drift_labels)
-
-    # Apply preprocessing if specified
-    preprocessing_applied = []
-    if config.preprocessing:
-        X_ref = apply_preprocessing_pipeline(X_ref, config.preprocessing, fit=True)
-        X_test = apply_preprocessing_pipeline(X_test, config.preprocessing, fit=False)
-        preprocessing_applied = [step.method for step in config.preprocessing]
-
-    # Create metadata
-    metadata = DatasetMetadata(
-        name=config.name,
-        n_samples=len(X_ref) + len(X_test),
-        n_features=X_ref.shape[1],
-        feature_names=feature_names,
-        target_name=file_config.target_column,
-        data_types=_infer_data_types(X_ref),
-        has_drift=drift_points is not None and len(drift_points) > 0,
-        drift_points=drift_points,
-        drift_metadata={"source": "file", "drift_column": file_config.drift_column},
-        source=str(file_path),
-        creation_time=datetime.now().isoformat(),
-        preprocessing_applied=preprocessing_applied,
-    )
-
-    logger.info(f"Loaded file dataset: {metadata.n_samples} samples, {metadata.n_features} features")
-
-    return X_ref, X_test, y_ref, y_test, metadata
-
-
-def _load_sklearn_dataset(config: DatasetConfig) -> DatasetTuple:
-    """
-    Load a scikit-learn built-in dataset.
-
-    Args:
-        config: Dataset configuration with sklearn_config
-
-    Returns:
-        Tuple of (X_ref, X_test, y_ref, y_test, metadata)
-    """
-    if not config.sklearn_config:
-        raise ValueError("Sklearn dataset configuration missing")
-
-    sklearn_config = config.sklearn_config
-    dataset_name = sklearn_config.dataset_name.lower()
-
-    logger.debug(f"Loading sklearn dataset: {dataset_name}")
-
-    # Load the appropriate sklearn dataset
-    if dataset_name == "iris":
-        dataset = load_iris(return_X_y=False, as_frame=sklearn_config.as_frame)
-    elif dataset_name == "wine":
-        dataset = load_wine(return_X_y=False, as_frame=sklearn_config.as_frame)
-    elif dataset_name == "breast_cancer":
-        dataset = load_breast_cancer(return_X_y=False, as_frame=sklearn_config.as_frame)
-    elif dataset_name == "diabetes":
-        dataset = load_diabetes(return_X_y=False, as_frame=sklearn_config.as_frame)
-    elif dataset_name == "digits":
-        dataset = load_digits(return_X_y=False, as_frame=sklearn_config.as_frame)
-    else:
-        # Try to fetch from OpenML
-        try:
-            dataset = fetch_openml(name=dataset_name, return_X_y=False, as_frame=sklearn_config.as_frame, parser="auto")
-        except Exception as e:
-            raise ValueError(f"Unknown sklearn dataset: {dataset_name}. Error: {e}")
-
-    # Extract data
-    X = dataset.data.values if hasattr(dataset.data, "values") else dataset.data
-    y = dataset.target.values if hasattr(dataset.target, "values") else dataset.target
-    feature_names = (
-        dataset.feature_names.tolist()
-        if hasattr(dataset, "feature_names")
-        else [f"feature_{i}" for i in range(X.shape[1])]
-    )
-
-    # Split data
-    X_ref, X_test, y_ref, y_test = train_test_split(
-        X,
-        y,
-        test_size=sklearn_config.test_split,
-        random_state=sklearn_config.random_state,
-        stratify=y if len(np.unique(y)) < len(y) // 10 else None,
-    )
-
-    # Apply preprocessing if specified
-    preprocessing_applied = []
-    if config.preprocessing:
-        X_ref = apply_preprocessing_pipeline(X_ref, config.preprocessing, fit=True)
-        X_test = apply_preprocessing_pipeline(X_test, config.preprocessing, fit=False)
-        preprocessing_applied = [step.method for step in config.preprocessing]
-
-    # Create metadata
-    metadata = DatasetMetadata(
-        name=config.name,
-        n_samples=len(X_ref) + len(X_test),
-        n_features=X_ref.shape[1],
-        feature_names=feature_names,
-        target_name="target",
-        data_types=_infer_data_types(X_ref),
-        has_drift=False,  # Built-in datasets typically don't have drift
-        drift_points=None,
-        drift_metadata={},
-        source=f"sklearn.datasets.{dataset_name}",
-        creation_time=datetime.now().isoformat(),
-        preprocessing_applied=preprocessing_applied,
-    )
-
-    logger.info(f"Loaded sklearn dataset: {metadata.n_samples} samples, {metadata.n_features} features")
-
-
-def _load_file_data(file_path: Path, config: FileDataConfig) -> pd.DataFrame:
-    """Load data from file based on format."""
-    file_format = config.file_format
-
-    # Auto-detect format if not specified
-    if file_format is None:
-        if file_path.is_dir():
-            file_format = "DIRECTORY"
+        if target_column in data.columns:
+            X = data.drop(columns=[target_column]).values
+            y = data[target_column].values
+            feature_names = data.drop(columns=[target_column]).columns.tolist()
         else:
-            suffix = file_path.suffix.lower()
-            if suffix == ".csv":
-                file_format = "CSV"
-            elif suffix == ".parquet":
-                file_format = "PARQUET"
-            elif suffix in [".xls", ".xlsx"]:
-                file_format = "EXCEL"
-            elif suffix == ".json":
-                file_format = "JSON"
-            else:
-                raise ValueError(f"Cannot determine file format for: {file_path}")
+            # No target column found, treat as unsupervised
+            X = data.values
+            y = None
+            feature_names = data.columns.tolist()
+            target_column = None
 
-    # Load data based on format
-    if file_format == "CSV":
-        data = pd.read_csv(file_path, sep=config.separator, header=config.header, encoding=config.encoding)
-    elif file_format == "PARQUET":
-        data = pd.read_parquet(file_path)
-    elif file_format == "EXCEL":
-        data = pd.read_excel(file_path, header=config.header)
-    elif file_format == "JSON":
-        data = pd.read_json(file_path, encoding=config.encoding)
-    elif file_format == "DIRECTORY":
-        # Concatenate all CSV files in directory
-        data_frames = []
-        for csv_file in file_path.glob("*.csv"):
-            df = pd.read_csv(csv_file, sep=config.separator, encoding=config.encoding)
-            data_frames.append(df)
-        if not data_frames:
-            raise ValueError(f"No CSV files found in directory: {file_path}")
-        data = pd.concat(data_frames, ignore_index=True)
-    else:
-        raise ValueError(f"Unsupported file format: {file_format}")
-
-    return data
-
-
-def _extract_features_and_target(
-    data: pd.DataFrame, config: FileDataConfig
-) -> Tuple[np.ndarray, Optional[np.ndarray], List[str]]:
-    """Extract features and target from loaded data."""
-    # Handle target column
-    y = None
-    if config.target_column and config.target_column in data.columns:
-        y = data[config.target_column].values
-        data = data.drop(columns=[config.target_column])
-
-    # Handle feature selection
-    if config.feature_columns:
-        # Use only specified features
-        missing_cols = [col for col in config.feature_columns if col not in data.columns]
-        if missing_cols:
-            raise ValueError(f"Feature columns not found: {missing_cols}")
-        data = data[config.feature_columns]
-        feature_names = config.feature_columns
-    else:
-        # Exclude datetime and drift columns from features
-        exclude_cols = []
-        if config.datetime_column and config.datetime_column in data.columns:
-            exclude_cols.append(config.datetime_column)
-        if config.drift_column and config.drift_column in data.columns:
-            exclude_cols.append(config.drift_column)
-
-        if exclude_cols:
-            data = data.drop(columns=exclude_cols)
-        feature_names = data.columns.tolist()
-
-    X = data.values
-    return X, y, feature_names
-
-
-def _extract_drift_information(
-    data: pd.DataFrame, config: FileDataConfig
-) -> Tuple[Optional[List[bool]], Optional[List[int]]]:
-    """Extract drift information from the dataset."""
-    drift_labels = None
-    drift_points = None
-
-    # Use explicit drift points if provided
-    if config.drift_points:
-        drift_points = config.drift_points
-        # Create drift labels based on drift points
-        drift_labels = [False] * len(data)
-        for point in drift_points:
-            if 0 <= point < len(data):
-                drift_labels[point] = True
-
-    # Use explicit drift labels if provided
-    elif config.drift_labels:
-        if len(config.drift_labels) != len(data):
-            raise ValueError("Drift labels length must match dataset length")
-        drift_labels = config.drift_labels
-        # Extract drift points from labels
-        drift_points = [i for i, is_drift in enumerate(drift_labels) if is_drift]
-
-    # Use drift column if specified
-    elif config.drift_column and config.drift_column in data.columns:
-        drift_col = data[config.drift_column]
-        if drift_col.dtype == bool:
-            drift_labels = drift_col.tolist()
-            drift_points = [i for i, is_drift in enumerate(drift_labels) if is_drift]
+        # Create reference and test sets
+        if file_config.ref_filter or file_config.test_filter:
+            # Use filtering for controlled data splits
+            X_ref, X_test, y_ref, y_test = _create_filtered_datasets(data, file_config, target_column)
         else:
-            # Assume drift column contains period identifiers
-            unique_periods = drift_col.unique()
-            if len(unique_periods) > 1:
-                # Find change points between periods
-                drift_points = []
-                prev_period = drift_col.iloc[0]
-                for i, current_period in enumerate(drift_col):
-                    if current_period != prev_period:
-                        drift_points.append(i)
-                        prev_period = current_period
+            # Use traditional random split
+            test_split = file_config.test_split or 0.3
+            X_ref, X_test, y_ref, y_test = _create_random_split_datasets(X, y, test_split)
 
-    return drift_labels, drift_points
-
-
-def _split_data(
-    X: np.ndarray, y: Optional[np.ndarray], config: FileDataConfig, drift_labels: Optional[List[bool]]
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
-    """Split data into reference and test sets."""
-
-    # Time-based split if datetime column and train_end_time specified
-    if config.train_end_time and config.datetime_column:
-        # This would require the original dataframe - simplified for now
-        # In practice, you'd pass the datetime column through the pipeline
-        raise NotImplementedError("Time-based splitting not yet implemented")
-
-    # Use test_split ratio if specified
-    if config.test_split:
-        return train_test_split(
-            X,
-            y,
-            test_size=config.test_split,
-            random_state=42,  # Fixed for reproducibility
-            stratify=y if y is not None and len(np.unique(y)) < len(y) // 10 else None,
+        # Create dataset metadata
+        has_filtering_drift = bool(file_config.ref_filter or file_config.test_filter)
+        metadata = DatasetMetadata(
+            name=config.name,
+            n_samples=len(X),
+            n_features=X.shape[1],
+            feature_names=feature_names,
+            target_name=target_column,
+            data_types=_infer_data_types(data.drop(columns=[target_column]) if target_column in data.columns else data),
+            has_drift=bool(file_config.drift_points or file_config.drift_labels or has_filtering_drift),
+            drift_points=file_config.drift_points,
+            drift_metadata={
+                "source": "file",
+                "drift_column": file_config.drift_column,
+                "artificial_drift": has_filtering_drift,
+                "ref_filter": file_config.ref_filter,
+                "test_filter": file_config.test_filter,
+                "filter_mode": file_config.filter_mode,
+            },
+            source=str(file_path),
+            creation_time=datetime.now().isoformat(),
+            preprocessing_applied=[],
         )
 
-    # Default split: 70% reference, 30% test
-    split_idx = int(0.7 * len(X))
-    X_ref, X_test = X[:split_idx], X[split_idx:]
+        # Create drift info
+        drift_characteristics = []
+        if has_filtering_drift:
+            drift_characteristics.append("COVARIATE")  # Filtering creates covariate shift
+            if file_config.ref_filter and file_config.test_filter:
+                drift_characteristics.append("CONCEPT")  # Different populations may have concept drift too
+
+        drift_info = DriftInfo(
+            has_drift=metadata.has_drift,
+            drift_points=metadata.drift_points,
+            drift_pattern="SUDDEN" if has_filtering_drift else None,  # Filter-based drift is sudden
+            drift_magnitude=1.0 if has_filtering_drift else None,  # Assume full magnitude for filter-based drift
+            drift_characteristics=drift_characteristics,
+            metadata=metadata.drift_metadata,
+        )
+
+        logger.info(f"CSV dataset loaded: {len(X_ref)} ref + {len(X_test)} test samples, {X.shape[1]} features")
+
+        return DatasetResult(X_ref=X_ref, X_test=X_test, y_ref=y_ref, y_test=y_test, drift_info=drift_info, metadata=metadata.model_dump())
+
+    except Exception as e:
+        raise ValueError(f"Failed to load CSV dataset from {file_path}: {e}")
+
+
+def _validate_and_parse_config(config: Union[str, Dict, DatasetConfig]) -> DatasetConfig:
+    """
+    Validate and parse dataset configuration input.
+
+    Args:
+        config: Raw configuration input
+
+    Returns:
+        Validated DatasetConfig object
+
+    Raises:
+        ValueError: If configuration is invalid
+    """
+    try:
+        if isinstance(config, str):
+            # String input - check for CSV file
+            csv_path = Path(settings.datasets_dir) / config
+            if not csv_path.suffix:
+                csv_path = csv_path.with_suffix(".csv")
+
+            if csv_path.exists():
+                return DatasetConfig(name=csv_path.stem, type="FILE", file_config=FileDataConfig(file_path=str(csv_path)))
+            else:
+                raise ValueError(f"CSV file '{csv_path}' not found in datasets directory")
+
+        elif isinstance(config, dict):
+            # Dictionary input - validate and convert to DatasetConfig
+            return DatasetConfig(**config)
+
+        elif isinstance(config, DatasetConfig):
+            # Already a DatasetConfig - return as-is
+            return config
+
+        else:
+            raise ValueError(f"Invalid config type: {type(config)}. Expected str, dict, or DatasetConfig")
+
+    except ValidationError as e:
+        # Handle Pydantic validation errors with more user-friendly messages
+        error_msg = str(e)
+        if "type" in error_msg and "Input should be" in error_msg:
+            raise ValueError("Unsupported dataset type")
+        elif "test_split" in error_msg and "less than" in error_msg:
+            raise ValueError("Invalid test split value")
+        else:
+            raise ValueError(f"Invalid dataset configuration: {e}")
+
+
+# =============================================================================
+# DATA PROCESSING AND FILTERING FUNCTIONS
+# =============================================================================
+
+
+def _apply_data_filter(data: pd.DataFrame, filter_criteria: Dict[str, Any], filter_mode: str = "include") -> pd.DataFrame:
+    """
+    Apply filtering criteria to a DataFrame for custom data splits.
+
+    This function supports multiple filter types:
+    - Categorical: {"category": ["A", "B"]}
+    - Numerical range: {"score": (25, 40)}
+    - Single value: {"type": "premium"}
+    - Mixed: {"category": ["A"], "score": (30, 50)}
+
+    Args:
+        data: Input DataFrame to filter
+        filter_criteria: Dictionary mapping column names to filter values
+        filter_mode: "include" to keep matching rows, "exclude" to remove them
+
+    Returns:
+        Filtered DataFrame
+
+    Examples:
+        # Keep only specific categories
+        filtered = _apply_data_filter(data, {"category": ["A", "B"]})
+
+        # Keep scores between 25 and 40
+        filtered = _apply_data_filter(data, {"score": (25, 40)})
+
+        # Complex filter
+        filtered = _apply_data_filter(data, {
+            "category": ["premium"],
+            "region": ["north", "south"],
+            "score": (5, 15)
+        })
+    """
+    if not filter_criteria:
+        return data
+
+    mask = pd.Series(True, index=data.index)
+
+    for column, criteria in filter_criteria.items():
+        if column not in data.columns:
+            logger.warning(f"Filter column '{column}' not found in data. Skipping.")
+            continue
+
+        if isinstance(criteria, (tuple, list)) and len(criteria) == 2 and all(isinstance(x, (int, float)) for x in criteria):
+            # Numerical range filter (min, max)
+            min_val, max_val = criteria
+            column_mask = (data[column] >= min_val) & (data[column] <= max_val)
+            logger.debug(f"Applied range filter {column}: {min_val}-{max_val}")
+        elif isinstance(criteria, (list, tuple)):
+            # Categorical value list filter
+            column_mask = data[column].isin(criteria)
+            logger.debug(f"Applied categorical filter {column}: {criteria}")
+        else:
+            # Single value filter
+            column_mask = data[column] == criteria
+            logger.debug(f"Applied single value filter {column}: {criteria}")
+
+        mask = mask & column_mask
+
+    if filter_mode == "exclude":
+        mask = ~mask
+
+    filtered_data = data[mask].copy()
+    logger.info(f"Filtered data from {len(data)} to {len(filtered_data)} rows ({len(filtered_data)/len(data)*100:.1f}%)")
+
+    return filtered_data
+
+
+def _create_filtered_datasets(data: pd.DataFrame, file_config: FileDataConfig, target_column: Optional[str]) -> tuple:
+    """
+    Create reference and test datasets using filtering for custom data splits.
+
+    Args:
+        data: Full dataset DataFrame
+        file_config: File configuration with filtering parameters
+        target_column: Name of target column (if any)
+
+    Returns:
+        Tuple of (X_ref, X_test, y_ref, y_test)
+    """
+    logger.info("Creating filtered datasets for custom data splits")
+
+    # Apply filters to create reference and test datasets
+    if file_config.ref_filter:
+        ref_data = _apply_data_filter(data, file_config.ref_filter, file_config.filter_mode)
+        logger.info(f"Reference data: {len(ref_data)} samples with filter {file_config.ref_filter}")
+    else:
+        ref_data = data.copy()
+        logger.info(f"Reference data: {len(ref_data)} samples (no filter)")
+
+    if file_config.test_filter:
+        test_data = _apply_data_filter(data, file_config.test_filter, file_config.filter_mode)
+        logger.info(f"Test data: {len(test_data)} samples with filter {file_config.test_filter}")
+    else:
+        test_data = data.copy()
+        logger.info(f"Test data: {len(test_data)} samples (no filter)")
+
+    # Extract features and targets
+    if target_column and target_column in data.columns:
+        X_ref = ref_data.drop(columns=[target_column]).values
+        y_ref = ref_data[target_column].values if len(ref_data) > 0 else np.array([])
+        X_test = test_data.drop(columns=[target_column]).values
+        y_test = test_data[target_column].values if len(test_data) > 0 else np.array([])
+    else:
+        X_ref = ref_data.values
+        y_ref = None
+        X_test = test_data.values
+        y_test = None
+
+    return X_ref, X_test, y_ref, y_test
+
+
+def _create_random_split_datasets(X: np.ndarray, y: Optional[np.ndarray], test_split: float) -> tuple:
+    """
+    Create reference and test datasets using traditional random split.
+
+    Args:
+        X: Feature matrix
+        y: Target vector (optional)
+        test_split: Fraction of data to use for test set
+
+    Returns:
+        Tuple of (X_ref, X_test, y_ref, y_test)
+    """
+    from sklearn.model_selection import train_test_split
+
+    logger.info(f"Creating random split datasets (test_split={test_split})")
 
     if y is not None:
-        y_ref, y_test = y[:split_idx], y[split_idx:]
+        # Use stratification if target has reasonable number of classes
+        stratify = y if len(np.unique(y)) > 1 and len(np.unique(y)) < len(y) // 10 else None
+        X_ref, X_test, y_ref, y_test = train_test_split(X, y, test_size=test_split, random_state=42, stratify=stratify)
     else:
+        X_ref, X_test = train_test_split(X, test_size=test_split, random_state=42)
         y_ref, y_test = None, None
 
     return X_ref, X_test, y_ref, y_test
 
 
-def _infer_data_types(X: np.ndarray) -> Dict[str, str]:
-    """Infer data types for features."""
+def _infer_data_types(df: pd.DataFrame) -> Dict[str, DataType]:
+    """Infer data types for DataFrame columns using proper literals."""
     data_types = {}
 
-    for i in range(X.shape[1]):
-        column = X[:, i]
-
-        # Check if numeric
-        try:
-            # Try to convert to float
-            float_col = column.astype(float)
-            # Check if integer
-            if np.all(float_col == float_col.astype(int)):
-                # Check if looks like categorical (few unique values)
-                unique_vals = len(np.unique(float_col))
-                if unique_vals <= 10 and unique_vals < len(float_col) * 0.1:
-                    data_types[f"feature_{i}"] = "categorical"
-                else:
-                    data_types[f"feature_{i}"] = "integer"
+    for col in df.columns:
+        if df[col].dtype in ["object", "category"]:
+            data_types[col] = "CATEGORICAL"
+        elif df[col].dtype in ["int64", "int32", "int16", "int8"]:
+            # Check if it looks categorical (few unique values)
+            unique_vals = df[col].nunique()
+            if unique_vals <= CATEGORICAL_UNIQUE_THRESHOLD and unique_vals <= len(df) * CATEGORICAL_RATIO_THRESHOLD:
+                data_types[col] = "CATEGORICAL"
             else:
-                data_types[f"feature_{i}"] = "continuous"
-        except (ValueError, TypeError):
-            # Non-numeric data
-            data_types[f"feature_{i}"] = "categorical"
+                data_types[col] = "CONTINUOUS"
+        elif df[col].dtype in ["float64", "float32"]:
+            data_types[col] = "CONTINUOUS"
+        else:
+            data_types[col] = "CATEGORICAL"
 
     return data_types
 
 
-# Convenience functions for backward compatibility
-def load_iris(**kwargs) -> DatasetTuple:
-    """Load the Iris dataset."""
-    config = DatasetConfig(name="iris", type="SKLEARN", sklearn_config=SklearnDataConfig(dataset_name="iris", **kwargs))
-    return load_dataset(config)
+# =============================================================================
+# UTILITY AND DISCOVERY FUNCTIONS
+# =============================================================================
 
 
-def load_wine(**kwargs) -> DatasetTuple:
-    """Load the Wine dataset."""
-    config = DatasetConfig(name="wine", type="SKLEARN", sklearn_config=SklearnDataConfig(dataset_name="wine", **kwargs))
-    return load_dataset(config)
+def list_csv_datasets() -> List[str]:
+    """List available CSV datasets in the datasets directory."""
+    datasets_path = Path(settings.datasets_dir)
+    if not datasets_path.exists():
+        return []
+
+    return [csv_file.stem for csv_file in datasets_path.glob("*.csv")]
 
 
-def load_breast_cancer(**kwargs) -> DatasetTuple:
-    """Load the Breast Cancer dataset."""
-    config = DatasetConfig(
-        name="breast_cancer", type="SKLEARN", sklearn_config=SklearnDataConfig(dataset_name="breast_cancer", **kwargs)
-    )
-    return load_dataset(config)
+def validate_dataset_for_drift_detection(
+    file_path: str, required_features: Optional[List[str]] = None, min_samples_per_group: int = 50
+) -> Dict[str, Any]:
+    """
+    Validate a dataset for filtering and data split suitability.
 
+    Analyzes a dataset to determine if it's suitable for custom filtering
+    and provides information about feature characteristics.
 
-# Registry of available built-in datasets
-BUILTIN_DATASETS = {
-    "iris": "Iris flower classification dataset",
-    "wine": "Wine recognition dataset",
-    "breast_cancer": "Breast cancer Wisconsin dataset",
-    "diabetes": "Diabetes regression dataset",
-    "digits": "Optical recognition of handwritten digits",
-}
+    Args:
+        file_path: Path to the CSV file to analyze
+        required_features: List of features that should be present
+        min_samples_per_group: Minimum samples required per filter group
 
+    Returns:
+        Dictionary with validation results and feature analysis
 
-def list_builtin_datasets() -> Dict[str, str]:
-    """List all available built-in datasets."""
-    return BUILTIN_DATASETS.copy()
+    Example:
+        validation = validate_dataset_for_drift_detection(
+            "data.csv",
+            required_features=["category", "type"],
+            min_samples_per_group=100
+        )
+
+        if validation["suitable"]:
+            print("Dataset is suitable for filtering")
+            print("Categorical features:", validation["categorical_features"])
+    """
+    # Resolve path
+    if not Path(file_path).is_absolute():
+        file_path = str(Path(settings.datasets_dir) / file_path)
+
+    # Load basic dataset info
+    data = pd.read_csv(file_path)
+
+    results = {
+        "suitable": True,
+        "n_samples": len(data),
+        "n_features": len(data.columns),
+        "feature_analysis": {},
+        "warnings": [],
+        "categorical_features": [],
+    }
+
+    # Analyze each feature for drift detection potential
+    for col in data.columns:
+        if data[col].dtype == "object" or data[col].nunique() <= CATEGORICAL_UNIQUE_THRESHOLD:
+            # Categorical feature analysis
+            unique_vals = data[col].unique()
+            value_counts = data[col].value_counts()
+
+            results["feature_analysis"][col] = {
+                "type": "categorical",
+                "unique_values": len(unique_vals),
+                "values": list(unique_vals)[:10],  # Show first 10 values
+                "min_count": value_counts.min(),
+                "max_count": value_counts.max(),
+                "suitable_for_filtering": value_counts.min() >= min_samples_per_group,
+            }
+
+            if value_counts.min() >= min_samples_per_group and len(unique_vals) >= 2:
+                results["categorical_features"].append(col)
+
+        else:
+            # Numerical feature analysis
+            results["feature_analysis"][col] = {
+                "type": "numerical",
+                "min": float(data[col].min()),
+                "max": float(data[col].max()),
+                "mean": float(data[col].mean()),
+                "std": float(data[col].std()),
+            }
+
+    # Validation checks
+    if required_features:
+        missing_features = [f for f in required_features if f not in data.columns]
+        if missing_features:
+            results["warnings"].append(f"Missing required features: {missing_features}")
+            results["suitable"] = False
+
+    if len(results["categorical_features"]) == 0:
+        results["warnings"].append("No suitable categorical features found for filtering")
+        results["suitable"] = False
+
+    if results["n_samples"] < min_samples_per_group * 4:  # Need at least 4 groups worth
+        results["warnings"].append(f"Dataset too small (need ≥{min_samples_per_group * 4} samples)")
+        results["suitable"] = False
+
+    logger.info(f"Dataset validation complete: {results['suitable']}")
+    if results["warnings"]:
+        for warning in results["warnings"]:
+            logger.warning(warning)
+
+    return results

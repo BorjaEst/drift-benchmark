@@ -346,6 +346,20 @@ class FileDataConfig(BaseDriftBenchmarkModel):
         description="Stride for sliding window",
     )
 
+    # Feature-based filtering for drift detection scenarios
+    ref_filter: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Filter criteria for reference/training data (e.g., {'education': ['Bachelor', 'Master']})",
+    )
+    test_filter: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Filter criteria for test/drift data (e.g., {'education': ['PhD', 'Associate']})",
+    )
+    filter_mode: str = Field(
+        default="include",
+        description="Filter mode: 'include' to keep matching rows, 'exclude' to remove them",
+    )
+
 
 class SklearnDataConfig(BaseDriftBenchmarkModel):
     """Configuration for scikit-learn built-in datasets."""

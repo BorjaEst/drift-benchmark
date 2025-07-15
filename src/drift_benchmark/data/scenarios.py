@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
+import pandas as pd
 from pydantic import ValidationError
 from sklearn.datasets import load_breast_cancer as sk_load_breast_cancer
 from sklearn.datasets import load_diabetes as sk_load_diabetes
@@ -504,8 +505,34 @@ def suggest_scenarios_for_dataset(file_path: str) -> List[str]:
     from .datasets import validate_dataset_for_drift_detection
 
     try:
+        # Get basic validation from datasets module
         validation = validate_dataset_for_drift_detection(file_path)
-        return validation.get("suggested_scenarios", [])
+        
+        # Load data for scenario-specific analysis
+        # Resolve path
+        if not Path(file_path).is_absolute():
+            file_path = str(Path(settings.datasets_dir) / file_path)
+        
+        data = pd.read_csv(file_path)
+        
+        suggested_scenarios = []
+        
+        # Analyze features for scenario suggestions
+        for col in data.columns:
+            if data[col].dtype == "object" or data[col].nunique() <= 10:
+                # Check for common drift scenario features
+                if col.lower() in ["education", "education_level"]:
+                    suggested_scenarios.append("education_drift")
+                elif col.lower() in ["region", "geography", "location"]:
+                    suggested_scenarios.append("geographic_drift")
+            else:
+                # Check if age-like feature
+                if col.lower() in ["age", "years", "experience"] and data[col].max() <= 150:
+                    suggested_scenarios.append("generational_drift")
+        
+        # Remove duplicates and return
+        return list(set(suggested_scenarios))
+        
     except Exception as e:
         logger.warning(f"Could not analyze dataset {file_path}: {e}")
         return []
