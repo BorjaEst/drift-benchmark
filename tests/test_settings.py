@@ -122,9 +122,7 @@ def test_env_file_export():
     with tempfile.TemporaryDirectory() as temp_dir:
         env_file = Path(temp_dir) / ".env"
 
-        settings = Settings(
-            log_level="DEBUG", max_workers=8, random_seed=123, memory_limit_mb=8192, enable_caching=False
-        )
+        settings = Settings(log_level="DEBUG", max_workers=8, random_seed=123, memory_limit_mb=8192, enable_caching=False)
         settings.to_env_file(str(env_file))
 
         assert env_file.exists()
@@ -311,25 +309,3 @@ def test_settings_immutability():
     dump1 = settings.model_dump()
     dump2 = settings.model_dump()
     assert dump1 == dump2
-
-
-# Summary of tests:
-# - test_default_settings: Validates default configuration values
-# - test_settings_from_env_vars: Tests environment variable configuration
-# - test_directory_creation: Tests create_directories() functionality
-# - test_absolute_vs_relative_paths: Tests path resolution including ~ expansion
-# - test_max_workers_validation: Tests custom validator for max_workers
-# - test_env_file_export: Tests exporting settings to .env file
-# - test_model_dump_env: Tests environment variable export functionality
-# - test_path_properties: Tests Path object properties
-# - test_logging_setup: Tests logging configuration
-# - test_validation_edge_cases: Tests boundary conditions and validation errors
-# - test_optional_random_seed: Tests optional random seed handling
-# - test_env_file_from_dotenv: Tests loading from .env file
-# - test_invalid_log_level: Tests validation of log levels
-# - test_settings_repr: Tests string representation
-# - test_all_path_properties: Tests all Path properties work correctly
-# - test_settings_immutability: Tests consistent behavior after creation
-
-if __name__ == "__main__":
-    pytest.main([__file__])
