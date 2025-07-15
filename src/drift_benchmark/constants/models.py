@@ -4,12 +4,50 @@ Pydantic models for drift-benchmark.
 This module contains all Pydantic models used throughout the drift-benchmark
 library for data validation, configuration management, and type safety.
 
-The models are organized into several categories:
-- Method/Detector metadata: ImplementationData, MethodData, DetectorData
-- Configuration models: Various *Config classes for datasets and preprocessing
-- Benchmark configuration: BenchmarkConfig and related models
-- Results models: DetectorPrediction, BenchmarkResult, DriftEvaluationResult
-- Utility models: MetricResult, DriftInfo, DatasetResult
+The models are organized by functional categories:
+
+1. BASE MODELS & MIXINS
+   - Common base classes and utility mixins
+
+2. DETECTOR & METHOD METADATA
+   - ImplementationData: Detector implementation metadata
+   - MethodData: Complete method definitions with implementations
+   - DetectorData: Specific detector instance metadata
+
+3. DATA CONFIGURATION MODELS
+   - SyntheticDataConfig: Synthetic dataset generation parameters
+   - FileDataConfig: File-based dataset loading parameters
+   - SklearnDataConfig: Scikit-learn dataset parameters
+   - DatasetConfig: Unified dataset configuration
+
+4. PREPROCESSING CONFIGURATION MODELS
+   - PreprocessingConfig: Base preprocessing configuration
+   - ScalingConfig: Feature scaling configuration
+   - ImputationConfig: Missing value imputation configuration
+   - EncodingConfig: Categorical encoding configuration
+   - OutlierConfig: Outlier detection configuration
+
+5. BENCHMARK CONFIGURATION MODELS
+   - MetadataModel: Benchmark metadata
+   - SettingsModel: Execution settings
+   - DataConfigModel: Dataset collection configuration
+   - DetectorConfigModel: Detector collection configuration
+   - EvaluationConfig: Evaluation and metrics configuration
+   - OutputModel: Output and export configuration
+   - BenchmarkConfig: Complete benchmark configuration
+
+6. PREDICTION & RESULTS MODELS
+   - DetectorPrediction: Single drift detection prediction
+   - BenchmarkResult: Results for one detector on one dataset
+   - DriftEvaluationResult: Complete benchmark evaluation results
+
+7. UTILITY & METADATA MODELS
+   - MetricConfiguration: Individual metric configuration
+   - MetricResult: Single metric calculation result
+   - MetricSummary: Statistical summary of metric values
+   - DriftInfo: Drift characteristics metadata
+   - DatasetMetadata: Dataset information and metadata
+   - DatasetResult: Complete dataset loading result
 """
 
 import datetime as dt
@@ -42,165 +80,328 @@ from drift_benchmark.constants.literals import (
     ScalingMethod,
 )
 
+# =============================================================================
+# 1. BASE MODELS & MIXINS
+# =============================================================================
 
-class ImplementationData(BaseModel):
+
+class BaseDriftBenchmarkModel(BaseModel):
+    """Base model for all drift-benchmark models with common configuration."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        validate_assignment=True,
+        use_enum_values=True,
+    )
+
+
+class NamedModel(BaseDriftBenchmarkModel):
+    """Mixin for models that have a name and description."""
+
+    name: str = Field(
+        ...,
+        min_length=1,
+        description="Name identifier",
+    )
+    description: Optional[str] = Field(
+        default=None,
+        description="Optional description",
+    )
+
+
+class ParametrizedModel(BaseDriftBenchmarkModel):
+    """Mixin for models that accept custom parameters."""
+
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Custom parameters",
+    )
+
+
+# =============================================================================
+# 2. DETECTOR & METHOD METADATA
+# =============================================================================
+
+
+class ImplementationData(NamedModel):
     """Metadata for drift detector implementations."""
 
-    model_config = ConfigDict(extra="forbid")
+    execution_mode: ExecutionMode = Field(
+        ...,
+        description="Execution mode of the implementation",
+    )
+    hyperparameters: List[str] = Field(
+        default_factory=list,
+        description="Allowed configuration hyperparameters",
+    )
+    references: List[str] = Field(
+        default_factory=list,
+        description="List of references for the implementation",
+    )
 
-    name: str = Field(..., min_length=1, description="Name of the implementation")
-    execution_mode: ExecutionMode = Field(..., description="Execution mode of the implementation")
-    hyperparameters: List[str] = Field(default_factory=list, description="Allowed configuration hyperparameters")
-    references: List[str] = Field(default_factory=list, description="List of references for the implementation")
 
-
-class _BaseMethodMetadata(BaseModel):
+class _BaseMethodMetadata(NamedModel):
     """Base class for method metadata with common fields."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(..., min_length=1, description="Name of the drift detection method")
-    description: str = Field(..., min_length=10, description="Description of the drift detection method")
-    drift_types: List[DriftType] = Field(..., min_length=1, description="List of drift types the method can detect")
-    family: DetectorFamily = Field(..., description="Family of the drift detection method")
-    data_dimension: DataDimension = Field(..., description="Dimensionality of the data")
-    data_types: List[DataType] = Field(..., min_length=1, description="List of data types the method can operate on")
-    requires_labels: bool = Field(..., description="Whether the method requires labels for drift detection")
-    references: List[str] = Field(..., description="List of references for the method")
+    description: str = Field(
+        ...,
+        min_length=10,
+        description="Description of the drift detection method",
+    )
+    drift_types: List[DriftType] = Field(
+        ...,
+        min_length=1,
+        description="List of drift types the method can detect",
+    )
+    family: DetectorFamily = Field(
+        ...,
+        description="Family of the drift detection method",
+    )
+    data_dimension: DataDimension = Field(
+        ...,
+        description="Dimensionality of the data",
+    )
+    data_types: List[DataType] = Field(
+        ...,
+        min_length=1,
+        description="List of data types the method can operate on",
+    )
+    requires_labels: bool = Field(
+        ...,
+        description="Whether the method requires labels for drift detection",
+    )
+    references: List[str] = Field(
+        ...,
+        description="List of references for the method",
+    )
 
 
 class MethodData(_BaseMethodMetadata):
     """Metadata for drift detection methods with multiple implementations."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    implementations: Dict[str, ImplementationData] = Field(..., description="Dictionary of implementations for the method")
+    implementations: Dict[str, ImplementationData] = Field(
+        ...,
+        description="Dictionary of implementations for the method",
+    )
 
 
 class DetectorData(_BaseMethodMetadata):
     """Metadata for a specific drift detector implementation."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    implementation: ImplementationData = Field(..., description="implementation data for the method")
-
-
-class PreprocessingConfig(BaseModel):
-    """Configuration for data preprocessing operations."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    method: PreprocessingMethod = Field(..., description="Preprocessing method to apply")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Method-specific parameters")
-    features: Union[str, List[str], List[int]] = Field(
-        default="all",
-        description="Features to apply preprocessing to ('all' or list of feature names/indices)",
+    implementation: ImplementationData = Field(
+        ...,
+        description="Implementation data for the method",
     )
 
 
-class ScalingConfig(PreprocessingConfig):
-    """Configuration for feature scaling."""
-
-    method: ScalingMethod = Field(..., description="Scaling method to use")
-    feature_range: Optional[tuple] = Field(default=None, description="Feature range for MinMaxScaler")
+# =============================================================================
+# 3. DATA CONFIGURATION MODELS
+# =============================================================================
 
 
-class ImputationConfig(PreprocessingConfig):
-    """Configuration for missing value imputation."""
-
-    strategy: ImputationStrategy = Field(..., description="Imputation strategy to use")
-    fill_value: Optional[Union[str, float, int]] = Field(default=None, description="Fill value for constant strategy")
-
-
-class EncodingConfig(PreprocessingConfig):
-    """Configuration for categorical encoding."""
-
-    method: EncodingMethod = Field(..., description="Encoding method to use")
-    drop_first: bool = Field(default=False, description="Drop first category for one-hot encoding")
-    handle_unknown: str = Field(default="error", description="How to handle unknown categories")
-
-
-class OutlierConfig(PreprocessingConfig):
-    """Configuration for outlier detection and removal."""
-
-    method: OutlierMethod = Field(..., description="Outlier detection method")
-    contamination: float = Field(default=0.1, description="Expected proportion of outliers")
-    threshold: Optional[float] = Field(default=None, description="Threshold for outlier detection")
-
-
-class SyntheticDataConfig(BaseModel):
+class SyntheticDataConfig(ParametrizedModel):
     """Configuration for synthetic data generation."""
 
-    model_config = ConfigDict(extra="forbid")
+    # Generator settings
+    generator_name: DataGenerator = Field(
+        ...,
+        description="Name of the data generator",
+    )
+    n_samples: int = Field(
+        ...,
+        gt=0,
+        description="Number of samples to generate",
+    )
+    n_features: int = Field(
+        ...,
+        gt=0,
+        description="Number of features to generate",
+    )
 
-    generator_name: DataGenerator = Field(..., description="Name of the data generator")
-    n_samples: int = Field(..., gt=0, description="Number of samples to generate")
-    n_features: int = Field(..., gt=0, description="Number of features to generate")
-    drift_pattern: DriftPattern = Field(..., description="Type of drift pattern to simulate")
-    drift_characteristic: DriftCharacteristic = Field(default="MEAN_SHIFT", description="Characteristic of the drift")
-    drift_magnitude: float = Field(default=1.0, description="Magnitude of the drift")
-    drift_position: float = Field(default=0.5, ge=0.0, le=1.0, description="Position where drift occurs (0.0-1.0)")
-    drift_duration: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Duration of gradual drift (0.0-1.0)")
-    drift_affected_features: Optional[List[int]] = Field(default=None, description="Indices of features affected by drift")
-    noise: float = Field(default=0.0, ge=0.0, description="Amount of noise to add")
-    categorical_features: Optional[List[int]] = Field(default=None, description="Indices of categorical features")
-    random_state: Optional[int] = Field(default=None, description="Random seed for reproducibility")
-    # Generator-specific parameters
-    generator_params: Dict[str, Any] = Field(default_factory=dict, description="Generator-specific parameters")
+    # Drift configuration
+    drift_pattern: DriftPattern = Field(
+        ...,
+        description="Type of drift pattern to simulate",
+    )
+    drift_characteristic: DriftCharacteristic = Field(
+        default="MEAN_SHIFT",
+        description="Characteristic of the drift",
+    )
+    drift_magnitude: float = Field(
+        default=1.0,
+        description="Magnitude of the drift",
+    )
+    drift_position: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Position where drift occurs (0.0-1.0)",
+    )
+    drift_duration: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Duration of gradual drift (0.0-1.0)",
+    )
+    drift_affected_features: Optional[List[int]] = Field(
+        default=None,
+        description="Indices of features affected by drift",
+    )
+
+    # Data characteristics
+    noise: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Amount of noise to add",
+    )
+    categorical_features: Optional[List[int]] = Field(
+        default=None,
+        description="Indices of categorical features",
+    )
+    random_state: Optional[int] = Field(
+        default=None,
+        description="Random seed for reproducibility",
+    )
+    generator_params: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Generator-specific parameters",
+    )
 
 
-class FileDataConfig(BaseModel):
+class FileDataConfig(BaseDriftBenchmarkModel):
     """Configuration for file-based data loading."""
 
-    model_config = ConfigDict(extra="forbid")
+    # File identification
+    file_path: str = Field(
+        ...,
+        min_length=1,
+        description="Path to the data file",
+    )
+    file_format: Optional[FileFormat] = Field(
+        default=None,
+        description="File format (auto-detected if None)",
+    )
 
-    file_path: str = Field(..., min_length=1, description="Path to the data file")
-    file_format: Optional[FileFormat] = Field(default=None, description="File format (auto-detected if None)")
-    target_column: Optional[str] = Field(default=None, description="Name of the target column")
-    feature_columns: Optional[List[str]] = Field(default=None, description="Names of feature columns")
-    datetime_column: Optional[str] = Field(default=None, description="Name of datetime column for time series")
-    drift_column: Optional[str] = Field(default=None, description="Column indicating drift periods")
-    drift_points: Optional[List[int]] = Field(default=None, description="Known drift points (sample indices)")
-    drift_labels: Optional[List[bool]] = Field(default=None, description="Boolean drift indicators per sample")
+    # Column specifications
+    target_column: Optional[str] = Field(
+        default=None,
+        description="Name of the target column",
+    )
+    feature_columns: Optional[List[str]] = Field(
+        default=None,
+        description="Names of feature columns",
+    )
+    datetime_column: Optional[str] = Field(
+        default=None,
+        description="Name of datetime column for time series",
+    )
+    drift_column: Optional[str] = Field(
+        default=None,
+        description="Column indicating drift periods",
+    )
+
+    # Drift information
+    drift_points: Optional[List[int]] = Field(
+        default=None,
+        description="Known drift points (sample indices)",
+    )
+    drift_labels: Optional[List[bool]] = Field(
+        default=None,
+        description="Boolean drift indicators per sample",
+    )
+
     # File loading parameters
-    separator: str = Field(default=",", description="Column separator for CSV files")
-    header: Union[int, str] = Field(default=0, description="Header row for CSV files")
-    encoding: str = Field(default="utf-8", description="File encoding")
+    separator: str = Field(
+        default=",",
+        description="Column separator for CSV files",
+    )
+    header: Union[int, str] = Field(
+        default=0,
+        description="Header row for CSV files",
+    )
+    encoding: str = Field(
+        default="utf-8",
+        description="File encoding",
+    )
+
     # Data splitting parameters
-    test_split: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Test split ratio")
-    train_end_time: Optional[str] = Field(default=None, description="End time for training data (for time series)")
-    window_size: Optional[int] = Field(default=None, gt=0, description="Window size for sliding window analysis")
-    stride: Optional[int] = Field(default=None, gt=0, description="Stride for sliding window")
+    test_split: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Test split ratio",
+    )
+    train_end_time: Optional[str] = Field(
+        default=None,
+        description="End time for training data (for time series)",
+    )
+    window_size: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description="Window size for sliding window analysis",
+    )
+    stride: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description="Stride for sliding window",
+    )
 
 
-class SklearnDataConfig(BaseModel):
+class SklearnDataConfig(BaseDriftBenchmarkModel):
     """Configuration for scikit-learn built-in datasets."""
 
-    model_config = ConfigDict(extra="forbid")
+    dataset_name: str = Field(
+        ...,
+        min_length=1,
+        description="Name of the sklearn dataset",
+    )
+    test_split: float = Field(
+        default=0.3,
+        gt=0.0,
+        lt=1.0,
+        description="Test split ratio",
+    )
+    random_state: Optional[int] = Field(
+        default=None,
+        description="Random state for reproducible splits",
+    )
+    return_X_y: bool = Field(
+        default=True,
+        description="Return features and target separately",
+    )
+    as_frame: bool = Field(
+        default=False,
+        description="Return data as pandas DataFrame",
+    )
 
-    dataset_name: str = Field(..., min_length=1, description="Name of the sklearn dataset")
-    test_split: float = Field(default=0.3, gt=0.0, lt=1.0, description="Test split ratio")
-    random_state: Optional[int] = Field(default=None, description="Random state for reproducible splits")
-    return_X_y: bool = Field(default=True, description="Return features and target separately")
-    as_frame: bool = Field(default=False, description="Return data as pandas DataFrame")
 
-
-class DatasetConfig(BaseModel):
+class DatasetConfig(NamedModel):
     """Unified dataset configuration supporting multiple data types."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(..., min_length=1, description="Name identifier for the dataset")
-    type: DatasetType = Field(..., description="Type of dataset")
-    description: Optional[str] = Field(default=None, description="Description of the dataset")
+    type: DatasetType = Field(
+        ...,
+        description="Type of dataset",
+    )
 
     # Preprocessing configuration
-    preprocessing: List[PreprocessingConfig] = Field(default_factory=list, description="List of preprocessing steps")
+    preprocessing: List["PreprocessingConfig"] = Field(
+        default_factory=list,
+        description="List of preprocessing steps",
+    )
 
     # Type-specific configurations (only one should be set based on type)
-    synthetic_config: Optional[SyntheticDataConfig] = Field(default=None, description="Synthetic data configuration")
-    file_config: Optional[FileDataConfig] = Field(default=None, description="File data configuration")
-    sklearn_config: Optional[SklearnDataConfig] = Field(default=None, description="Sklearn data configuration")
+    synthetic_config: Optional[SyntheticDataConfig] = Field(
+        default=None,
+        description="Synthetic data configuration",
+    )
+    file_config: Optional[FileDataConfig] = Field(
+        default=None,
+        description="File data configuration",
+    )
+    sklearn_config: Optional[SklearnDataConfig] = Field(
+        default=None,
+        description="Sklearn data configuration",
+    )
 
     def get_config(self) -> Union[SyntheticDataConfig, FileDataConfig, SklearnDataConfig]:
         """Get the appropriate configuration based on dataset type."""
@@ -214,85 +415,158 @@ class DatasetConfig(BaseModel):
             raise ValueError(f"Missing configuration for dataset type: {self.type}")
 
 
-class DatasetMetadata(BaseModel):
-    """Metadata about a loaded dataset."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(..., description="Dataset name")
-    n_samples: int = Field(..., description="Number of samples")
-    n_features: int = Field(..., description="Number of features")
-    feature_names: Optional[List[str]] = Field(default=None, description="Names of features")
-    target_name: Optional[str] = Field(default=None, description="Name of target variable")
-    data_types: Dict[str, str] = Field(default_factory=dict, description="Data types of features")
-    has_drift: bool = Field(default=False, description="Whether dataset contains known drift")
-    drift_points: Optional[List[int]] = Field(default=None, description="Known drift point indices")
-    drift_metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional drift information")
-    source: Optional[str] = Field(default=None, description="Source of the dataset")
-    creation_time: Optional[str] = Field(default=None, description="When the dataset was created/loaded")
-    preprocessing_applied: List[str] = Field(default_factory=list, description="Applied preprocessing steps")
+# =============================================================================
+# 4. PREPROCESSING CONFIGURATION MODELS
+# =============================================================================
 
 
-class MetricConfiguration(BaseModel):
-    """Configuration for a specific metric."""
+class PreprocessingConfig(ParametrizedModel):
+    """Base configuration for data preprocessing operations."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    name: Metric = Field(..., description="Name of the metric")
-    enabled: bool = Field(default=True, description="Whether this metric is enabled")
-    weight: float = Field(default=1.0, gt=0.0, description="Weight for aggregation")
-    threshold: Optional[float] = Field(default=None, description="Optional threshold for the metric")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Metric-specific parameters")
-
-    @field_validator("name", mode="before")
-    @classmethod
-    def normalize_metric_name(cls, v: str) -> str:
-        """Convert lowercase metric names to uppercase for backward compatibility."""
-        if isinstance(v, str):
-            return v.upper()
-        return v
+    method: PreprocessingMethod = Field(
+        ...,
+        description="Preprocessing method to apply",
+    )
+    features: Union[str, List[str], List[int]] = Field(
+        default="all",
+        description="Features to apply preprocessing to ('all' or list of feature names/indices)",
+    )
 
 
-class MetadataModel(BaseModel):
+class ScalingConfig(PreprocessingConfig):
+    """Configuration for feature scaling."""
+
+    method: ScalingMethod = Field(
+        ...,
+        description="Scaling method to use",
+    )
+    feature_range: Optional[Tuple[float, float]] = Field(
+        default=None,
+        description="Feature range for MinMaxScaler",
+    )
+
+
+class ImputationConfig(PreprocessingConfig):
+    """Configuration for missing value imputation."""
+
+    strategy: ImputationStrategy = Field(
+        ...,
+        description="Imputation strategy to use",
+    )
+    fill_value: Optional[Union[str, float, int]] = Field(
+        default=None,
+        description="Fill value for constant strategy",
+    )
+
+
+class EncodingConfig(PreprocessingConfig):
+    """Configuration for categorical encoding."""
+
+    method: EncodingMethod = Field(
+        ...,
+        description="Encoding method to use",
+    )
+    drop_first: bool = Field(
+        default=False,
+        description="Drop first category for one-hot encoding",
+    )
+    handle_unknown: str = Field(
+        default="error",
+        description="How to handle unknown categories",
+    )
+
+
+class OutlierConfig(PreprocessingConfig):
+    """Configuration for outlier detection and removal."""
+
+    method: OutlierMethod = Field(
+        ...,
+        description="Outlier detection method",
+    )
+    contamination: float = Field(
+        default=0.1,
+        description="Expected proportion of outliers",
+    )
+    threshold: Optional[float] = Field(
+        default=None,
+        description="Threshold for outlier detection",
+    )
+
+
+# =============================================================================
+# 5. BENCHMARK CONFIGURATION MODELS
+# =============================================================================
+
+
+class MetadataModel(NamedModel):
     """Metadata for benchmark configurations."""
 
-    model_config = ConfigDict(extra="forbid")
+    author: str = Field(
+        ...,
+        description="Author of the benchmark configuration",
+    )
+    date: dt.date = Field(
+        default_factory=dt.date.today,
+        description="Date the benchmark was created",
+    )
+    version: str = Field(
+        ...,
+        description="Version of the benchmark configuration",
+    )
 
-    name: str = Field(..., description="Name of the benchmark")
-    description: str = Field(..., description="Description of the benchmark")
-    author: str = Field(..., description="Author of the benchmark configuration")
-    date: dt.date = Field(default_factory=dt.date.today, description="Date the benchmark was created")
-    version: str = Field(..., description="Version of the benchmark configuration")
 
-
-class SettingsModel(BaseModel):
+class SettingsModel(BaseDriftBenchmarkModel):
     """Settings for benchmark execution."""
 
-    model_config = ConfigDict(extra="forbid")
+    seed: int = Field(
+        default=42,
+        description="Random seed for reproducibility",
+    )
+    n_runs: int = Field(
+        default=1,
+        description="Number of benchmark runs",
+    )
+    cross_validation: bool = Field(
+        default=False,
+        description="Whether to use cross-validation",
+    )
+    cv_folds: int = Field(
+        default=3,
+        description="Number of cross-validation folds",
+    )
+    timeout_per_detector: int = Field(
+        default=300,
+        description="Maximum time in seconds allowed per detector",
+    )
 
-    seed: int = Field(42, description="Random seed for reproducibility")
-    n_runs: int = Field(1, description="Number of benchmark runs")
-    cross_validation: bool = Field(False, description="Whether to use cross-validation")
-    cv_folds: int = Field(3, description="Number of cross-validation folds")
-    timeout_per_detector: int = Field(300, description="Maximum time in seconds allowed per detector")
 
-
-class DatasetModel(BaseModel):
+class DatasetModel(NamedModel):
     """Dataset configuration using compositional approach."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(..., description="Name of the dataset")
-    type: DatasetType = Field(..., description="Type of dataset")
-    description: Optional[str] = Field(None, description="Description of the dataset")
+    type: DatasetType = Field(
+        ...,
+        description="Type of dataset",
+    )
 
     # Compositional configuration - only one should be set based on type
-    synthetic_config: Optional[Dict[str, Any]] = Field(None, description="Synthetic data configuration")
-    file_config: Optional[Dict[str, Any]] = Field(None, description="File data configuration")
-    sklearn_config: Optional[Dict[str, Any]] = Field(None, description="Sklearn data configuration")
+    synthetic_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Synthetic data configuration",
+    )
+    file_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="File data configuration",
+    )
+    sklearn_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Sklearn data configuration",
+    )
 
     # Preprocessing configuration
-    preprocessing: List[Dict[str, Any]] = Field(default_factory=list, description="List of preprocessing steps")
+    preprocessing: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of preprocessing steps",
+    )
 
     @model_validator(mode="after")
     def validate_dataset_fields(self) -> "DatasetModel":
@@ -342,16 +616,21 @@ class DatasetModel(BaseModel):
         return DatasetConfig(**config_dict)
 
 
-class DetectorModel(BaseModel):
+class DetectorModel(NamedModel, ParametrizedModel):
     """Detector configuration with validation."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(..., description="Name of the detector")
-    adapter: str = Field(..., description="Adapter module from where to load the detector")
-    method_id: str = Field(..., description="Method ID from methods.toml")
-    implementation_id: str = Field(..., description="Implementation ID from methods.toml")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Parameters for the detector")
+    adapter: str = Field(
+        ...,
+        description="Adapter module from where to load the detector",
+    )
+    method_id: str = Field(
+        ...,
+        description="Method ID from methods.toml",
+    )
+    implementation_id: str = Field(
+        ...,
+        description="Implementation ID from methods.toml",
+    )
 
     @model_validator(mode="after")
     def validate_detector(self) -> "DetectorModel":
@@ -365,41 +644,28 @@ class DetectorModel(BaseModel):
         return None
 
 
-class DataConfigModel(BaseModel):
+class DataConfigModel(BaseDriftBenchmarkModel):
     """Data configuration container."""
 
-    model_config = ConfigDict(extra="forbid")
+    datasets: List[DatasetModel] = Field(
+        ...,
+        description="List of datasets to use in benchmark",
+    )
 
-    datasets: List[DatasetModel] = Field(..., description="List of datasets to use in benchmark")
 
-
-class DetectorConfigModel(BaseModel):
+class DetectorConfigModel(BaseDriftBenchmarkModel):
     """Detector configuration container."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    algorithms: List[DetectorModel] = Field(..., description="List of detectors to evaluate")
-
-
-class OutputModel(BaseModel):
-    """Output configuration."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    save_results: bool = Field(True, description="Whether to save benchmark results")
-    visualization: bool = Field(True, description="Whether to generate visualizations")
-    plots: List[str] = Field(default_factory=list, description="Types of plots to generate")
-    export_format: List[ExportFormat] = Field(default_factory=lambda: ["CSV"], description="Formats to export results")
-    log_level: LogLevel = Field("INFO", description="Logging level")
-    results_dir: str = Field("results", description="Directory to save results")
+    algorithms: List[DetectorModel] = Field(
+        ...,
+        description="List of detectors to evaluate",
+    )
 
 
-class EvaluationConfig(BaseModel):
+class EvaluationConfig(BaseDriftBenchmarkModel):
     """Configuration for evaluation settings."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    metrics: List[MetricConfiguration] = Field(
+    metrics: List["MetricConfiguration"] = Field(
         default_factory=lambda: [
             MetricConfiguration(name="ACCURACY"),
             MetricConfiguration(name="PRECISION"),
@@ -408,23 +674,80 @@ class EvaluationConfig(BaseModel):
         ],
         description="List of metrics to compute",
     )
-    cross_validation: bool = Field(False, description="Whether to use cross-validation")
-    cv_folds: int = Field(5, description="Number of cross-validation folds")
-    significance_tests: bool = Field(True, description="Whether to perform statistical significance tests")
-    confidence_level: float = Field(0.95, description="Confidence level for statistical tests")
+    cross_validation: bool = Field(
+        default=False,
+        description="Whether to use cross-validation",
+    )
+    cv_folds: int = Field(
+        default=5,
+        description="Number of cross-validation folds",
+    )
+    significance_tests: bool = Field(
+        default=True,
+        description="Whether to perform statistical significance tests",
+    )
+    confidence_level: float = Field(
+        default=0.95,
+        description="Confidence level for statistical tests",
+    )
 
 
-class BenchmarkConfig(BaseModel):
+class OutputModel(BaseDriftBenchmarkModel):
+    """Output configuration."""
+
+    save_results: bool = Field(
+        default=True,
+        description="Whether to save benchmark results",
+    )
+    visualization: bool = Field(
+        default=True,
+        description="Whether to generate visualizations",
+    )
+    plots: List[str] = Field(
+        default_factory=list,
+        description="Types of plots to generate",
+    )
+    export_format: List[ExportFormat] = Field(
+        default_factory=lambda: ["CSV"],
+        description="Formats to export results",
+    )
+    log_level: LogLevel = Field(
+        default="INFO",
+        description="Logging level",
+    )
+    results_dir: str = Field(
+        default="results",
+        description="Directory to save results",
+    )
+
+
+class BenchmarkConfig(BaseDriftBenchmarkModel):
     """Complete benchmark configuration."""
 
-    model_config = ConfigDict(extra="forbid")
-
-    metadata: MetadataModel = Field(..., description="Benchmark metadata")
-    settings: SettingsModel = Field(default_factory=SettingsModel, description="Benchmark settings")
-    data: DataConfigModel = Field(..., description="Data configuration")
-    detectors: DetectorConfigModel = Field(..., description="Detector configuration")
-    evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig, description="Evaluation configuration")
-    output: OutputModel = Field(default_factory=OutputModel, description="Output configuration")
+    metadata: MetadataModel = Field(
+        ...,
+        description="Benchmark metadata",
+    )
+    settings: SettingsModel = Field(
+        default_factory=SettingsModel,
+        description="Benchmark settings",
+    )
+    data: DataConfigModel = Field(
+        ...,
+        description="Data configuration",
+    )
+    detectors: DetectorConfigModel = Field(
+        ...,
+        description="Detector configuration",
+    )
+    evaluation: EvaluationConfig = Field(
+        default_factory=EvaluationConfig,
+        description="Evaluation configuration",
+    )
+    output: OutputModel = Field(
+        default_factory=OutputModel,
+        description="Output configuration",
+    )
 
     def get_detector_count(self) -> int:
         """Get the total number of detectors in the configuration."""
@@ -462,7 +785,7 @@ class BenchmarkConfig(BaseModel):
             for dataset in self.data.datasets:
                 if dataset.type == "synthetic":
                     # Assume synthetic data is continuous by default
-                    if "CONTINUOUS" not in metadata.method.data_types:
+                    if "CONTINUOUS" not in metadata.data_types:
                         detector_issues.append(f"Does not support continuous data (dataset: {dataset.name})")
 
             if detector_issues:
@@ -475,26 +798,48 @@ class BenchmarkConfig(BaseModel):
         return self.get_detector_count() * self.get_dataset_count() * self.settings.n_runs
 
 
-class DetectorPrediction(BaseModel):
+# =============================================================================
+# 6. PREDICTION & RESULTS MODELS
+# =============================================================================
+
+
+class DetectorPrediction(BaseDriftBenchmarkModel):
     """Single prediction by a drift detector."""
 
-    model_config = ConfigDict(extra="forbid")
-
     # Input data identifiers
-    dataset_name: str = Field(..., description="Name of the dataset")
-    window_id: int = Field(..., description="Window/sample identifier")
+    dataset_name: str = Field(
+        ...,
+        description="Name of the dataset",
+    )
+    window_id: int = Field(
+        ...,
+        description="Window/sample identifier",
+    )
 
     # True drift status
-    has_true_drift: bool = Field(..., description="Whether true drift exists at this point")
+    has_true_drift: bool = Field(
+        ...,
+        description="Whether true drift exists at this point",
+    )
 
     # Detector prediction
-    detected_drift: bool = Field(..., description="Whether detector detected drift")
+    detected_drift: bool = Field(
+        ...,
+        description="Whether detector detected drift",
+    )
 
     # Timing information
-    detection_time: float = Field(default=0.0, ge=0.0, description="Detection time in seconds")
+    detection_time: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Detection time in seconds",
+    )
 
     # Additional metrics
-    scores: Dict[str, float] = Field(default_factory=dict, description="Additional detector scores")
+    scores: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Additional detector scores",
+    )
 
     @property
     def result(self) -> DetectionResult:
@@ -509,24 +854,46 @@ class DetectorPrediction(BaseModel):
             return DetectionResult.FALSE_NEGATIVE
 
 
-class BenchmarkResult(BaseModel):
+class BenchmarkResult(BaseDriftBenchmarkModel):
     """Results for a single detector on a single dataset."""
 
-    model_config = ConfigDict(extra="forbid")
+    # Identifiers
+    detector_name: str = Field(
+        ...,
+        description="Name of the detector",
+    )
+    dataset_name: str = Field(
+        ...,
+        description="Name of the dataset",
+    )
 
-    detector_name: str = Field(..., description="Name of the detector")
-    detector_params: Dict[str, Any] = Field(default_factory=dict, description="Detector parameters")
-    dataset_name: str = Field(..., description="Name of the dataset")
-    dataset_params: Dict[str, Any] = Field(default_factory=dict, description="Dataset parameters")
+    # Configuration parameters
+    detector_params: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Detector parameters",
+    )
+    dataset_params: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Dataset parameters",
+    )
 
     # Collection of all predictions
-    predictions: List[DetectorPrediction] = Field(default_factory=list, description="List of predictions")
+    predictions: List[DetectorPrediction] = Field(
+        default_factory=list,
+        description="List of predictions",
+    )
 
     # Aggregated metrics computed from predictions
-    metrics: Dict[str, float] = Field(default_factory=dict, description="Computed metrics")
+    metrics: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Computed metrics",
+    )
 
     # ROC curve data for visualization
-    roc_data: Optional[Dict[str, List[float]]] = Field(default=None, description="ROC curve data points")
+    roc_data: Optional[Dict[str, List[float]]] = Field(
+        default=None,
+        description="ROC curve data points",
+    )
 
     def add_prediction(self, prediction: DetectorPrediction) -> None:
         """Add a new prediction to the results."""
@@ -573,25 +940,38 @@ class BenchmarkResult(BaseModel):
         return self.roc_data or {"fpr": [], "tpr": [], "thresholds": []}
 
 
-class DriftEvaluationResult(BaseModel):
+class DriftEvaluationResult(BaseDriftBenchmarkModel):
     """Overall benchmark results for multiple detectors and datasets."""
 
-    model_config = ConfigDict(extra="forbid")
-
     # Individual benchmark results
-    results: List[BenchmarkResult] = Field(default_factory=list, description="Individual benchmark results")
+    results: List[BenchmarkResult] = Field(
+        default_factory=list,
+        description="Individual benchmark results",
+    )
 
     # Settings used for the benchmark
-    settings: Dict[str, Any] = Field(default_factory=dict, description="Benchmark settings")
+    settings: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Benchmark settings",
+    )
 
     # Overall ranking summary
-    rankings: Dict[str, Dict[str, int]] = Field(default_factory=dict, description="Detector rankings by metric")
+    rankings: Dict[str, Dict[str, int]] = Field(
+        default_factory=dict,
+        description="Detector rankings by metric",
+    )
 
     # Statistical summaries for each detector
-    statistical_summaries: Dict[str, Dict[str, float]] = Field(default_factory=dict, description="Statistical summaries per detector")
+    statistical_summaries: Dict[str, Dict[str, float]] = Field(
+        default_factory=dict,
+        description="Statistical summaries per detector",
+    )
 
     # Best performing detectors by metric
-    best_performers: Dict[str, str] = Field(default_factory=dict, description="Best detector for each metric")
+    best_performers: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Best detector for each metric",
+    )
 
     def add_result(self, result: BenchmarkResult) -> None:
         """Add an individual benchmark result."""
@@ -686,53 +1066,220 @@ class DriftEvaluationResult(BaseModel):
         }
 
 
-class MetricResult(BaseModel):
+# =============================================================================
+# 7. UTILITY & METADATA MODELS
+# =============================================================================
+
+
+class MetricConfiguration(ParametrizedModel):
+    """Configuration for a specific metric."""
+
+    name: Metric = Field(
+        ...,
+        description="Name of the metric",
+    )
+    enabled: bool = Field(
+        default=True,
+        description="Whether this metric is enabled",
+    )
+    weight: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="Weight for aggregation",
+    )
+    threshold: Optional[float] = Field(
+        default=None,
+        description="Optional threshold for the metric",
+    )
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def normalize_metric_name(cls, v: str) -> str:
+        """Convert lowercase metric names to uppercase for backward compatibility."""
+        if isinstance(v, str):
+            return v.upper()
+        return v
+
+
+class MetricResult(BaseDriftBenchmarkModel):
     """Result for a single metric calculation."""
 
-    model_config = ConfigDict(extra="forbid")
+    name: Metric = Field(
+        ...,
+        description="Name of the metric",
+    )
+    value: float = Field(
+        ...,
+        description="Calculated metric value",
+    )
+    confidence_interval: Optional[Tuple[float, float]] = Field(
+        default=None,
+        description="Confidence interval if available",
+    )
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metric metadata",
+    )
 
-    name: Metric = Field(..., description="Name of the metric")
-    value: float = Field(..., description="Calculated metric value")
-    confidence_interval: Optional[Tuple[float, float]] = Field(default=None, description="Confidence interval if available")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metric metadata")
 
-
-class MetricSummary(BaseModel):
+class MetricSummary(BaseDriftBenchmarkModel):
     """Summary statistics for a metric across multiple evaluations."""
 
-    model_config = ConfigDict(extra="forbid")
+    name: Metric = Field(
+        ...,
+        description="Name of the metric",
+    )
+    mean: float = Field(
+        ...,
+        description="Mean value",
+    )
+    std: float = Field(
+        ...,
+        description="Standard deviation",
+    )
+    min: float = Field(
+        ...,
+        description="Minimum value",
+    )
+    max: float = Field(
+        ...,
+        description="Maximum value",
+    )
+    median: float = Field(
+        ...,
+        description="Median value",
+    )
+    count: int = Field(
+        ...,
+        gt=0,
+        description="Number of evaluations",
+    )
+    percentiles: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Percentile values",
+    )
 
-    name: Metric = Field(..., description="Name of the metric")
-    mean: float = Field(..., description="Mean value")
-    std: float = Field(..., description="Standard deviation")
-    min: float = Field(..., description="Minimum value")
-    max: float = Field(..., description="Maximum value")
-    median: float = Field(..., description="Median value")
-    count: int = Field(..., gt=0, description="Number of evaluations")
-    percentiles: Dict[str, float] = Field(default_factory=dict, description="Percentile values")
 
-
-class DriftInfo(BaseModel):
+class DriftInfo(BaseDriftBenchmarkModel):
     """Information about drift characteristics in a dataset."""
 
-    model_config = ConfigDict(extra="forbid")
+    has_drift: bool = Field(
+        ...,
+        description="Whether the dataset contains drift",
+    )
+    drift_points: Optional[List[int]] = Field(
+        default=None,
+        description="Indices where drift occurs",
+    )
+    drift_pattern: Optional[str] = Field(
+        default=None,
+        description="Type of drift pattern",
+    )
+    drift_magnitude: Optional[float] = Field(
+        default=None,
+        description="Magnitude of the drift",
+    )
+    drift_characteristics: List[str] = Field(
+        default_factory=list,
+        description="Characteristics of the drift",
+    )
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional drift metadata",
+    )
 
-    has_drift: bool = Field(..., description="Whether the dataset contains drift")
-    drift_points: Optional[List[int]] = Field(default=None, description="Indices where drift occurs")
-    drift_pattern: Optional[str] = Field(default=None, description="Type of drift pattern")
-    drift_magnitude: Optional[float] = Field(default=None, description="Magnitude of the drift")
-    drift_characteristics: List[str] = Field(default_factory=list, description="Characteristics of the drift")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional drift metadata")
+
+class DatasetMetadata(NamedModel):
+    """Metadata about a loaded dataset."""
+
+    # Dataset characteristics
+    n_samples: int = Field(
+        ...,
+        description="Number of samples",
+    )
+    n_features: int = Field(
+        ...,
+        description="Number of features",
+    )
+    feature_names: Optional[List[str]] = Field(
+        default=None,
+        description="Names of features",
+    )
+    target_name: Optional[str] = Field(
+        default=None,
+        description="Name of target variable",
+    )
+    data_types: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Data types of features",
+    )
+
+    # Drift information
+    has_drift: bool = Field(
+        default=False,
+        description="Whether dataset contains known drift",
+    )
+    drift_points: Optional[List[int]] = Field(
+        default=None,
+        description="Known drift point indices",
+    )
+    drift_metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional drift information",
+    )
+
+    # Provenance and processing
+    source: Optional[str] = Field(
+        default=None,
+        description="Source of the dataset",
+    )
+    creation_time: Optional[str] = Field(
+        default=None,
+        description="When the dataset was created/loaded",
+    )
+    preprocessing_applied: List[str] = Field(
+        default_factory=list,
+        description="Applied preprocessing steps",
+    )
 
 
-class DatasetResult(BaseModel):
+class DatasetResult(BaseDriftBenchmarkModel):
     """Result of loading a dataset with all metadata."""
 
-    model_config = ConfigDict(extra="forbid")
+    # Data arrays (Any type to support DataFrame/Series)
+    X_ref: Any = Field(
+        ...,
+        description="Reference data features",
+    )
+    X_test: Any = Field(
+        ...,
+        description="Test data features",
+    )
+    y_ref: Optional[Any] = Field(
+        default=None,
+        description="Reference data targets",
+    )
+    y_test: Optional[Any] = Field(
+        default=None,
+        description="Test data targets",
+    )
 
-    X_ref: Any = Field(..., description="Reference data features")  # Will be DataFrame
-    X_test: Any = Field(..., description="Test data features")  # Will be DataFrame
-    y_ref: Optional[Any] = Field(default=None, description="Reference data targets")  # Will be Series
-    y_test: Optional[Any] = Field(default=None, description="Test data targets")  # Will be Series
-    drift_info: DriftInfo = Field(..., description="Drift information")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Dataset metadata")
+    # Metadata
+    drift_info: DriftInfo = Field(
+        ...,
+        description="Drift information",
+    )
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Dataset metadata",
+    )
+
+
+# =============================================================================
+# MODEL EXPORTS AND FORWARD REFERENCES
+# =============================================================================
+
+
+# Update forward references after all models are defined
+DatasetConfig.model_rebuild()
+EvaluationConfig.model_rebuild()

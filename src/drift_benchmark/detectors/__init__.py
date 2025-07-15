@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Set, Union
 import tomli
 
 from drift_benchmark.constants.literals import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
-from drift_benchmark.detectors.models import DetectorData, MethodData
+from drift_benchmark.constants.models import DetectorData, MethodData
 
 # Path to methods.toml file
 METHODS_TOML = os.path.join(os.path.dirname(__file__), "methods.toml")
