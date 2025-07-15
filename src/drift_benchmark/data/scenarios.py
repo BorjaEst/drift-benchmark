@@ -26,7 +26,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-import pandas as pd
 from pydantic import ValidationError
 from sklearn.datasets import load_breast_cancer as sk_load_breast_cancer
 from sklearn.datasets import load_diabetes as sk_load_diabetes
@@ -585,21 +584,24 @@ def _filter_by_classes(X: np.ndarray, y: np.ndarray, target_classes: List[int]) 
 
 
 def _filter_by_feature_condition(X: np.ndarray, y: np.ndarray, condition: str, feature_names: List[str]) -> tuple[np.ndarray, np.ndarray]:
-    """Filter dataset based on feature conditions (e.g., 'sepal_length <= 5.5')."""
-    # Convert to DataFrame for easier condition evaluation
-    df = pd.DataFrame(X, columns=feature_names)
-    df["target"] = y
+    """Filter dataset based on feature conditions (e.g., 'sepal length (cm) <= 5.5')."""
+    # Create feature name to column index mapping for efficient lookups
+    feature_to_index = {name: idx for idx, name in enumerate(feature_names)}
 
-    # Parse and evaluate condition
-    # Replace feature names with column references
+    # Parse and evaluate condition using numpy operations
     eval_condition = condition
+
+    # Replace feature names with X column references
     for feature in feature_names:
-        eval_condition = eval_condition.replace(feature, f"df['{feature}']")
+        if feature in eval_condition:
+            col_idx = feature_to_index[feature]
+            eval_condition = eval_condition.replace(feature, f"X[:, {col_idx}]")
 
     try:
-        mask = eval(eval_condition)
-        filtered_df = df[mask]
-        return filtered_df[feature_names].values, filtered_df["target"].values
+        # Create local namespace for eval with numpy array
+        namespace = {"X": X, "np": np}
+        mask = eval(eval_condition, namespace)
+        return X[mask], y[mask]
     except Exception as e:
         raise ValueError(f"Invalid condition '{condition}': {e}")
 
