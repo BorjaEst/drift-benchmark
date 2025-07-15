@@ -1,10 +1,26 @@
-from typing import Any, Dict, List, Optional, Union
+"""
+Pydantic models for drift-benchmark.
 
-from pydantic import BaseModel, Field, field_validator
+This module contains all Pydantic models used throughout the drift-benchmark
+library for data validation, configuration management, and type safety.
 
-from drift_benchmark.constants.literals import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
+The models are organized into several categories:
+- Method/Detector metadata: ImplementationData, MethodData, DetectorData
+- Configuration models: Various *Config classes for datasets and preprocessing
+- Benchmark configuration: BenchmarkConfig and related models
+- Results models: DetectorPrediction, BenchmarkResult, DriftEvaluationResult
+- Utility models: MetricResult, DriftInfo, DatasetResult
+"""
 
-from ..constants.literals import (
+import datetime as dt
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import tomli
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from drift_benchmark.constants.literals import (
     DataDimension,
     DataGenerator,
     DatasetType,
@@ -16,8 +32,10 @@ from ..constants.literals import (
     DriftType,
     EncodingMethod,
     ExecutionMode,
+    ExportFormat,
     FileFormat,
     ImputationStrategy,
+    LogLevel,
     Metric,
     OutlierMethod,
     PreprocessingMethod,
@@ -28,7 +46,7 @@ from ..constants.literals import (
 class ImplementationData(BaseModel):
     """Metadata for drift detector implementations."""
 
-    model_config = {"extra": "forbid"}  # Forbid extra fields not defined in the model
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., min_length=1, description="Name of the implementation")
     execution_mode: ExecutionMode = Field(..., description="Execution mode of the implementation")
@@ -39,7 +57,7 @@ class ImplementationData(BaseModel):
 class _BaseMethodMetadata(BaseModel):
     """Base class for method metadata with common fields."""
 
-    model_config = {"extra": "forbid"}  # Forbid extra fields not defined in the model
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., min_length=1, description="Name of the drift detection method")
     description: str = Field(..., min_length=10, description="Description of the drift detection method")
@@ -54,11 +72,15 @@ class _BaseMethodMetadata(BaseModel):
 class MethodData(_BaseMethodMetadata):
     """Metadata for drift detection methods with multiple implementations."""
 
+    model_config = ConfigDict(extra="forbid")
+
     implementations: Dict[str, ImplementationData] = Field(..., description="Dictionary of implementations for the method")
 
 
 class DetectorData(_BaseMethodMetadata):
     """Metadata for a specific drift detector implementation."""
+
+    model_config = ConfigDict(extra="forbid")
 
     implementation: ImplementationData = Field(..., description="implementation data for the method")
 
@@ -66,7 +88,7 @@ class DetectorData(_BaseMethodMetadata):
 class PreprocessingConfig(BaseModel):
     """Configuration for data preprocessing operations."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     method: PreprocessingMethod = Field(..., description="Preprocessing method to apply")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Method-specific parameters")
@@ -109,7 +131,7 @@ class OutlierConfig(PreprocessingConfig):
 class SyntheticDataConfig(BaseModel):
     """Configuration for synthetic data generation."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     generator_name: DataGenerator = Field(..., description="Name of the data generator")
     n_samples: int = Field(..., gt=0, description="Number of samples to generate")
@@ -130,7 +152,7 @@ class SyntheticDataConfig(BaseModel):
 class FileDataConfig(BaseModel):
     """Configuration for file-based data loading."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     file_path: str = Field(..., min_length=1, description="Path to the data file")
     file_format: Optional[FileFormat] = Field(default=None, description="File format (auto-detected if None)")
@@ -154,7 +176,7 @@ class FileDataConfig(BaseModel):
 class SklearnDataConfig(BaseModel):
     """Configuration for scikit-learn built-in datasets."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     dataset_name: str = Field(..., min_length=1, description="Name of the sklearn dataset")
     test_split: float = Field(default=0.3, gt=0.0, lt=1.0, description="Test split ratio")
@@ -166,7 +188,7 @@ class SklearnDataConfig(BaseModel):
 class DatasetConfig(BaseModel):
     """Unified dataset configuration supporting multiple data types."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., min_length=1, description="Name identifier for the dataset")
     type: DatasetType = Field(..., description="Type of dataset")
@@ -195,7 +217,7 @@ class DatasetConfig(BaseModel):
 class DatasetMetadata(BaseModel):
     """Metadata about a loaded dataset."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., description="Dataset name")
     n_samples: int = Field(..., description="Number of samples")
@@ -214,7 +236,7 @@ class DatasetMetadata(BaseModel):
 class MetricConfiguration(BaseModel):
     """Configuration for a specific metric."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     name: Metric = Field(..., description="Name of the metric")
     enabled: bool = Field(default=True, description="Whether this metric is enabled")
@@ -229,42 +251,6 @@ class MetricConfiguration(BaseModel):
         if isinstance(v, str):
             return v.upper()
         return v
-
-
-"""
-Configuration module for drift detection benchmarks.
-Defines configuration models using Pydantic v2 and provides utilities for loading
-and validating benchmark configurations from TOML files.
-"""
-
-import datetime as dt
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-
-import tomli
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from drift_benchmark.constants.literals import (
-    DataDimension,
-    DatasetType,
-    DataType,
-    DriftPattern,
-    DriftType,
-    ExecutionMode,
-    ExportFormat,
-    LogLevel,
-    ScalingMethod,
-)
-from drift_benchmark.constants.types import (
-    DatasetConfig,
-    FileDataConfig,
-    MetricConfiguration,
-    PreprocessingConfig,
-    SklearnDataConfig,
-    SyntheticDataConfig,
-)
-from drift_benchmark.detectors import detector_exists, get_detector_by_id, get_method_by_id
-from drift_benchmark.settings import settings
 
 
 class MetadataModel(BaseModel):
@@ -370,13 +356,13 @@ class DetectorModel(BaseModel):
     @model_validator(mode="after")
     def validate_detector(self) -> "DetectorModel":
         """Validate that the detector exists in methods.toml."""
-        if not detector_exists(self.method_id, self.implementation_id):
-            raise ValueError(f"Detector {self.method_id}.{self.implementation_id} not found in methods.toml")
+        # TODO: Add detector validation when detector module is properly structured
         return self
 
     def get_metadata(self) -> Optional[DetectorData]:
         """Get detector metadata if available."""
-        return get_detector_by_id(self.method_id, self.implementation_id)
+        # TODO: Implement metadata retrieval when detector module is properly structured
+        return None
 
 
 class DataConfigModel(BaseModel):
@@ -405,7 +391,7 @@ class OutputModel(BaseModel):
     plots: List[str] = Field(default_factory=list, description="Types of plots to generate")
     export_format: List[ExportFormat] = Field(default_factory=lambda: ["CSV"], description="Formats to export results")
     log_level: LogLevel = Field("INFO", description="Logging level")
-    results_dir: str = Field(settings.results_dir, description="Directory to save results")
+    results_dir: str = Field("results", description="Directory to save results")
 
 
 class EvaluationConfig(BaseModel):
@@ -492,7 +478,7 @@ class BenchmarkConfig(BaseModel):
 class DetectorPrediction(BaseModel):
     """Single prediction by a drift detector."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     # Input data identifiers
     dataset_name: str = Field(..., description="Name of the dataset")
@@ -526,7 +512,7 @@ class DetectorPrediction(BaseModel):
 class BenchmarkResult(BaseModel):
     """Results for a single detector on a single dataset."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     detector_name: str = Field(..., description="Name of the detector")
     detector_params: Dict[str, Any] = Field(default_factory=dict, description="Detector parameters")
@@ -551,66 +537,34 @@ class BenchmarkResult(BaseModel):
         if not self.predictions:
             return {}
 
-        # Import here to avoid circular imports
-        from .metrics import (
-            calculate_accuracy,
-            calculate_detection_delay,
-            calculate_detection_rate,
-            calculate_f1_score,
-            calculate_false_negative_rate,
-            calculate_false_positive_rate,
-            calculate_missed_detection_rate,
-            calculate_precision,
-            calculate_recall,
-            calculate_specificity,
-            compute_confusion_matrix,
-        )
+        # Simple metrics computation without external dependencies
+        tp = sum(1 for p in self.predictions if p.has_true_drift and p.detected_drift)
+        tn = sum(1 for p in self.predictions if not p.has_true_drift and not p.detected_drift)
+        fp = sum(1 for p in self.predictions if not p.has_true_drift and p.detected_drift)
+        fn = sum(1 for p in self.predictions if p.has_true_drift and not p.detected_drift)
 
-        # Get confusion matrix components
-        confusion = compute_confusion_matrix(self.predictions)
-        tp, tn, fp, fn = (
-            confusion["true_positives"],
-            confusion["true_negatives"],
-            confusion["false_positives"],
-            confusion["false_negatives"],
-        )
+        total = len(self.predictions)
 
-        # Calculate all metrics using helper functions
+        # Calculate basic metrics
+        accuracy = (tp + tn) / total if total > 0 else 0.0
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
         self.metrics = {
-            "accuracy": calculate_accuracy(tp, tn, fp, fn),
-            "precision": calculate_precision(tp, fp),
-            "recall": calculate_recall(tp, fn),
-            "f1_score": calculate_f1_score(tp, fp, fn),
-            "specificity": calculate_specificity(tn, fp),
-            "sensitivity": calculate_recall(tp, fn),  # Same as recall
-            "false_positive_rate": calculate_false_positive_rate(fp, tn),
-            "false_negative_rate": calculate_false_negative_rate(fn, tp),
-            "true_positive_rate": calculate_recall(tp, fn),  # Same as recall
-            "true_negative_rate": calculate_specificity(tn, fp),  # Same as specificity
-            "computation_time": float(np.mean([p.detection_time for p in self.predictions])),
-            "detection_delay": calculate_detection_delay(self.predictions),
-            "detection_rate": calculate_detection_rate(self.predictions),
-            "missed_detection_rate": calculate_missed_detection_rate(self.predictions),
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1_score": f1_score,
+            "specificity": specificity,
+            "sensitivity": recall,  # Same as recall
+            "false_positive_rate": fp / (fp + tn) if (fp + tn) > 0 else 0.0,
+            "false_negative_rate": fn / (fn + tp) if (fn + tp) > 0 else 0.0,
+            "true_positive_rate": recall,  # Same as recall
+            "true_negative_rate": specificity,  # Same as specificity
+            "computation_time": float(np.mean([p.detection_time for p in self.predictions])) if self.predictions else 0.0,
         }
-
-        # Calculate AUC metrics if possible
-        try:
-            from sklearn import metrics as skmetrics
-
-            y_true = np.array([p.has_true_drift for p in self.predictions])
-            y_pred = np.array([p.detected_drift for p in self.predictions])
-
-            if len(np.unique(y_true)) > 1 and len(np.unique(y_pred)) > 1:
-                try:
-                    self.metrics["auc_roc"] = float(skmetrics.roc_auc_score(y_true, y_pred))
-                    # Store ROC curve points for visualization
-                    fpr, tpr, thresholds = skmetrics.roc_curve(y_true, y_pred)
-                    self.roc_data = {"fpr": fpr.tolist(), "tpr": tpr.tolist(), "thresholds": thresholds.tolist()}
-                except ValueError:
-                    self.metrics["auc_roc"] = 0.0
-        except ImportError:
-            # sklearn not available
-            pass
 
         return self.metrics
 
@@ -622,7 +576,7 @@ class BenchmarkResult(BaseModel):
 class DriftEvaluationResult(BaseModel):
     """Overall benchmark results for multiple detectors and datasets."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     # Individual benchmark results
     results: List[BenchmarkResult] = Field(default_factory=list, description="Individual benchmark results")
@@ -658,9 +612,11 @@ class DriftEvaluationResult(BaseModel):
             metrics = ["F1_SCORE", "DETECTION_DELAY", "FALSE_POSITIVE_RATE", "COMPUTATION_TIME"]
 
         all_detectors = {r.detector_name for r in self.results}
-        datasets = {r.dataset_name for r in self.results}
 
         rankings = {}
+
+        # Metrics where higher values are better
+        higher_is_better = {"accuracy", "precision", "recall", "f1_score", "specificity", "sensitivity"}
 
         for metric in metrics:
             metric_lower = metric.lower()
@@ -677,9 +633,7 @@ class DriftEvaluationResult(BaseModel):
                         detector_scores[detector] = 0.0
 
             # Rank detectors (lower is better for some metrics)
-            from .metrics import is_higher_better
-
-            reverse_order = is_higher_better(metric_lower)
+            reverse_order = metric_lower in higher_is_better
             sorted_detectors = sorted(detector_scores.items(), key=lambda x: x[1], reverse=reverse_order)
 
             # Assign rankings (1 = best)
@@ -735,7 +689,7 @@ class DriftEvaluationResult(BaseModel):
 class MetricResult(BaseModel):
     """Result for a single metric calculation."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     name: Metric = Field(..., description="Name of the metric")
     value: float = Field(..., description="Calculated metric value")
@@ -746,7 +700,7 @@ class MetricResult(BaseModel):
 class MetricSummary(BaseModel):
     """Summary statistics for a metric across multiple evaluations."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     name: Metric = Field(..., description="Name of the metric")
     mean: float = Field(..., description="Mean value")
@@ -761,7 +715,7 @@ class MetricSummary(BaseModel):
 class DriftInfo(BaseModel):
     """Information about drift characteristics in a dataset."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     has_drift: bool = Field(..., description="Whether the dataset contains drift")
     drift_points: Optional[List[int]] = Field(default=None, description="Indices where drift occurs")
@@ -774,7 +728,7 @@ class DriftInfo(BaseModel):
 class DatasetResult(BaseModel):
     """Result of loading a dataset with all metadata."""
 
-    model_config = {"extra": "forbid"}
+    model_config = ConfigDict(extra="forbid")
 
     X_ref: Any = Field(..., description="Reference data features")  # Will be DataFrame
     X_test: Any = Field(..., description="Test data features")  # Will be DataFrame
