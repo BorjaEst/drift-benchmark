@@ -4,7 +4,7 @@ from typing import Literal
 DriftType = Literal[
     "CONCEPT",  # P(y|X) changes
     "COVARIATE",  # P(X) changes
-    "LABEL",  # P(y) changes
+    "PRIOR",  # P(y) changes
 ]
 
 # Execution mode of the detector
@@ -113,7 +113,7 @@ ImputationStrategy = Literal[
 # Categorical encoding methods
 EncodingMethod = Literal[
     "ONEHOT",  # One-hot encoding
-    "LABEL",  # Label encoding
+    "PRIOR",  # Label encoding
     "TARGET",  # Target encoding
     "BINARY",  # Binary encoding
     "ORDINAL",  # Ordinal encoding

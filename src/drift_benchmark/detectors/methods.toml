@@ -445,7 +445,7 @@
 [periodic_trigger]
     name            = "Periodic Trigger Detector"
     description     = "Detector that triggers drift detection at regular intervals for testing purposes."
-    drift_types     = ["CONCEPT", "COVARIATE", "LABEL"]
+    drift_types     = ["CONCEPT", "COVARIATE", "PRIOR"]
     family          = "STATISTICAL_TEST"
     data_dimension  = "UNIVARIATE"
     data_types      = ["CONTINUOUS", "CATEGORICAL"]
