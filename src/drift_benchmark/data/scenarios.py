@@ -26,6 +26,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
+import pandas as pd
 from pydantic import ValidationError
 from sklearn.datasets import load_breast_cancer as sk_load_breast_cancer
 from sklearn.datasets import load_diabetes as sk_load_diabetes
@@ -34,7 +35,7 @@ from sklearn.datasets import load_iris as sk_load_iris
 from sklearn.datasets import load_wine as sk_load_wine
 from sklearn.model_selection import train_test_split
 
-from drift_benchmark.constants.literals import DataType
+from drift_benchmark.constants.literals import DataType, DriftCharacteristic, DriftPattern
 from drift_benchmark.constants.models import DatasetConfig, DatasetMetadata, DatasetResult, DriftInfo, SklearnDataConfig
 from drift_benchmark.settings import settings
 
@@ -178,19 +179,20 @@ def create_sklearn_drift_scenario(scenario_name: str, random_state: int = 42, na
     base_result = load_sklearn_dataset(dataset_name)
 
     # Combine reference and test data for filtering
-    X_full = np.vstack([base_result.X_ref, base_result.X_test])
-    y_full = np.hstack([base_result.y_ref, base_result.y_test])
+    X_full = pd.concat([base_result.X_ref, base_result.X_test], ignore_index=True)
+    y_full = pd.concat([base_result.y_ref, base_result.y_test], ignore_index=True)
 
     # Apply scenario-specific filtering
     if scenario["drift_type"] == "class_based":
-        X_ref, y_ref = _filter_by_classes(X_full, y_full, scenario["ref_classes"])
-        X_test, y_test = _filter_by_classes(X_full, y_full, scenario["test_classes"])
+        X_ref, y_ref = _filter_by_classes_df(X_full, y_full, scenario["ref_classes"])
+        X_test, y_test = _filter_by_classes_df(X_full, y_full, scenario["test_classes"])
     elif scenario["drift_type"] == "feature_based":
-        X_ref, y_ref = _filter_by_feature_condition(X_full, y_full, scenario["ref_condition"], base_result.metadata["feature_names"])
-        X_test, y_test = _filter_by_feature_condition(X_full, y_full, scenario["test_condition"], base_result.metadata["feature_names"])
+        feature_names = base_result.metadata["feature_names"]
+        X_ref, y_ref = _filter_by_feature_condition_df(X_full, y_full, scenario["ref_condition"], feature_names)
+        X_test, y_test = _filter_by_feature_condition_df(X_full, y_full, scenario["test_condition"], feature_names)
     elif scenario["drift_type"] == "target_based":
-        X_ref, y_ref = _filter_by_target_condition(X_full, y_full, scenario["ref_condition"])
-        X_test, y_test = _filter_by_target_condition(X_full, y_full, scenario["test_condition"])
+        X_ref, y_ref = _filter_by_target_condition_df(X_full, y_full, scenario["ref_condition"])
+        X_test, y_test = _filter_by_target_condition_df(X_full, y_full, scenario["test_condition"])
     else:
         raise ValueError(f"Unknown drift type: {scenario['drift_type']}")
 
@@ -202,7 +204,7 @@ def create_sklearn_drift_scenario(scenario_name: str, random_state: int = 42, na
     drift_info = DriftInfo(
         has_drift=True,
         drift_points=[len(X_ref)],  # Drift occurs at boundary between ref and test
-        drift_pattern="sudden",
+        drift_pattern="SUDDEN",
         drift_magnitude=0.5,  # Moderate drift
         drift_characteristics=scenario["characteristics"],
         metadata={
@@ -355,7 +357,9 @@ def _load_sklearn_dataset(config: DatasetConfig) -> DatasetResult:
             data_types=_infer_data_types_from_array(X, feature_names),
             has_drift=False,  # Built-in datasets typically don't have drift
             drift_points=None,
-            drift_metadata={},
+            drift_metadata={
+                "dataset_name": dataset_name,
+            },
             source=f"sklearn.datasets.{dataset_name}",
             creation_time=datetime.now().isoformat(),
             preprocessing_applied=[],
@@ -373,7 +377,20 @@ def _load_sklearn_dataset(config: DatasetConfig) -> DatasetResult:
 
         logger.info(f"Sklearn dataset loaded: {len(X_ref)} ref + {len(X_test)} test samples, {X.shape[1]} features")
 
-        return DatasetResult(X_ref=X_ref, X_test=X_test, y_ref=y_ref, y_test=y_test, drift_info=drift_info, metadata=metadata.model_dump())
+        # Convert numpy arrays to pandas DataFrames/Series
+        X_ref_df = pd.DataFrame(X_ref, columns=feature_names)
+        X_test_df = pd.DataFrame(X_test, columns=feature_names)
+        y_ref_series = pd.Series(y_ref, name="target")
+        y_test_series = pd.Series(y_test, name="target")
+
+        return DatasetResult(
+            X_ref=X_ref_df,
+            X_test=X_test_df,
+            y_ref=y_ref_series,
+            y_test=y_test_series,
+            drift_info=drift_info,
+            metadata=metadata.model_dump(),
+        )
 
     except ValidationError as e:
         # Handle Pydantic validation errors
@@ -614,5 +631,46 @@ def _filter_by_target_condition(X: np.ndarray, y: np.ndarray, condition: str) ->
     try:
         mask = eval(eval_condition)
         return X[mask], y[mask]
+    except Exception as e:
+        raise ValueError(f"Invalid target condition '{condition}': {e}")
+
+
+def _filter_by_classes_df(X: pd.DataFrame, y: pd.Series, target_classes: List[int]) -> tuple[pd.DataFrame, pd.Series]:
+    """Filter DataFrame dataset to include only specified target classes."""
+    mask = y.isin(target_classes)
+    return X[mask].copy(), y[mask].copy()
+
+
+def _filter_by_feature_condition_df(
+    X: pd.DataFrame, y: pd.Series, condition: str, feature_names: List[str]
+) -> tuple[pd.DataFrame, pd.Series]:
+    """Filter DataFrame dataset based on feature conditions (e.g., 'sepal length (cm) <= 5.5')."""
+    # Parse and evaluate condition using pandas operations
+    eval_condition = condition
+
+    # Replace feature names with DataFrame column references
+    for feature in feature_names:
+        if feature in eval_condition:
+            # Use proper pandas syntax for column access
+            eval_condition = eval_condition.replace(feature, f"X['{feature}']")
+
+    try:
+        # Create local namespace for eval with DataFrame
+        namespace = {"X": X, "pd": pd, "np": np}
+        mask = eval(eval_condition, namespace)
+        return X[mask].copy(), y[mask].copy()
+    except Exception as e:
+        raise ValueError(f"Invalid condition '{condition}': {e}")
+
+
+def _filter_by_target_condition_df(X: pd.DataFrame, y: pd.Series, condition: str) -> tuple[pd.DataFrame, pd.Series]:
+    """Filter DataFrame dataset based on target conditions (e.g., 'target <= 100')."""
+    # Replace 'target' with actual target values
+    eval_condition = condition.replace("target", "y")
+
+    try:
+        namespace = {"y": y, "pd": pd, "np": np}
+        mask = eval(eval_condition, namespace)
+        return X[mask].copy(), y[mask].copy()
     except Exception as e:
         raise ValueError(f"Invalid target condition '{condition}': {e}")
