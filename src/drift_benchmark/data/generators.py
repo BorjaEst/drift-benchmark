@@ -7,7 +7,7 @@ multiple data distributions like Gaussian, mixed types, multimodal, and time ser
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -549,91 +549,6 @@ def _generate_time_series_data(
     }
 
     return _create_dataset_result(X_ref, X_test, None, None, drift_info_dict, n_features)
-
-
-# Legacy function for backward compatibility
-def generate_drift(
-    generator_name: str,
-    n_samples: int = 1000,
-    n_features: int = 10,
-    drift_type: str = "sudden",
-    drift_magnitude: float = 1.0,
-    drift_ratio: float = 0.5,
-    drift_position: float = 0.5,
-    noise: float = 0.05,
-    categorical_features: Optional[List[int]] = None,
-    random_state: Optional[int] = None,
-    **kwargs,
-) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
-    """
-    Legacy function for backward compatibility.
-
-    Maps old parameter names to new function.
-    """
-    # Map old names to new constants
-    generator_map = {
-        "gaussian": "GAUSSIAN",
-        "mixed": "MIXED",
-        "multimodal": "MULTIMODAL",
-        "time_series": "TIME_SERIES",
-    }
-
-    pattern_map = {
-        "sudden": "SUDDEN",
-        "gradual": "GRADUAL",
-        "incremental": "INCREMENTAL",
-        "recurring": "RECURRING",
-        "mean_shift": "SUDDEN",  # Assume sudden for mean_shift
-        "variance_shift": "SUDDEN",
-    }
-
-    characteristic_map = {
-        "mean_shift": "MEAN_SHIFT",
-        "variance_shift": "VARIANCE_SHIFT",
-        "sudden": "MEAN_SHIFT",  # Default to mean shift
-        "gradual": "MEAN_SHIFT",
-        "incremental": "MEAN_SHIFT",
-        "recurring": "MEAN_SHIFT",
-    }
-
-    new_generator = generator_map.get(generator_name.lower(), "GAUSSIAN")
-    new_pattern = pattern_map.get(drift_type.lower(), "SUDDEN")
-    new_characteristic = characteristic_map.get(drift_type.lower(), "MEAN_SHIFT")
-
-    # Calculate affected features from drift_ratio
-    n_affected = max(1, int(drift_ratio * n_features))
-    drift_affected_features = list(range(n_affected))
-
-    dataset_result = generate_synthetic_data(
-        generator_name=new_generator,
-        n_samples=n_samples,
-        n_features=n_features,
-        drift_pattern=new_pattern,
-        drift_characteristic=new_characteristic,
-        drift_magnitude=drift_magnitude,
-        drift_position=drift_position,
-        drift_affected_features=drift_affected_features,
-        noise=noise,
-        categorical_features=categorical_features,
-        random_state=random_state,
-        **kwargs,
-    )
-
-    # Extract DataFrames from DatasetResult for backward compatibility
-    X_ref_df = dataset_result.X_ref
-    X_test_df = dataset_result.X_test
-
-    # Legacy metadata format
-    metadata = {
-        "name": f"{generator_name}_drift",
-        "drift_type": drift_type,
-        "drift_magnitude": drift_magnitude,
-        "drift_position": drift_position,
-        "n_features": n_features,
-        "n_samples": n_samples,
-    }
-
-    return X_ref_df, X_test_df, metadata
 
 
 def generate_synthetic_data_from_config(config: SyntheticDataConfig) -> DatasetResult:
