@@ -15,26 +15,33 @@ ExecutionMode = Literal[
 
 # Family of drift detection algorithm
 DetectorFamily = Literal[
-    "CHANGE_DETECTION",
-    "STATISTICAL_PROCESS_CONTROL",
-    "WINDOW_BASED",
-    "DISTANCE_BASED",
-    "STATISTICAL_TEST",
-    "ENSEMBLE",
-    "MACHINE_LEARNING",
+    "CHANGE_DETECTION",  # Change detection algorithms
+    "STATISTICAL_PROCESS_CONTROL",  # Statistical process control methods
+    "WINDOW_BASED",  # Sliding window techniques
+    "DISTANCE_BASED",  # Distance-based methods
+    "STATISTICAL_TEST",  # Statistical hypothesis testing
+    "ENSEMBLE",  # Ensemble methods combining multiple detectors
+    "MACHINE_LEARNING",  # Machine learning-based drift detection
 ]
 
 # Data dimensionality the detector can handle
 DataDimension = Literal[
-    "UNIVARIATE",
-    "MULTIVARIATE",
+    "UNIVARIATE",  # Single feature analysis
+    "MULTIVARIATE",  # Multiple features analysis simultaneously
 ]
 
 # Data types the detector can handle
 DataType = Literal[
-    "CONTINUOUS",
-    "CATEGORICAL",
-    "MIXED",
+    "CONTINUOUS",  # Continuous numerical data
+    "CATEGORICAL",  # Categorical data
+    "MIXED",  # Mixed continuous and categorical data
+]
+
+# Algorithm type that uses the data
+DataAlgorithm = Literal[
+    "SUPERVISED",  # Requires labeled data
+    "UNSUPERVISED",  # Does not require labeled data
+    "SEMI_SUPERVISED",  # Uses both labeled and unlabeled data
 ]
 
 # Dataset types for loading data
