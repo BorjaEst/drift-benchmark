@@ -20,30 +20,30 @@
     keywords = ["data quality", "data distribution drift", "ML pipelines"]
     dynamic = ["version", "readme", "dependencies", "optional-dependencies"]
 
-[project.urls]
-    "Homepage"    = "https://github.com/BorjaEst/drift-benchmark"
-    "Bug Tracker" = "https://github.com/BorjaEst/drift-benchmark/issues"
+    [project.urls]
+        "Homepage"    = "https://github.com/BorjaEst/drift-benchmark"
+        "Bug Tracker" = "https://github.com/BorjaEst/drift-benchmark/issues"
 
 
 [tool.setuptools]
     package-dir = { "" = "src" }
 
-[tool.setuptools.dynamic]
-    version      = { file = "src/drift_benchmark/VERSION" }
-    readme       = { file = ["README.md"] }
-    dependencies = { file = ["requirements.txt"] }
+    [tool.setuptools.dynamic]
+        version      = { file = "src/drift_benchmark/VERSION" }
+        readme       = { file = ["README.md"] }
+        dependencies = { file = ["requirements.txt"] }
 
-[tool.setuptools.dynamic.optional-dependencies]
-    full = { file = ["requirements-full.txt"] }
-    dev  = { file = ["requirements-dev.txt", "requirements-full.txt"] }
+        [tool.setuptools.dynamic.optional-dependencies]
+            full = { file = ["requirements-full.txt"] }
+            dev  = { file = ["requirements-dev.txt", "requirements-full.txt"] }
 
 [tool.black]
-    line-length    = 120
+    line-length    = 140
     target-version = ["py310"]
 
 [tool.isort]
     profile     = "black"
-    line_length = 120
+    line_length = 140
 
 [tool.mypy]
     python_version           = "3.10"
