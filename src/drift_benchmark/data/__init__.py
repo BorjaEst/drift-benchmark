@@ -1,27 +1,33 @@
+"""Data module for drift-benchmark.
+
+This module provides simplified data loading functionality with proper type safety
+using Pydantic models and literal types from the constants module.
+
+Key Features:
+- Simplified dataset loading interface with configuration-driven approach
+- Support for CSV files from datasets_dir and scikit-learn built-in datasets
+- Proper type safety using Pydantic models and literal types
+- Comprehensive metadata and drift information tracking
 """
-Data module for drift-benchmark.
 
-This module provides comprehensive data handling utilities including:
-- Dataset loading from multiple sources (synthetic, files, sklearn)
-- Synthetic data generation with various drift patterns
-- Data preprocessing pipelines
-- Standardized data interfaces and metadata
+from drift_benchmark.constants.literals import DatasetType, DataType
 
-The module follows a configuration-driven approach using Pydantic models
-for type safety and validation.
-"""
-
-from drift_benchmark.data.datasets import (
-    BUILTIN_DATASETS,
-    DatasetTuple,
-    list_builtin_datasets,
-    load_breast_cancer,
-    load_dataset,
-    load_iris,
-    load_wine,
+# Export types from constants for convenience
+from drift_benchmark.constants.models import (
+    DatasetConfig,
+    DatasetMetadata,
+    DatasetResult,
+    DriftInfo,
+    FileDataConfig,
+    SklearnDataConfig,
+    SyntheticDataConfig,
 )
-from drift_benchmark.data.drift_generators import generate_drift  # Legacy compatibility
-from drift_benchmark.data.drift_generators import generate_synthetic_data
+
+# Universal dataset loading from datasets module
+from drift_benchmark.data.datasets import list_csv_datasets, load_dataset, load_dataset_with_filters, validate_dataset_for_drift_detection
+
+# Synthetic data generation from generators module
+from drift_benchmark.data.generators import create_synthetic_data_config, generate_synthetic_data, generate_synthetic_data_from_config
 from drift_benchmark.data.preprocessing import (
     apply_preprocessing_pipeline,
     get_preprocessing_state,
@@ -29,24 +35,56 @@ from drift_benchmark.data.preprocessing import (
     set_preprocessing_state,
 )
 
+# Sklearn datasets and scenarios from scenarios module
+from drift_benchmark.data.scenarios import (
+    SKLEARN_DATASETS,
+    create_sklearn_drift_scenario,
+    list_available_scenarios,
+    list_sklearn_datasets,
+    load_breast_cancer,
+    load_diabetes,
+    load_digits,
+    load_iris,
+    load_sklearn_dataset,
+    load_wine,
+)
+
 __all__ = [
-    # Main dataset loading functions
+    # Universal dataset loading
     "load_dataset",
-    # Convenience dataset loaders
+    "load_dataset_with_filters",
+    "validate_dataset_for_drift_detection",
+    # Sklearn datasets and scenarios
+    "load_sklearn_dataset",
+    "create_sklearn_drift_scenario",
     "load_iris",
     "load_wine",
     "load_breast_cancer",
-    # Dataset registry
-    "list_builtin_datasets",
-    "BUILTIN_DATASETS",
-    # Data generation
+    "load_diabetes",
+    "load_digits",
+    # Dataset discovery
+    "list_csv_datasets",
+    "list_sklearn_datasets",
+    "list_available_scenarios",
+    "SKLEARN_DATASETS",
+    # Pydantic models for configuration
+    "DatasetConfig",
+    "DatasetResult",
+    "DatasetMetadata",
+    "DriftInfo",
+    "FileDataConfig",
+    "SklearnDataConfig",
+    "SyntheticDataConfig",
+    # Literal types
+    "DatasetType",
+    "DataType",
+    # Synthetic data generation
     "generate_synthetic_data",
-    "generate_drift",  # Legacy compatibility
-    # Preprocessing
+    "generate_synthetic_data_from_config",
+    "create_synthetic_data_config",
+    # Data preprocessing
     "apply_preprocessing_pipeline",
     "reset_preprocessing_state",
     "get_preprocessing_state",
     "set_preprocessing_state",
-    # Type definitions
-    "DatasetTuple",
 ]
