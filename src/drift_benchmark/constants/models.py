@@ -45,6 +45,11 @@ The models are organized by functional categories:
    - MetricConfiguration: Individual metric configuration
    - MetricResult: Single metric calculation result
    - MetricSummary: Statistical summary of metric values
+   - ConfusionMatrix: Confusion matrix for classification metrics
+   - MetricReport: Comprehensive metric analysis report
+   - TemporalMetrics: Time-series metric analysis
+   - ComparativeAnalysis: Detector comparison results
+   - BootstrapResult: Bootstrap statistical analysis result
    - DriftInfo: Drift characteristics metadata
    - DatasetMetadata: Dataset information and metadata
    - DatasetResult: Complete dataset loading result
@@ -1243,6 +1248,216 @@ class MetricSummary(BaseDriftBenchmarkModel):
     percentiles: Dict[str, float] = Field(
         default_factory=dict,
         description="Percentile values",
+    )
+
+
+class ConfusionMatrix(BaseDriftBenchmarkModel):
+    """Confusion matrix for binary classification metrics."""
+
+    true_positives: int = Field(
+        ...,
+        ge=0,
+        description="Number of true positive predictions",
+    )
+    true_negatives: int = Field(
+        ...,
+        ge=0,
+        description="Number of true negative predictions",
+    )
+    false_positives: int = Field(
+        ...,
+        ge=0,
+        description="Number of false positive predictions",
+    )
+    false_negatives: int = Field(
+        ...,
+        ge=0,
+        description="Number of false negative predictions",
+    )
+
+    @property
+    def total(self) -> int:
+        """Total number of predictions."""
+        return self.true_positives + self.true_negatives + self.false_positives + self.false_negatives
+
+    @property
+    def accuracy(self) -> float:
+        """Calculate accuracy from confusion matrix."""
+        if self.total == 0:
+            return 0.0
+        return (self.true_positives + self.true_negatives) / self.total
+
+    @property
+    def precision(self) -> float:
+        """Calculate precision from confusion matrix."""
+        if (self.true_positives + self.false_positives) == 0:
+            return 0.0
+        return self.true_positives / (self.true_positives + self.false_positives)
+
+    @property
+    def recall(self) -> float:
+        """Calculate recall from confusion matrix."""
+        if (self.true_positives + self.false_negatives) == 0:
+            return 0.0
+        return self.true_positives / (self.true_positives + self.false_negatives)
+
+    @property
+    def f1_score(self) -> float:
+        """Calculate F1 score from confusion matrix."""
+        precision = self.precision
+        recall = self.recall
+        if precision + recall == 0:
+            return 0.0
+        return 2 * (precision * recall) / (precision + recall)
+
+
+class BootstrapResult(BaseDriftBenchmarkModel):
+    """Result from bootstrap statistical analysis."""
+
+    original_value: float = Field(
+        ...,
+        description="Original metric value",
+    )
+    bootstrap_mean: float = Field(
+        ...,
+        description="Bootstrap sample mean",
+    )
+    bootstrap_std: float = Field(
+        ...,
+        description="Bootstrap sample standard deviation",
+    )
+    confidence_interval: Tuple[float, float] = Field(
+        ...,
+        description="Bootstrap confidence interval",
+    )
+    confidence_level: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Confidence level used",
+    )
+    n_bootstrap: int = Field(
+        ...,
+        gt=0,
+        description="Number of bootstrap samples",
+    )
+    bootstrap_samples: Optional[List[float]] = Field(
+        default=None,
+        description="Bootstrap sample values",
+    )
+
+
+class TemporalMetrics(BaseDriftBenchmarkModel):
+    """Temporal analysis of metrics over time."""
+
+    metric_name: Metric = Field(
+        ...,
+        description="Name of the metric",
+    )
+    timestamps: List[dt.datetime] = Field(
+        ...,
+        description="Timestamps for metric values",
+    )
+    values: List[float] = Field(
+        ...,
+        description="Metric values over time",
+    )
+    trend: Optional[str] = Field(
+        default=None,
+        description="Trend direction (increasing, decreasing, stable)",
+    )
+    seasonality: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Seasonality analysis results",
+    )
+    volatility: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Metric volatility measure",
+    )
+    change_points: List[int] = Field(
+        default_factory=list,
+        description="Detected change points in the time series",
+    )
+
+    @field_validator("timestamps", "values")
+    @classmethod
+    def validate_equal_length(cls, v, info):
+        """Validate that timestamps and values have equal length."""
+        if info.data and "timestamps" in info.data:
+            timestamps = info.data["timestamps"]
+            if len(v) != len(timestamps):
+                raise ValueError("timestamps and values must have equal length")
+        return v
+
+
+class ComparativeAnalysis(BaseDriftBenchmarkModel):
+    """Results from comparative analysis between detectors."""
+
+    detector_rankings: Dict[str, int] = Field(
+        ...,
+        description="Ranking of detectors (1=best)",
+    )
+    pairwise_comparisons: Dict[str, Dict[str, float]] = Field(
+        default_factory=dict,
+        description="Pairwise comparison p-values",
+    )
+    effect_sizes: Dict[str, Dict[str, float]] = Field(
+        default_factory=dict,
+        description="Effect sizes between detector pairs",
+    )
+    best_detector: str = Field(
+        ...,
+        description="Name of the best performing detector",
+    )
+    statistical_significance: Dict[str, bool] = Field(
+        default_factory=dict,
+        description="Statistical significance of comparisons",
+    )
+    dominance_matrix: Dict[str, Dict[str, bool]] = Field(
+        default_factory=dict,
+        description="Pareto dominance relationships",
+    )
+
+
+class MetricReport(BaseDriftBenchmarkModel):
+    """Comprehensive metric analysis report."""
+
+    report_id: str = Field(
+        ...,
+        description="Unique identifier for the report",
+    )
+    generated_at: dt.datetime = Field(
+        default_factory=dt.datetime.now,
+        description="Report generation timestamp",
+    )
+    summary_metrics: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Summary metric values",
+    )
+    detailed_results: List[MetricResult] = Field(
+        default_factory=list,
+        description="Detailed metric calculation results",
+    )
+    comparative_analysis: Optional[ComparativeAnalysis] = Field(
+        default=None,
+        description="Comparative analysis between detectors",
+    )
+    temporal_analysis: Optional[Dict[str, TemporalMetrics]] = Field(
+        default=None,
+        description="Temporal analysis for each metric",
+    )
+    statistical_tests: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Results from statistical significance tests",
+    )
+    recommendations: List[str] = Field(
+        default_factory=list,
+        description="Analysis recommendations and insights",
+    )
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional report metadata",
     )
 
 
