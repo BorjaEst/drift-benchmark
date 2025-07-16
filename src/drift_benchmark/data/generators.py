@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from drift_benchmark.constants import DataGenerator, DriftCharacteristic, DriftPattern
+from drift_benchmark.constants.models import DatasetResult, DriftInfo, SyntheticDataConfig
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def generate_synthetic_data(
     categorical_features: Optional[List[int]] = None,
     random_state: Optional[int] = None,
     **generator_params,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Dict[str, Any]]:
+) -> DatasetResult:
     """
     Generate synthetic data with specified drift patterns.
 
@@ -51,12 +52,13 @@ def generate_synthetic_data(
         **generator_params: Additional generator-specific parameters
 
     Returns:
-        Tuple containing:
-            - X_ref: Reference data features
-            - X_test: Test data features (with drift)
-            - y_ref: Reference data labels (None for unsupervised)
-            - y_test: Test data labels (None for unsupervised)
-            - drift_info: Dictionary with drift metadata
+        DatasetResult containing:
+            - X_ref: Reference data features as pandas DataFrame
+            - X_test: Test data features (with drift) as pandas DataFrame
+            - y_ref: Reference data labels as pandas Series (None for unsupervised)
+            - y_test: Test data labels as pandas Series (None for unsupervised)
+            - drift_info: DriftInfo object with drift metadata
+            - metadata: Additional dataset metadata
     """
     if random_state is not None:
         np.random.seed(random_state)
@@ -65,7 +67,7 @@ def generate_synthetic_data(
 
     # Route to appropriate generator
     if generator_name == "GAUSSIAN":
-        return _generate_gaussian_data(
+        dataset_result = _generate_gaussian_data(
             n_samples,
             n_features,
             drift_pattern,
@@ -78,7 +80,7 @@ def generate_synthetic_data(
             **generator_params,
         )
     elif generator_name == "MIXED":
-        return _generate_mixed_data(
+        dataset_result = _generate_mixed_data(
             n_samples,
             n_features,
             drift_pattern,
@@ -92,7 +94,7 @@ def generate_synthetic_data(
             **generator_params,
         )
     elif generator_name == "MULTIMODAL":
-        return _generate_multimodal_data(
+        dataset_result = _generate_multimodal_data(
             n_samples,
             n_features,
             drift_pattern,
@@ -105,7 +107,7 @@ def generate_synthetic_data(
             **generator_params,
         )
     elif generator_name == "TIME_SERIES":
-        return _generate_time_series_data(
+        dataset_result = _generate_time_series_data(
             n_samples,
             n_features,
             drift_pattern,
@@ -120,6 +122,61 @@ def generate_synthetic_data(
     else:
         raise ValueError(f"Unknown generator: {generator_name}")
 
+    return dataset_result
+
+
+def _create_dataset_result(
+    X_ref: np.ndarray,
+    X_test: np.ndarray,
+    y_ref: Optional[np.ndarray],
+    y_test: Optional[np.ndarray],
+    drift_info_dict: Dict[str, Any],
+    n_features: int,
+) -> DatasetResult:
+    """Convert raw data arrays to DatasetResult with proper models."""
+
+    # Create feature names
+    feature_names = [f"feature_{i}" for i in range(n_features)]
+
+    # Convert to DataFrames
+    X_ref_df = pd.DataFrame(X_ref, columns=feature_names)
+    X_test_df = pd.DataFrame(X_test, columns=feature_names)
+
+    # Convert labels to Series if they exist
+    y_ref_series = pd.Series(y_ref, name="target") if y_ref is not None else None
+    y_test_series = pd.Series(y_test, name="target") if y_test is not None else None
+
+    # Create DriftInfo object
+    drift_info = DriftInfo(
+        has_drift=True,  # We're generating synthetic data with drift
+        drift_points=[int(len(X_ref))],  # Drift starts at the beginning of test data
+        drift_pattern=drift_info_dict.get("drift_pattern"),
+        drift_magnitude=drift_info_dict.get("drift_magnitude"),
+        drift_characteristics=[drift_info_dict.get("drift_characteristic", "")],
+        metadata=drift_info_dict,
+    )
+
+    # Create metadata
+    metadata = {
+        "generator": drift_info_dict.get("generator"),
+        "n_samples_total": len(X_ref) + len(X_test),
+        "n_ref_samples": len(X_ref),
+        "n_test_samples": len(X_test),
+        "n_features": n_features,
+        "feature_names": feature_names,
+        "has_labels": y_ref is not None or y_test is not None,
+        "generation_parameters": drift_info_dict.get("parameters", {}),
+    }
+
+    return DatasetResult(
+        X_ref=X_ref_df,
+        X_test=X_test_df,
+        y_ref=y_ref_series,
+        y_test=y_test_series,
+        drift_info=drift_info,
+        metadata=metadata,
+    )
+
 
 def _generate_gaussian_data(
     n_samples: int,
@@ -132,7 +189,7 @@ def _generate_gaussian_data(
     drift_affected_features: Optional[List[int]],
     noise: float,
     **params,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Dict[str, Any]]:
+) -> DatasetResult:
     """Generate Gaussian distributed data with drift."""
 
     # Parameters with defaults
@@ -170,7 +227,7 @@ def _generate_gaussian_data(
         X_test += np.random.normal(0, noise, X_test.shape)
 
     # Create drift metadata
-    drift_info = {
+    drift_info_dict = {
         "generator": "GAUSSIAN",
         "drift_pattern": drift_pattern,
         "drift_characteristic": drift_characteristic,
@@ -182,7 +239,7 @@ def _generate_gaussian_data(
         "parameters": params,
     }
 
-    return X_ref, X_test, None, None, drift_info
+    return _create_dataset_result(X_ref, X_test, None, None, drift_info_dict, n_features)
 
 
 def _apply_drift_to_gaussian(
@@ -267,7 +324,7 @@ def _generate_mixed_data(
     noise: float,
     categorical_features: Optional[List[int]],
     **params,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Dict[str, Any]]:
+) -> DatasetResult:
     """Generate mixed continuous and categorical data with drift."""
 
     if categorical_features is None:
@@ -327,7 +384,7 @@ def _generate_mixed_data(
             X_ref[:, i] += np.random.normal(0, noise, ref_samples)
             X_test[:, i] += np.random.normal(0, noise, test_samples)
 
-    drift_info = {
+    drift_info_dict = {
         "generator": "MIXED",
         "drift_pattern": drift_pattern,
         "drift_characteristic": drift_characteristic,
@@ -338,7 +395,7 @@ def _generate_mixed_data(
         "parameters": params,
     }
 
-    return X_ref, X_test, None, None, drift_info
+    return _create_dataset_result(X_ref, X_test, None, None, drift_info_dict, n_features)
 
 
 def _generate_multimodal_data(
@@ -352,7 +409,7 @@ def _generate_multimodal_data(
     drift_affected_features: Optional[List[int]],
     noise: float,
     **params,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Dict[str, Any]]:
+) -> DatasetResult:
     """Generate multimodal data with drift."""
 
     n_modes = params.get("n_modes", 3)
@@ -388,7 +445,7 @@ def _generate_multimodal_data(
         X_ref += np.random.normal(0, noise, X_ref.shape)
         X_test += np.random.normal(0, noise, X_test.shape)
 
-    drift_info = {
+    drift_info_dict = {
         "generator": "MULTIMODAL",
         "drift_pattern": drift_pattern,
         "drift_characteristic": drift_characteristic,
@@ -399,7 +456,7 @@ def _generate_multimodal_data(
         "parameters": params,
     }
 
-    return X_ref, X_test, None, None, drift_info
+    return _create_dataset_result(X_ref, X_test, None, None, drift_info_dict, n_features)
 
 
 def _generate_multimodal_samples(n_samples: int, n_features: int, n_modes: int, separation: float) -> np.ndarray:
@@ -430,7 +487,7 @@ def _generate_time_series_data(
     drift_affected_features: Optional[List[int]],
     noise: float,
     **params,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Dict[str, Any]]:
+) -> DatasetResult:
     """Generate time series data with drift."""
 
     trend = params.get("trend", 0.0)
@@ -479,7 +536,7 @@ def _generate_time_series_data(
         X_ref += np.random.normal(0, noise, X_ref.shape)
         X_test += np.random.normal(0, noise, X_test.shape)
 
-    drift_info = {
+    drift_info_dict = {
         "generator": "TIME_SERIES",
         "drift_pattern": drift_pattern,
         "drift_characteristic": drift_characteristic,
@@ -491,7 +548,7 @@ def _generate_time_series_data(
         "parameters": params,
     }
 
-    return X_ref, X_test, None, None, drift_info
+    return _create_dataset_result(X_ref, X_test, None, None, drift_info_dict, n_features)
 
 
 # Legacy function for backward compatibility
@@ -514,7 +571,12 @@ def generate_drift(
     Maps old parameter names to new function.
     """
     # Map old names to new constants
-    generator_map = {"gaussian": "GAUSSIAN", "mixed": "MIXED", "multimodal": "MULTIMODAL", "time_series": "TIME_SERIES"}
+    generator_map = {
+        "gaussian": "GAUSSIAN",
+        "mixed": "MIXED",
+        "multimodal": "MULTIMODAL",
+        "time_series": "TIME_SERIES",
+    }
 
     pattern_map = {
         "sudden": "SUDDEN",
@@ -542,7 +604,7 @@ def generate_drift(
     n_affected = max(1, int(drift_ratio * n_features))
     drift_affected_features = list(range(n_affected))
 
-    X_ref, X_test, y_ref, y_test, drift_info = generate_synthetic_data(
+    dataset_result = generate_synthetic_data(
         generator_name=new_generator,
         n_samples=n_samples,
         n_features=n_features,
@@ -557,9 +619,9 @@ def generate_drift(
         **kwargs,
     )
 
-    # Convert to DataFrames for backward compatibility
-    X_ref_df = pd.DataFrame(X_ref, columns=[f"feature_{i}" for i in range(n_features)])
-    X_test_df = pd.DataFrame(X_test, columns=[f"feature_{i}" for i in range(n_features)])
+    # Extract DataFrames from DatasetResult for backward compatibility
+    X_ref_df = dataset_result.X_ref
+    X_test_df = dataset_result.X_test
 
     # Legacy metadata format
     metadata = {
@@ -572,3 +634,89 @@ def generate_drift(
     }
 
     return X_ref_df, X_test_df, metadata
+
+
+def generate_synthetic_data_from_config(config: SyntheticDataConfig) -> DatasetResult:
+    """
+    Generate synthetic data using a SyntheticDataConfig object.
+
+    Args:
+        config: SyntheticDataConfig object containing all generation parameters
+
+    Returns:
+        DatasetResult containing:
+            - X_ref: Reference data features as pandas DataFrame
+            - X_test: Test data features (with drift) as pandas DataFrame
+            - y_ref: Reference data labels as pandas Series (None for unsupervised)
+            - y_test: Test data labels as pandas Series (None for unsupervised)
+            - drift_info: DriftInfo object with drift metadata
+            - metadata: Additional dataset metadata
+    """
+    return generate_synthetic_data(
+        generator_name=config.generator_name,
+        n_samples=config.n_samples,
+        n_features=config.n_features,
+        drift_pattern=config.drift_pattern,
+        drift_characteristic=config.drift_characteristic,
+        drift_magnitude=config.drift_magnitude,
+        drift_position=config.drift_position,
+        drift_duration=config.drift_duration,
+        drift_affected_features=config.drift_affected_features,
+        noise=config.noise,
+        categorical_features=config.categorical_features,
+        random_state=config.random_state,
+        **config.generator_params,
+    )
+
+
+def create_synthetic_data_config(
+    generator_name: DataGenerator,
+    n_samples: int,
+    n_features: int,
+    drift_pattern: DriftPattern,
+    drift_characteristic: DriftCharacteristic = "MEAN_SHIFT",
+    drift_magnitude: float = 1.0,
+    drift_position: float = 0.5,
+    drift_duration: Optional[float] = None,
+    drift_affected_features: Optional[List[int]] = None,
+    noise: float = 0.0,
+    categorical_features: Optional[List[int]] = None,
+    random_state: Optional[int] = None,
+    **generator_params,
+) -> SyntheticDataConfig:
+    """
+    Create a SyntheticDataConfig object from individual parameters.
+
+    Args:
+        generator_name: Type of data generator to use
+        n_samples: Total number of samples to generate
+        n_features: Number of features
+        drift_pattern: Pattern of drift (SUDDEN, GRADUAL, etc.)
+        drift_characteristic: Type of drift characteristic (MEAN_SHIFT, etc.)
+        drift_magnitude: Magnitude of the drift
+        drift_position: Position where drift occurs (0.0-1.0)
+        drift_duration: Duration of gradual drift (for GRADUAL pattern)
+        drift_affected_features: Indices of features affected by drift
+        noise: Amount of noise to add
+        categorical_features: Indices of categorical features
+        random_state: Random seed for reproducibility
+        **generator_params: Additional generator-specific parameters
+
+    Returns:
+        SyntheticDataConfig object with all parameters
+    """
+    return SyntheticDataConfig(
+        generator_name=generator_name,
+        n_samples=n_samples,
+        n_features=n_features,
+        drift_pattern=drift_pattern,
+        drift_characteristic=drift_characteristic,
+        drift_magnitude=drift_magnitude,
+        drift_position=drift_position,
+        drift_duration=drift_duration,
+        drift_affected_features=drift_affected_features,
+        noise=noise,
+        categorical_features=categorical_features,
+        random_state=random_state,
+        generator_params=generator_params,
+    )

@@ -11,7 +11,12 @@ import pandas as pd
 import pytest
 
 from drift_benchmark.constants.literals import DataGenerator, DriftCharacteristic, DriftPattern
-from drift_benchmark.data.generators import generate_drift, generate_synthetic_data
+from drift_benchmark.data.generators import (
+    create_synthetic_data_config,
+    generate_drift,
+    generate_synthetic_data,
+    generate_synthetic_data_from_config,
+)
 
 # =============================================================================
 # FIXTURES
@@ -59,7 +64,7 @@ class TestGenerateSyntheticData:
 
     def test_basic_gaussian_generation(self, base_generator_params):
         """Test basic Gaussian data generation."""
-        X_ref, X_test, y_ref, y_test, drift_info = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -67,29 +72,30 @@ class TestGenerateSyntheticData:
         )
 
         # Check basic properties
-        assert X_ref.shape[0] == 500  # Half the samples (drift_position=0.5)
-        assert X_test.shape[0] == 500
-        assert X_ref.shape[1] == base_generator_params["n_features"]
-        assert X_test.shape[1] == base_generator_params["n_features"]
+        assert result.X_ref.shape[0] == 500  # Half the samples (drift_position=0.5)
+        assert result.X_test.shape[0] == 500  # Half the samples
+        assert result.X_ref.shape[1] == 5  # Number of features
+        assert result.X_test.shape[1] == 5  # Number of features
+        assert result.y_ref is None  # Unsupervised
+        assert result.y_test is None  # Unsupervised
+        assert result.drift_info.has_drift  # Has drift
+        assert isinstance(result.X_ref, pd.DataFrame)
+        assert isinstance(result.X_test, pd.DataFrame)
 
         # Check that data is numeric
-        assert np.isfinite(X_ref).all()
-        assert np.isfinite(X_test).all()
+        assert np.isfinite(result.X_ref.values).all()
+        assert np.isfinite(result.X_test.values).all()
 
         # Check drift info
-        assert drift_info["generator"] == "GAUSSIAN"
-        assert drift_info["drift_pattern"] == "SUDDEN"
-        assert drift_info["drift_characteristic"] == "MEAN_SHIFT"
-        assert "drift_magnitude" in drift_info
-
-        # For unsupervised generation, labels should be None
-        assert y_ref is None
-        assert y_test is None
+        assert result.drift_info.metadata["generator"] == "GAUSSIAN"
+        assert result.drift_info.drift_pattern == "SUDDEN"
+        assert result.drift_info.drift_characteristics[0] == "MEAN_SHIFT"
+        assert result.drift_info.drift_magnitude is not None
 
     def test_all_generators_basic_functionality(self, base_generator_params, all_generators):
         """Test that all generators produce valid output."""
         for generator in all_generators:
-            X_ref, X_test, y_ref, y_test, drift_info = generate_synthetic_data(
+            result = generate_synthetic_data(
                 generator_name=generator,
                 drift_pattern="SUDDEN",
                 drift_characteristic="MEAN_SHIFT",
@@ -97,16 +103,16 @@ class TestGenerateSyntheticData:
             )
 
             # Basic shape checks
-            assert X_ref.shape[0] + X_test.shape[0] == base_generator_params["n_samples"]
-            assert X_ref.shape[1] == base_generator_params["n_features"]
-            assert X_test.shape[1] == base_generator_params["n_features"]
+            assert result.X_ref.shape[0] + result.X_test.shape[0] == base_generator_params["n_samples"]
+            assert result.X_ref.shape[1] == base_generator_params["n_features"]
+            assert result.X_test.shape[1] == base_generator_params["n_features"]
 
             # Data validity checks
-            assert np.isfinite(X_ref).all()
-            assert np.isfinite(X_test).all()
+            assert np.isfinite(result.X_ref.values).all()
+            assert np.isfinite(result.X_test.values).all()
 
             # Drift info checks
-            assert drift_info["generator"] == generator
+            assert result.drift_info.metadata["generator"] == generator
 
     def test_all_drift_patterns(self, base_generator_params, all_drift_patterns):
         """Test all drift patterns with Gaussian generator."""
@@ -116,7 +122,7 @@ class TestGenerateSyntheticData:
             if pattern == "GRADUAL":
                 params["drift_duration"] = 0.3
 
-            X_ref, X_test, y_ref, y_test, drift_info = generate_synthetic_data(
+            result = generate_synthetic_data(
                 generator_name="GAUSSIAN",
                 drift_pattern=pattern,
                 drift_characteristic="MEAN_SHIFT",
@@ -124,14 +130,14 @@ class TestGenerateSyntheticData:
             )
 
             # Basic checks
-            assert X_ref.shape[0] > 0
-            assert X_test.shape[0] > 0
-            assert drift_info["drift_pattern"] == pattern
+            assert result.X_ref.shape[0] > 0
+            assert result.X_test.shape[0] > 0
+            assert result.drift_info.metadata["drift_pattern"] == pattern
 
     def test_all_drift_characteristics(self, base_generator_params, all_drift_characteristics):
         """Test all drift characteristics with Gaussian generator."""
         for characteristic in all_drift_characteristics:
-            X_ref, X_test, y_ref, y_test, drift_info = generate_synthetic_data(
+            result = generate_synthetic_data(
                 generator_name="GAUSSIAN",
                 drift_pattern="SUDDEN",
                 drift_characteristic=characteristic,
@@ -139,14 +145,14 @@ class TestGenerateSyntheticData:
             )
 
             # Basic checks
-            assert X_ref.shape[0] > 0
-            assert X_test.shape[0] > 0
-            assert drift_info["drift_characteristic"] == characteristic
+            assert result.X_ref.shape[0] > 0
+            assert result.X_test.shape[0] > 0
+            assert result.drift_info.metadata["drift_characteristic"] == characteristic
 
     def test_drift_magnitude_effect(self, base_generator_params):
         """Test that drift magnitude affects the generated data."""
         # Generate data with low and high drift magnitude
-        X_ref_low, X_test_low, _, _, _ = generate_synthetic_data(
+        result_low = generate_synthetic_data(
             generator_name="GAUSSIAN",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -154,7 +160,7 @@ class TestGenerateSyntheticData:
             **{k: v for k, v in base_generator_params.items() if k != "drift_magnitude"},
         )
 
-        X_ref_high, X_test_high, _, _, _ = generate_synthetic_data(
+        result_high = generate_synthetic_data(
             generator_name="GAUSSIAN",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -163,11 +169,11 @@ class TestGenerateSyntheticData:
         )
 
         # Reference data should be similar (same seed)
-        np.testing.assert_allclose(X_ref_low, X_ref_high, rtol=1e-10)
+        np.testing.assert_allclose(result_low.X_ref.values, result_high.X_ref.values, rtol=1e-10)
 
         # Test data should be more different with higher drift magnitude
-        diff_low = np.abs(X_test_low.mean(axis=0) - X_ref_low.mean(axis=0))
-        diff_high = np.abs(X_test_high.mean(axis=0) - X_ref_high.mean(axis=0))
+        diff_low = np.abs(result_low.X_test.values.mean(axis=0) - result_low.X_ref.values.mean(axis=0))
+        diff_high = np.abs(result_high.X_test.values.mean(axis=0) - result_high.X_ref.values.mean(axis=0))
 
         # Higher drift should produce larger differences
         assert diff_high.mean() > diff_low.mean()
@@ -179,7 +185,7 @@ class TestGenerateSyntheticData:
         n_samples = base_generator_params["n_samples"]
 
         for position in positions:
-            X_ref, X_test, _, _, _ = generate_synthetic_data(
+            result = generate_synthetic_data(
                 generator_name="GAUSSIAN",
                 drift_pattern="SUDDEN",
                 drift_characteristic="MEAN_SHIFT",
@@ -190,14 +196,14 @@ class TestGenerateSyntheticData:
             expected_ref_samples = int(n_samples * position)
             expected_test_samples = n_samples - expected_ref_samples
 
-            assert X_ref.shape[0] == expected_ref_samples
-            assert X_test.shape[0] == expected_test_samples
+            assert result.X_ref.shape[0] == expected_ref_samples
+            assert result.X_test.shape[0] == expected_test_samples
 
     def test_drift_affected_features(self, base_generator_params):
         """Test that only specified features are affected by drift."""
         affected_features = [0, 2]  # Only first and third features
 
-        X_ref, X_test, _, _, drift_info = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -206,7 +212,7 @@ class TestGenerateSyntheticData:
         )
 
         # Calculate mean differences between reference and test data
-        mean_diffs = np.abs(X_test.mean(axis=0) - X_ref.mean(axis=0))
+        mean_diffs = np.abs(result.X_test.mean(axis=0) - result.X_ref.mean(axis=0))
 
         # Affected features should have larger differences
         for i in range(base_generator_params["n_features"]):
@@ -220,7 +226,7 @@ class TestGenerateSyntheticData:
     def test_noise_effect(self, base_generator_params):
         """Test that noise parameter affects data variability."""
         # Generate data with different noise levels
-        X_ref_low, X_test_low, _, _, _ = generate_synthetic_data(
+        result_low = generate_synthetic_data(
             generator_name="GAUSSIAN",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -228,7 +234,7 @@ class TestGenerateSyntheticData:
             **{k: v for k, v in base_generator_params.items() if k != "noise"},
         )
 
-        X_ref_high, X_test_high, _, _, _ = generate_synthetic_data(
+        result_high = generate_synthetic_data(
             generator_name="GAUSSIAN",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -237,8 +243,8 @@ class TestGenerateSyntheticData:
         )
 
         # Higher noise should produce higher variance
-        var_low = np.var(X_ref_low, axis=0).mean()
-        var_high = np.var(X_ref_high, axis=0).mean()
+        var_low = np.var(result_low.X_ref.values, axis=0).mean()
+        var_high = np.var(result_high.X_ref.values, axis=0).mean()
 
         assert var_high > var_low
 
@@ -260,14 +266,14 @@ class TestGenerateSyntheticData:
         )
 
         # Results should be identical
-        np.testing.assert_array_equal(result1[0], result2[0])  # X_ref
-        np.testing.assert_array_equal(result1[1], result2[1])  # X_test
+        np.testing.assert_array_equal(result1.X_ref.values, result2.X_ref.values)  # result.result.X_ref
+        np.testing.assert_array_equal(result1.X_test.values, result2.X_test.values)  # result.result.X_test
 
     def test_mixed_data_with_categorical_features(self, base_generator_params):
         """Test mixed data generation with categorical features."""
         categorical_features = [1, 3]
 
-        X_ref, X_test, _, _, drift_info = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="MIXED",
             drift_pattern="SUDDEN",
             drift_characteristic="DISTRIBUTION_SHIFT",
@@ -277,16 +283,16 @@ class TestGenerateSyntheticData:
 
         # Check that categorical features contain integer values
         for cat_feat in categorical_features:
-            assert np.all(X_ref[:, cat_feat] == X_ref[:, cat_feat].astype(int))
-            assert np.all(X_test[:, cat_feat] == X_test[:, cat_feat].astype(int))
+            assert np.all(result.X_ref.iloc[:, cat_feat] == result.X_ref.iloc[:, cat_feat].astype(int))
+            assert np.all(result.X_test.iloc[:, cat_feat] == result.X_test.iloc[:, cat_feat].astype(int))
 
         # Check drift info contains categorical feature information
-        assert "categorical_features" in drift_info
-        assert drift_info["categorical_features"] == categorical_features
+        assert "categorical_features" in result.drift_info.metadata
+        assert result.drift_info.metadata["categorical_features"] == categorical_features
 
     def test_gradual_drift_with_duration(self, base_generator_params):
         """Test gradual drift with specific duration."""
-        X_ref, X_test, _, _, drift_info = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             drift_pattern="GRADUAL",
             drift_characteristic="MEAN_SHIFT",
@@ -295,16 +301,16 @@ class TestGenerateSyntheticData:
         )
 
         # Basic checks
-        assert X_ref.shape[0] > 0
-        assert X_test.shape[0] > 0
+        assert result.X_ref.shape[0] > 0
+        assert result.X_test.shape[0] > 0
 
         # Check that drift_duration is recorded
-        assert "drift_duration" in drift_info
-        assert drift_info["drift_duration"] == 0.5
+        assert "drift_duration" in result.drift_info.metadata
+        assert result.drift_info.metadata["drift_duration"] == 0.5
 
     def test_multimodal_data_generation(self, base_generator_params):
         """Test multimodal data generation with specific parameters."""
-        X_ref, X_test, _, _, drift_info = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="MULTIMODAL",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -314,16 +320,16 @@ class TestGenerateSyntheticData:
         )
 
         # Basic checks
-        assert X_ref.shape[0] > 0
-        assert X_test.shape[0] > 0
-        assert drift_info["generator"] == "MULTIMODAL"
+        assert result.X_ref.shape[0] > 0
+        assert result.X_test.shape[0] > 0
+        assert result.drift_info.metadata["generator"] == "MULTIMODAL"
 
         # Check that generator parameters are recorded
-        assert "parameters" in drift_info
+        assert "parameters" in result.drift_info.metadata
 
     def test_time_series_data_generation(self, base_generator_params):
         """Test time series data generation."""
-        X_ref, X_test, _, _, drift_info = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="TIME_SERIES",
             drift_pattern="SUDDEN",
             drift_characteristic="MEAN_SHIFT",
@@ -333,9 +339,9 @@ class TestGenerateSyntheticData:
         )
 
         # Basic checks
-        assert X_ref.shape[0] > 0
-        assert X_test.shape[0] > 0
-        assert drift_info["generator"] == "TIME_SERIES"
+        assert result.X_ref.shape[0] > 0
+        assert result.X_test.shape[0] > 0
+        assert result.drift_info.metadata["generator"] == "TIME_SERIES"
 
     def test_invalid_generator_raises_error(self, base_generator_params):
         """Test that invalid generator names raise appropriate errors."""
@@ -346,6 +352,79 @@ class TestGenerateSyntheticData:
                 drift_characteristic="MEAN_SHIFT",
                 **base_generator_params,
             )
+
+    def test_synthetic_data_config_generation(self, base_generator_params):
+        """Test generation using SyntheticDataConfig object."""
+        # Create config object
+        config = create_synthetic_data_config(
+            generator_name="GAUSSIAN",
+            drift_pattern="SUDDEN",
+            drift_characteristic="MEAN_SHIFT",
+            **base_generator_params,
+        )
+
+        # Generate data using config
+        result = generate_synthetic_data_from_config(config)
+
+        # Check basic properties
+        assert result.X_ref.shape[0] == 500  # Half the samples (drift_position=0.5)
+        assert result.X_test.shape[0] == 500
+        assert result.X_ref.shape[1] == 5
+        assert result.X_test.shape[1] == 5
+        assert result.drift_info.has_drift
+        assert result.drift_info.metadata["generator"] == "GAUSSIAN"
+
+        # Verify config object attributes
+        assert config.generator_name == "GAUSSIAN"
+        assert config.n_samples == base_generator_params["n_samples"]
+        assert config.drift_pattern == "SUDDEN"
+
+    def test_config_vs_direct_generation_equivalence(self, base_generator_params):
+        """Test that config-based and direct generation produce equivalent results."""
+        # Generate data directly
+        result_direct = generate_synthetic_data(
+            generator_name="GAUSSIAN",
+            drift_pattern="SUDDEN",
+            drift_characteristic="MEAN_SHIFT",
+            **base_generator_params,
+        )
+
+        # Generate data using config
+        config = create_synthetic_data_config(
+            generator_name="GAUSSIAN",
+            drift_pattern="SUDDEN",
+            drift_characteristic="MEAN_SHIFT",
+            **base_generator_params,
+        )
+        result_config = generate_synthetic_data_from_config(config)
+
+        # Results should be identical (same random seed)
+        np.testing.assert_array_equal(result_direct.X_ref.values, result_config.X_ref.values)
+        np.testing.assert_array_equal(result_direct.X_test.values, result_config.X_test.values)
+        assert result_direct.drift_info.metadata == result_config.drift_info.metadata
+
+    def test_config_with_custom_generator_params(self, base_generator_params):
+        """Test SyntheticDataConfig with custom generator parameters."""
+        custom_params = {"mean": 2.0, "std": 0.5}
+
+        config = create_synthetic_data_config(
+            generator_name="GAUSSIAN",
+            drift_pattern="SUDDEN",
+            drift_characteristic="MEAN_SHIFT",
+            **base_generator_params,
+            **custom_params,
+        )
+
+        result = generate_synthetic_data_from_config(config)
+
+        # Check that custom params are in the config
+        assert config.generator_params["mean"] == 2.0
+        assert config.generator_params["std"] == 0.5
+
+        # Verify data generation worked
+        assert result.X_ref.shape[0] > 0
+        assert result.X_test.shape[0] > 0
+        assert result.drift_info.metadata["parameters"]["mean"] == 2.0
 
 
 class TestGenerateDrift:
@@ -488,7 +567,7 @@ class TestEdgeCases:
 
     def test_minimum_samples(self):
         """Test generation with minimum number of samples."""
-        X_ref, X_test, _, _, _ = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             n_samples=10,  # Very small
             n_features=2,
@@ -498,13 +577,13 @@ class TestEdgeCases:
             random_state=42,
         )
 
-        assert X_ref.shape[0] >= 1
-        assert X_test.shape[0] >= 1
-        assert X_ref.shape[0] + X_test.shape[0] == 10
+        assert result.X_ref.shape[0] >= 1
+        assert result.X_test.shape[0] >= 1
+        assert result.X_ref.shape[0] + result.X_test.shape[0] == 10
 
     def test_single_feature(self):
         """Test generation with single feature."""
-        X_ref, X_test, _, _, _ = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             n_samples=1000,
             n_features=1,
@@ -513,13 +592,13 @@ class TestEdgeCases:
             random_state=42,
         )
 
-        assert X_ref.shape[1] == 1
-        assert X_test.shape[1] == 1
+        assert result.X_ref.shape[1] == 1
+        assert result.X_test.shape[1] == 1
 
     def test_extreme_drift_positions(self):
         """Test with extreme drift positions."""
         # Test with very early drift position
-        X_ref, X_test, _, _, _ = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             n_samples=1000,
             n_features=3,
@@ -529,11 +608,11 @@ class TestEdgeCases:
             random_state=42,
         )
 
-        assert X_ref.shape[0] == 100
-        assert X_test.shape[0] == 900
+        assert result.X_ref.shape[0] == 100
+        assert result.X_test.shape[0] == 900
 
         # Test with very late drift position
-        X_ref, X_test, _, _, _ = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             n_samples=1000,
             n_features=3,
@@ -543,12 +622,12 @@ class TestEdgeCases:
             random_state=42,
         )
 
-        assert X_ref.shape[0] == 900
-        assert X_test.shape[0] == 100
+        assert result.X_ref.shape[0] == 900
+        assert result.X_test.shape[0] == 100
 
     def test_zero_noise(self):
         """Test generation with zero noise."""
-        X_ref, X_test, _, _, _ = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             n_samples=1000,
             n_features=3,
@@ -559,12 +638,12 @@ class TestEdgeCases:
         )
 
         # Should still produce valid data
-        assert np.isfinite(X_ref).all()
-        assert np.isfinite(X_test).all()
+        assert np.isfinite(result.X_ref.values).all()
+        assert np.isfinite(result.X_test.values).all()
 
     def test_large_drift_magnitude(self):
         """Test with very large drift magnitude."""
-        X_ref, X_test, _, _, _ = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="GAUSSIAN",
             n_samples=1000,
             n_features=3,
@@ -575,11 +654,11 @@ class TestEdgeCases:
         )
 
         # Should still produce finite values
-        assert np.isfinite(X_ref).all()
-        assert np.isfinite(X_test).all()
+        assert np.isfinite(result.X_ref.values).all()
+        assert np.isfinite(result.X_test.values).all()
 
         # Drift should be clearly visible
-        mean_diff = np.abs(X_test.mean(axis=0) - X_ref.mean(axis=0))
+        mean_diff = np.abs(result.X_test.mean(axis=0) - result.X_ref.mean(axis=0))
         assert mean_diff.mean() > 50.0  # Large difference expected
 
 
@@ -593,7 +672,7 @@ class TestIntegration:
 
     def test_complex_scenario(self):
         """Test a complex scenario with multiple drift features."""
-        X_ref, X_test, _, _, drift_info = generate_synthetic_data(
+        result = generate_synthetic_data(
             generator_name="MIXED",
             n_samples=2000,
             n_features=8,
@@ -609,10 +688,10 @@ class TestIntegration:
         )
 
         # Verify complex parameters
-        assert X_ref.shape[0] == 600  # 30% for reference
-        assert X_test.shape[0] == 1400  # 70% for test
-        assert X_ref.shape[1] == 8
-        assert X_test.shape[1] == 8
+        assert result.X_ref.shape[0] == 600  # 30% for reference
+        assert result.X_test.shape[0] == 1400  # 70% for test
+        assert result.X_ref.shape[1] == 8
+        assert result.X_test.shape[1] == 8
 
         # Check drift info contains all expected fields
         expected_fields = [
@@ -624,7 +703,7 @@ class TestIntegration:
             "parameters",
         ]
         for field in expected_fields:
-            assert field in drift_info
+            assert field in result.drift_info.metadata
 
     def test_all_combinations_basic(self):
         """Test basic functionality across all generator/pattern combinations."""
@@ -651,7 +730,7 @@ class TestIntegration:
                     if generator == "MIXED":
                         params["categorical_features"] = [1]
 
-                    X_ref, X_test, _, _, drift_info = generate_synthetic_data(
+                    result = generate_synthetic_data(
                         generator_name=generator,
                         drift_pattern=pattern,
                         drift_characteristic=characteristic,
@@ -659,8 +738,8 @@ class TestIntegration:
                     )
 
                     # Basic validation
-                    assert X_ref.shape[0] > 0
-                    assert X_test.shape[0] > 0
-                    assert drift_info["generator"] == generator
-                    assert drift_info["drift_pattern"] == pattern
-                    assert drift_info["drift_characteristic"] == characteristic
+                    assert result.X_ref.shape[0] > 0
+                    assert result.X_test.shape[0] > 0
+                    assert result.drift_info.metadata["generator"] == generator
+                    assert result.drift_info.metadata["drift_pattern"] == pattern
+                    assert result.drift_info.metadata["drift_characteristic"] == characteristic
