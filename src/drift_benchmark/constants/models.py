@@ -966,13 +966,13 @@ class DetectorPrediction(BaseDriftBenchmarkModel):
     def result(self) -> DetectionResult:
         """Get the classification of this detection result."""
         if self.has_true_drift and self.detected_drift:
-            return DetectionResult.TRUE_POSITIVE
+            return "true_positive"
         elif not self.has_true_drift and not self.detected_drift:
-            return DetectionResult.TRUE_NEGATIVE
+            return "true_negative"
         elif not self.has_true_drift and self.detected_drift:
-            return DetectionResult.FALSE_POSITIVE
+            return "false_positive"
         else:  # has_true_drift and not detected_drift
-            return DetectionResult.FALSE_NEGATIVE
+            return "false_negative"
 
 
 class BenchmarkResult(BaseDriftBenchmarkModel):
