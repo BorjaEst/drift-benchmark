@@ -48,6 +48,11 @@ The models are organized by functional categories:
    - DriftInfo: Drift characteristics metadata
    - DatasetMetadata: Dataset information and metadata
    - DatasetResult: Complete dataset loading result
+
+8. REGISTRY MODELS
+   - DetectorRegistryEntry: Model for a detector registry entry
+   - RegistryValidationResult: Results from registry validation
+   - DetectorSearchCriteria: Criteria for searching detectors
 """
 
 import datetime as dt
@@ -1353,4 +1358,84 @@ class DatasetResult(BaseDriftBenchmarkModel):
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
         description="Dataset metadata",
+    )
+
+
+# =============================================================================
+# 8. REGISTRY MODELS
+# =============================================================================
+
+
+class DetectorRegistryEntry(BaseDriftBenchmarkModel):
+    """Model for a detector registry entry."""
+
+    detector_class: Any = Field(
+        ...,
+        description="The detector class",
+    )
+    method_id: str = Field(
+        ...,
+        description="Method ID from methods.toml",
+    )
+    implementation_id: str = Field(
+        ...,
+        description="Implementation ID from methods.toml",
+    )
+    aliases: List[str] = Field(
+        default_factory=list,
+        description="Alternative names for the detector",
+    )
+    module_name: Optional[str] = Field(
+        default=None,
+        description="Name of the module where detector was found",
+    )
+
+
+class RegistryValidationResult(BaseDriftBenchmarkModel):
+    """Results from registry validation."""
+
+    total_registered: int = Field(
+        ...,
+        description="Total number of registered detectors",
+    )
+    valid_detectors: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of valid detector information",
+    )
+    invalid_detectors: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of invalid detector information",
+    )
+    missing_metadata: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of detectors with metadata issues",
+    )
+    validation_errors: List[str] = Field(
+        default_factory=list,
+        description="General validation errors",
+    )
+    total_methods_in_toml: Optional[int] = Field(
+        default=None,
+        description="Total methods available in methods.toml",
+    )
+
+
+class DetectorSearchCriteria(BaseDriftBenchmarkModel):
+    """Criteria for searching detectors."""
+
+    drift_type: Optional[DriftType] = Field(
+        default=None,
+        description="Type of drift the detector should handle",
+    )
+    data_dimension: Optional[DataDimension] = Field(
+        default=None,
+        description="Data dimensionality the detector should handle",
+    )
+    requires_labels: Optional[bool] = Field(
+        default=None,
+        description="Whether the detector requires labels",
+    )
+    library: Optional[str] = Field(
+        default=None,
+        description="Name of the library/adapter",
     )
