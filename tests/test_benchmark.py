@@ -62,6 +62,7 @@ def sample_benchmark_config():
             "name": "Test Benchmark",
             "description": "A test benchmark configuration",
             "author": "Test Author",
+            "version": "1.0.0",
         },
         "settings": {
             "seed": 42,
@@ -70,24 +71,28 @@ def sample_benchmark_config():
             "cv_folds": 5,
             "timeout_per_detector": 300,
             "parallel_execution": False,
-            "max_workers": 2,
+            "max_workers": None,
         },
         "data": {
             "datasets": [
                 {
                     "name": "synthetic_test",
-                    "type": "synthetic",
-                    "n_samples": 1000,
-                    "n_features": 4,
-                    "drift_pattern": "sudden",
-                    "drift_position": 0.5,
-                    "noise": 0.1,
+                    "type": "SYNTHETIC",
+                    "synthetic_config": {
+                        "n_samples": 1000,
+                        "n_features": 4,
+                        "drift_pattern": "sudden",
+                        "drift_position": 0.5,
+                        "noise": 0.1,
+                    },
                 },
                 {
                     "name": "file_test",
-                    "type": "file",
-                    "file_path": "test_data.csv",
-                    "target_column": "target",
+                    "type": "FILE",
+                    "file_config": {
+                        "file_path": "test_data.csv",
+                        "target_column": "target",
+                    },
                 },
             ]
         },
@@ -110,9 +115,14 @@ def sample_benchmark_config():
             ]
         },
         "evaluation": {
-            "metrics": ["ACCURACY", "PRECISION", "RECALL", "F1_SCORE"],
-            "bootstrap_samples": 100,
+            "metrics": [
+                {"name": "ACCURACY"},
+                {"name": "PRECISION"},
+                {"name": "RECALL"},
+                {"name": "F1_SCORE"},
+            ],
             "confidence_level": 0.95,
+            "bootstrap_samples": None,
         },
         "output": {
             "save_results": True,
@@ -172,6 +182,7 @@ def sample_detector_predictions():
         DetectorPrediction(
             dataset_name="test_dataset",
             window_id=1,
+            run_id=1,
             has_true_drift=True,
             detected_drift=True,
             detection_time=0.001,
@@ -180,6 +191,7 @@ def sample_detector_predictions():
         DetectorPrediction(
             dataset_name="test_dataset",
             window_id=2,
+            run_id=1,
             has_true_drift=True,
             detected_drift=True,
             detection_time=0.0015,
@@ -188,6 +200,7 @@ def sample_detector_predictions():
         DetectorPrediction(
             dataset_name="test_dataset",
             window_id=3,
+            run_id=1,
             has_true_drift=False,
             detected_drift=False,
             detection_time=0.0008,
@@ -249,6 +262,7 @@ def temp_config_file(sample_benchmark_config, tmp_path):
 name = "{sample_benchmark_config['metadata']['name']}"
 description = "{sample_benchmark_config['metadata']['description']}"
 author = "{sample_benchmark_config['metadata']['author']}"
+version = "{sample_benchmark_config['metadata']['version']}"
 
 [settings]
 seed = {sample_benchmark_config['settings']['seed']}
@@ -257,23 +271,26 @@ cross_validation = {str(sample_benchmark_config['settings']['cross_validation'])
 cv_folds = {sample_benchmark_config['settings']['cv_folds']}
 timeout_per_detector = {sample_benchmark_config['settings']['timeout_per_detector']}
 parallel_execution = {str(sample_benchmark_config['settings']['parallel_execution']).lower()}
-max_workers = {sample_benchmark_config['settings']['max_workers']}
 
 [data]
 [[data.datasets]]
 name = "{sample_benchmark_config['data']['datasets'][0]['name']}"
 type = "{sample_benchmark_config['data']['datasets'][0]['type']}"
-n_samples = {sample_benchmark_config['data']['datasets'][0]['n_samples']}
-n_features = {sample_benchmark_config['data']['datasets'][0]['n_features']}
-drift_pattern = "{sample_benchmark_config['data']['datasets'][0]['drift_pattern']}"
-drift_position = {sample_benchmark_config['data']['datasets'][0]['drift_position']}
-noise = {sample_benchmark_config['data']['datasets'][0]['noise']}
+
+[data.datasets.synthetic_config]
+n_samples = {sample_benchmark_config['data']['datasets'][0]['synthetic_config']['n_samples']}
+n_features = {sample_benchmark_config['data']['datasets'][0]['synthetic_config']['n_features']}
+drift_pattern = "{sample_benchmark_config['data']['datasets'][0]['synthetic_config']['drift_pattern']}"
+drift_position = {sample_benchmark_config['data']['datasets'][0]['synthetic_config']['drift_position']}
+noise = {sample_benchmark_config['data']['datasets'][0]['synthetic_config']['noise']}
 
 [[data.datasets]]
 name = "{sample_benchmark_config['data']['datasets'][1]['name']}"
 type = "{sample_benchmark_config['data']['datasets'][1]['type']}"
-file_path = "{sample_benchmark_config['data']['datasets'][1]['file_path']}"
-target_column = "{sample_benchmark_config['data']['datasets'][1]['target_column']}"
+
+[data.datasets.file_config]
+file_path = "{sample_benchmark_config['data']['datasets'][1]['file_config']['file_path']}"
+target_column = "{sample_benchmark_config['data']['datasets'][1]['file_config']['target_column']}"
 
 [detectors]
 [[detectors.algorithms]]
@@ -289,9 +306,19 @@ method_id = "{sample_benchmark_config['detectors']['algorithms'][1]['method_id']
 implementation_id = "{sample_benchmark_config['detectors']['algorithms'][1]['implementation_id']}"
 
 [evaluation]
-metrics = {sample_benchmark_config['evaluation']['metrics']}
-bootstrap_samples = {sample_benchmark_config['evaluation']['bootstrap_samples']}
 confidence_level = {sample_benchmark_config['evaluation']['confidence_level']}
+
+[[evaluation.metrics]]
+name = "ACCURACY"
+
+[[evaluation.metrics]]
+name = "PRECISION"
+
+[[evaluation.metrics]]
+name = "RECALL"
+
+[[evaluation.metrics]]
+name = "F1_SCORE"
 
 [output]
 save_results = {str(sample_benchmark_config['output']['save_results']).lower()}
@@ -308,10 +335,10 @@ visualization = {str(sample_benchmark_config['output']['visualization']).lower()
 def mock_dependencies():
     """Mock external dependencies to focus on benchmark logic."""
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
-        patch("drift_benchmark.adapters.registry.get_detector") as mock_get_detector,
-        patch("drift_benchmark.metrics.calculate_multiple_metrics") as mock_calculate_metrics,
-        patch("drift_benchmark.results.export_benchmark_result") as mock_save_results,
+        patch("drift_benchmark.benchmark.runner.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.benchmark.runner.get_detector") as mock_get_detector,
+        patch("drift_benchmark.benchmark.runner.calculate_multiple_metrics") as mock_calculate_metrics,
+        patch("drift_benchmark.benchmark.runner.export_benchmark_result") as mock_save_results,
     ):
 
         yield {
@@ -998,8 +1025,8 @@ class TestErrorHandling:
             results = runner.run(continue_on_error=True)
 
         assert isinstance(results, DriftEvaluationResult)
-        # Should have results for the successful dataset only
-        assert len(results.results) == 1
+        # Should have results for the successful dataset only (1 dataset × 2 detectors = 2 results)
+        assert len(results.results) == 2
 
     def test_detector_initialization_error(self, sample_benchmark_config, mock_dependencies, sample_dataset_result):
         """Test handling of detector initialization errors."""
@@ -1062,46 +1089,55 @@ class TestConfigurationValidation:
 
         runner = BenchmarkRunner(config=sample_benchmark_config)
 
-        with patch("drift_benchmark.detectors.get_detector") as mock_get_detector:
-            mock_detector_info = Mock()
-            mock_detector_info.data_dimension = "UNIVARIATE"
-            mock_detector_info.data_types = ["CONTINUOUS"]
-            mock_detector_info.requires_labels = False
-            mock_get_detector.return_value = mock_detector_info
+        # Since get_detector is imported inside the method, we need to patch the import
+        import drift_benchmark.detectors
 
+        mock_detector_info = Mock()
+        mock_detector_info.data_dimension = "UNIVARIATE"
+        mock_detector_info.data_types = ["CONTINUOUS"]
+        mock_detector_info.requires_labels = False
+
+        # Store original function and replace it
+        original_get_detector = drift_benchmark.detectors.get_detector
+        drift_benchmark.detectors.get_detector = Mock(return_value=mock_detector_info)
+
+        try:
             validation = runner.validate_detector_compatibility()
 
             assert isinstance(validation, dict)
             # Should detect multivariate datasets with univariate detectors
             assert len(validation) > 0
+        finally:
+            # Restore original function
+            drift_benchmark.detectors.get_detector = original_get_detector
 
     def test_validate_metric_configuration(self, sample_benchmark_config):
         """Test validation of metric configuration."""
+        from pydantic import ValidationError
+
         from drift_benchmark.benchmark import BenchmarkRunner
 
         # Add invalid metric
         config = sample_benchmark_config.copy()
-        config["evaluation"]["metrics"] = ["INVALID_METRIC", "ACCURACY"]
+        config["evaluation"]["metrics"] = [{"name": "INVALID_METRIC"}, {"name": "ACCURACY"}]
 
-        runner = BenchmarkRunner(config=config)
-        validation = runner.validate_configuration()
-
-        assert validation["is_valid"] is False
-        assert any("INVALID_METRIC" in error for error in validation["errors"])
+        # Should raise validation error during initialization due to invalid metric
+        with pytest.raises(ValidationError, match="INVALID_METRIC"):
+            runner = BenchmarkRunner(config=config)
 
     def test_validate_output_configuration(self, sample_benchmark_config):
         """Test validation of output configuration."""
+        from pydantic import ValidationError
+
         from drift_benchmark.benchmark import BenchmarkRunner
 
         # Add invalid export format
         config = sample_benchmark_config.copy()
         config["output"]["export_format"] = ["INVALID_FORMAT"]
 
-        runner = BenchmarkRunner(config=config)
-        validation = runner.validate_configuration()
-
-        assert validation["is_valid"] is False
-        assert any("INVALID_FORMAT" in error for error in validation["errors"])
+        # Should raise validation error during initialization due to invalid export format
+        with pytest.raises(ValidationError, match="INVALID_FORMAT"):
+            runner = BenchmarkRunner(config=config)
 
 
 class TestBenchmarkReproducibility:
@@ -1129,6 +1165,8 @@ class TestBenchmarkReproducibility:
         self, sample_benchmark_config, mock_dependencies, sample_dataset_result, mock_detector_class
     ):
         """Test that results differ when using different seeds."""
+        import copy
+
         from drift_benchmark.benchmark import BenchmarkRunner
 
         mock_dependencies["load_dataset"].return_value = sample_dataset_result
@@ -1136,10 +1174,10 @@ class TestBenchmarkReproducibility:
         mock_dependencies["calculate_metrics"].return_value = {"accuracy": 0.85}
 
         # Run with different seeds
-        config1 = sample_benchmark_config.copy()
+        config1 = copy.deepcopy(sample_benchmark_config)
         config1["settings"]["seed"] = 42
 
-        config2 = sample_benchmark_config.copy()
+        config2 = copy.deepcopy(sample_benchmark_config)
         config2["settings"]["seed"] = 123
 
         runner1 = BenchmarkRunner(config=config1)

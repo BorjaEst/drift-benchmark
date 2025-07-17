@@ -26,13 +26,7 @@ from sklearn.preprocessing import (
     StandardScaler,
 )
 
-from drift_benchmark.constants import (
-    EncodingConfig,
-    ImputationConfig,
-    OutlierConfig,
-    PreprocessingConfig,
-    ScalingConfig,
-)
+from drift_benchmark.constants import EncodingConfig, ImputationConfig, OutlierConfig, PreprocessingConfig, ScalingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +34,7 @@ logger = logging.getLogger(__name__)
 _preprocessing_state = {}
 
 
-def apply_preprocessing_pipeline(
-    X: np.ndarray, preprocessing_steps: List[PreprocessingConfig], fit: bool = True
-) -> np.ndarray:
+def apply_preprocessing_pipeline(X: np.ndarray, preprocessing_steps: List[PreprocessingConfig], fit: bool = True) -> np.ndarray:
     """
     Apply a preprocessing pipeline to data.
 
@@ -190,7 +182,7 @@ def _apply_encoding(X: np.ndarray, step: PreprocessingConfig, step_key: str, fit
             handle_unknown="ignore" if config.handle_unknown == "ignore" else "error",
             sparse_output=False,
         )
-    elif config.method == "LABEL":
+    elif config.method == "PRIOR":
         encoder = LabelEncoder()
     elif config.method == "ORDINAL":
         encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)

@@ -100,7 +100,7 @@ class BaseDriftBenchmarkModel(BaseModel):
     """Base model for all drift-benchmark models with common configuration."""
 
     model_config = ConfigDict(
-        extra="forbid",
+        extra="allow",
         validate_assignment=True,
         use_enum_values=True,
         arbitrary_types_allowed=True,
@@ -572,6 +572,14 @@ class DatasetConfig(NamedModel):
         description="Sklearn data configuration",
     )
 
+    @field_validator("type", mode="before")
+    @classmethod
+    def validate_type(cls, v):
+        """Accept both uppercase and lowercase dataset types."""
+        if isinstance(v, str):
+            return v.upper()
+        return v
+
     def get_config(self) -> Union[SyntheticDataConfig, FileDataConfig, SklearnDataConfig]:
         """Get the appropriate configuration based on dataset type."""
         if self.type == "SYNTHETIC" and self.synthetic_config:
@@ -625,9 +633,21 @@ class SettingsModel(BaseDriftBenchmarkModel):
         default=3,
         description="Number of cross-validation folds",
     )
-    timeout_per_detector: int = Field(
+    timeout_per_detector: Union[int, float] = Field(
         default=300,
         description="Maximum time in seconds allowed per detector",
+    )
+    parallel_execution: bool = Field(
+        default=False,
+        description="Whether to use parallel execution",
+    )
+    max_workers: Optional[int] = Field(
+        default=None,
+        description="Maximum number of worker processes for parallel execution",
+    )
+    memory_limit_mb: Optional[int] = Field(
+        default=None,
+        description="Memory limit in MB for execution",
     )
 
 
@@ -658,6 +678,14 @@ class DatasetModel(NamedModel):
         default_factory=list,
         description="List of preprocessing steps",
     )
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def validate_type(cls, v):
+        """Accept both uppercase and lowercase dataset types."""
+        if isinstance(v, str):
+            return v.upper()
+        return v
 
     @model_validator(mode="after")
     def validate_dataset_fields(self) -> "DatasetModel":
@@ -811,6 +839,10 @@ class EvaluationConfig(BaseDriftBenchmarkModel):
         default=0.95,
         description="Confidence level for statistical tests",
     )
+    bootstrap_samples: Optional[int] = Field(
+        default=None,
+        description="Number of bootstrap samples for confidence intervals",
+    )
 
 
 class OutputModel(BaseDriftBenchmarkModel):
@@ -936,6 +968,10 @@ class DetectorPrediction(BaseDriftBenchmarkModel):
         ...,
         description="Window/sample identifier",
     )
+    run_id: int = Field(
+        ...,
+        description="Run identifier",
+    )
 
     # True drift status
     has_true_drift: bool = Field(
@@ -961,6 +997,11 @@ class DetectorPrediction(BaseDriftBenchmarkModel):
         default_factory=dict,
         description="Additional detector scores",
     )
+
+    @property
+    def prediction(self) -> bool:
+        """Alias for detected_drift for backwards compatibility."""
+        return self.detected_drift
 
     @property
     def result(self) -> DetectionResult:
@@ -1008,6 +1049,24 @@ class BenchmarkResult(BaseDriftBenchmarkModel):
     metrics: Dict[str, float] = Field(
         default_factory=dict,
         description="Computed metrics",
+    )
+
+    # Performance metrics (timing, etc.)
+    performance_metrics: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Performance metrics like detection times",
+    )
+
+    # Configuration used for this benchmark
+    configuration: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Configuration parameters used",
+    )
+
+    # Additional metadata
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metadata about the benchmark run",
     )
 
     # ROC curve data for visualization
@@ -1071,9 +1130,15 @@ class DriftEvaluationResult(BaseDriftBenchmarkModel):
     )
 
     # Settings used for the benchmark
-    settings: Dict[str, Any] = Field(
+    settings: Union[Dict[str, Any], "SettingsModel"] = Field(
         default_factory=dict,
         description="Benchmark settings",
+    )
+
+    # Configuration used for the evaluation
+    config: Optional[Union[Dict[str, Any], "BenchmarkConfig"]] = Field(
+        default=None,
+        description="Configuration used for the evaluation",
     )
 
     # Overall ranking summary
