@@ -13,76 +13,16 @@ import toml
 
 
 @pytest.fixture(scope="module")
-def sample_methods_toml_content():
-    """Provide realistic methods.toml content for testing"""
-    return {
-        "kolmogorov_smirnov": {
-            "name": "Kolmogorov-Smirnov Test",
-            "description": "Two-sample Kolmogorov-Smirnov test for distribution comparison",
-            "drift_types": ["COVARIATE"],
-            "family": "STATISTICAL_TEST",
-            "data_dimension": "UNIVARIATE",
-            "data_types": ["CONTINUOUS"],
-            "requires_labels": False,
-            "references": [
-                "https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test",
-                "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstest.html",
-            ],
-            "implementations": {
-                "scipy_ks": {
-                    "name": "SciPy KS Test",
-                    "execution_mode": "BATCH",
-                    "hyperparameters": ["alpha", "alternative"],
-                    "references": ["https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html"],
-                },
-                "river_ks": {
-                    "name": "River KS Test",
-                    "execution_mode": "STREAMING",
-                    "hyperparameters": ["window_size", "alpha"],
-                    "references": ["https://riverml.xyz/0.15.0/api/drift/KSWIN/"],
-                },
-            },
-        },
-        "page_hinkley": {
-            "name": "Page-Hinkley Test",
-            "description": "Sequential change detection test for monitoring data streams",
-            "drift_types": ["COVARIATE", "CONCEPT"],
-            "family": "CHANGE_DETECTION",
-            "data_dimension": "UNIVARIATE",
-            "data_types": ["CONTINUOUS"],
-            "requires_labels": False,
-            "references": ["https://en.wikipedia.org/wiki/Page%E2%80%99s_trend_test", "https://riverml.xyz/0.15.0/api/drift/PageHinkley/"],
-            "implementations": {
-                "river_ph": {
-                    "name": "River Page-Hinkley",
-                    "execution_mode": "STREAMING",
-                    "hyperparameters": ["min_instances", "delta", "threshold", "alpha"],
-                    "references": ["https://riverml.xyz/0.15.0/api/drift/PageHinkley/"],
-                }
-            },
-        },
-        "chi_square": {
-            "name": "Chi-Square Test",
-            "description": "Chi-square test for categorical data drift detection",
-            "drift_types": ["COVARIATE", "PRIOR"],
-            "family": "STATISTICAL_TEST",
-            "data_dimension": "MULTIVARIATE",
-            "data_types": ["CATEGORICAL", "MIXED"],
-            "requires_labels": True,
-            "references": [
-                "https://en.wikipedia.org/wiki/Chi-squared_test",
-                "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html",
-            ],
-            "implementations": {
-                "scipy_chi": {
-                    "name": "SciPy Chi-Square",
-                    "execution_mode": "BATCH",
-                    "hyperparameters": ["alpha", "ddof"],
-                    "references": ["https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi2_contingency.html"],
-                }
-            },
-        },
-    }
+def actual_methods_toml_path():
+    """Provide path to actual methods.toml file"""
+    return Path(__file__).parent.parent.parent / "src" / "drift_benchmark" / "detectors" / "methods.toml"
+
+
+@pytest.fixture(scope="module")
+def sample_methods_toml_content(actual_methods_toml_path):
+    """Load actual methods.toml content for testing"""
+    with open(actual_methods_toml_path, "r") as f:
+        return toml.load(f)
 
 
 @pytest.fixture(scope="function")
@@ -91,7 +31,8 @@ def mock_methods_registry():
     # Clear any existing cache before each test
     try:
         from drift_benchmark.detectors import load_methods
-        if hasattr(load_methods, 'cache_clear'):
+
+        if hasattr(load_methods, "cache_clear"):
             load_methods.cache_clear()
     except (ImportError, AttributeError):
         pass
@@ -118,7 +59,7 @@ def sample_validation_errors():
                 "data_types": ["CONTINUOUS"],
                 "requires_labels": False,
                 "references": [],
-                "implementations": {}
+                "implementations": {},
             }
         },
         "invalid_execution_mode": {
@@ -136,93 +77,72 @@ def sample_validation_errors():
                         "name": "Invalid Implementation",
                         "execution_mode": "INVALID_MODE",
                         "hyperparameters": [],
-                        "references": []
+                        "references": [],
                     }
-                }
+                },
             }
-        }
+        },
     }
 
 
 @pytest.fixture(scope="function")
-def temp_methods_toml():
+def temp_methods_toml(sample_methods_toml_content):
     """Create a temporary methods.toml file for testing file operations"""
     temp_dir = Path(tempfile.mkdtemp())
     temp_file = temp_dir / "methods.toml"
-    
+
+    # Write actual methods.toml content to temp file
+    with open(temp_file, "w") as f:
+        toml.dump(sample_methods_toml_content, f)
+
     yield temp_file
-    
+
     # Cleanup
     import shutil
+
     shutil.rmtree(temp_dir)
 
 
 @pytest.fixture(scope="module")
-def comprehensive_method_examples():
-    """Provide comprehensive examples of different method types for testing"""
-    return {
-        "statistical_method": {
-            "name": "Statistical Method",
-            "description": "Example statistical test method",
-            "drift_types": ["COVARIATE"],
-            "family": "STATISTICAL_TEST",
-            "data_dimension": "UNIVARIATE",
-            "data_types": ["CONTINUOUS"],
-            "requires_labels": False,
-            "references": ["https://example.com/paper1"],
-            "implementations": {
-                "batch_impl": {
-                    "name": "Batch Implementation",
-                    "execution_mode": "BATCH",
-                    "hyperparameters": ["threshold", "alpha"],
-                    "references": []
-                }
-            }
-        },
-        "ml_method": {
-            "name": "Machine Learning Method",
-            "description": "Example ML-based drift detection method",
-            "drift_types": ["COVARIATE", "CONCEPT"],
-            "family": "MACHINE_LEARNING",
-            "data_dimension": "MULTIVARIATE",
-            "data_types": ["CONTINUOUS", "CATEGORICAL"],
-            "requires_labels": True,
-            "references": ["https://example.com/paper2"],
-            "implementations": {
-                "neural_impl": {
-                    "name": "Neural Network Implementation",
-                    "execution_mode": "BATCH",
-                    "hyperparameters": ["learning_rate", "epochs", "hidden_layers"],
-                    "references": ["https://example.com/implementation"]
-                },
-                "streaming_impl": {
-                    "name": "Streaming Implementation", 
-                    "execution_mode": "STREAMING",
-                    "hyperparameters": ["window_size", "learning_rate"],
-                    "references": []
-                }
-            }
-        },
-        "ensemble_method": {
-            "name": "Ensemble Method",
-            "description": "Example ensemble drift detection method",
-            "drift_types": ["COVARIATE", "CONCEPT", "PRIOR"],
-            "family": "ENSEMBLE",
-            "data_dimension": "MULTIVARIATE",
-            "data_types": ["MIXED"],
-            "requires_labels": False,
-            "references": ["https://example.com/paper3"],
-            "implementations": {
-                "voting_impl": {
-                    "name": "Voting Ensemble",
-                    "execution_mode": "BATCH",
-                    "hyperparameters": ["base_detectors", "voting_strategy"],
-                    "references": []
-                }
-            }
-        }
-    }
+def comprehensive_method_examples(sample_methods_toml_content):
+    """Provide comprehensive examples of different method types from actual methods.toml"""
+    methods = sample_methods_toml_content
 
+    # Find examples of different families and execution modes from actual data
+    examples = {}
+
+    # Find a statistical test method
+    for method_id, method_data in methods.items():
+        if method_data.get("family") == "STATISTICAL_TEST" and "statistical_method" not in examples:
+            examples["statistical_method"] = method_data
+            break
+
+    # Find a distance-based method
+    for method_id, method_data in methods.items():
+        if method_data.get("family") == "DISTANCE_BASED" and "distance_method" not in examples:
+            examples["distance_method"] = method_data
+            break
+
+    # Find a window-based method
+    for method_id, method_data in methods.items():
+        if method_data.get("family") == "WINDOW_BASED" and "window_method" not in examples:
+            examples["window_method"] = method_data
+            break
+
+    # Find a change detection method
+    for method_id, method_data in methods.items():
+        if method_data.get("family") == "CHANGE_DETECTION" and "change_detection_method" not in examples:
+            examples["change_detection_method"] = method_data
+            break
+
+    # If we don't have enough variety, add some fallbacks
+    if len(examples) < 3:
+        # Add first few methods as examples
+        method_ids = list(methods.keys())[:3]
+        for i, method_id in enumerate(method_ids):
+            examples[f"method_{i+1}"] = methods[method_id]
+
+    return examples
 
 
 @pytest.fixture
@@ -261,12 +181,12 @@ def invalid_methods_toml_content():
 
 
 @pytest.fixture
-def methods_registry_service():
-    """Provide a mock service class for testing registry operations"""
+def methods_registry_service(sample_methods_toml_content):
+    """Provide a mock service class for testing registry operations with actual data"""
 
     class MockMethodsRegistryService:
-        def __init__(self, methods_data):
-            self._methods = methods_data
+        def __init__(self, methods_data=None):
+            self._methods = methods_data or sample_methods_toml_content
 
         def load_methods(self):
             return self._methods
@@ -292,6 +212,23 @@ def methods_registry_service():
     return MockMethodsRegistryService
 
 
+@pytest.fixture(scope="module")
+def actual_method_ids(sample_methods_toml_content):
+    """Provide actual method IDs from the methods.toml file"""
+    return list(sample_methods_toml_content.keys())
+
+
+@pytest.fixture(scope="module")
+def actual_implementation_examples(sample_methods_toml_content):
+    """Provide examples of actual method/implementation combinations"""
+    examples = []
+    for method_id, method_data in sample_methods_toml_content.items():
+        implementations = method_data.get("implementations", {})
+        for impl_id in implementations.keys():
+            examples.append((method_id, impl_id))
+    return examples
+
+
 # Exception classes that should be available for testing
 class MethodNotFoundError(Exception):
     """Exception raised when a method is not found in the registry"""
@@ -307,7 +244,7 @@ class ImplementationNotFoundError(Exception):
 
 @pytest.fixture
 def validation_schemas():
-    """Provide validation schemas for methods.toml structure"""
+    """Provide validation schemas for methods.toml structure based on actual file"""
     return {
         "required_method_fields": ["name", "description", "drift_types", "family", "data_dimension", "data_types", "requires_labels"],
         "required_implementation_fields": ["name", "execution_mode", "hyperparameters", "references"],
