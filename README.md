@@ -1,63 +1,67 @@
-# Drift Benchmark Library
+# 🚀 Drift Benchmark Library
 
 [![PyPI version](https://badge.fury.io/py/drift-benchmark.svg)](https://badge.fury.io/py/drift-benchmark)
 [![Documentation Status](https://readthedocs.org/projects/drift-benchmark/badge/?version=latest)](https://drift-benchmark.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/license-GNU%20GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
-## Project Overview
+## 📋 Project Overview
 
-drift-benchmark is a comprehensive Python library designed to benchmark various drift detection frameworks and algorithms across multiple libraries and implementations. It provides a standardized, extensible platform for:
+**drift-benchmark** is a comprehensive Python library designed to benchmark various drift detection frameworks and algorithms across multiple libraries and implementations. It provides a standardized, extensible platform for performance evaluation and reproducible research.
 
-**Requirements:**
+### 📋 Requirements
 
-- Python 3.10+
+- **Python**: 3.10+
 
-**Key Features:**
+### ✨ Key Features
 
-- **Performance Evaluation**: Compare drift detection methods across different scenarios and datasets
-- **Method Discovery**: Centralized registry of 40+ drift detection methods with detailed metadata
-- **Implementation Flexibility**: Support for both streaming and batch processing modes
-- **Framework Integration**: Adapters for popular libraries (Evidently, Alibi Detect, Frouros, etc.)
-- **Reproducible Research**: Standardized benchmarking protocols and result reporting
+| Feature                           | Description                                                                |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| 📊 **Performance Evaluation**     | Compare drift detection methods across different scenarios and datasets    |
+| 🔍 **Method Discovery**           | Centralized registry of 40+ drift detection methods with detailed metadata |
+| ⚡ **Implementation Flexibility** | Support for both streaming and batch processing modes                      |
+| 🔗 **Framework Integration**      | Adapters for popular libraries (Evidently, Alibi Detect, Frouros, etc.)    |
+| 🔬 **Reproducible Research**      | Standardized benchmarking protocols and result reporting                   |
 
-**Key Concepts:**
+### 🔑 Key Concepts
 
-- **Method**: A drift detection algorithm (e.g., Kolmogorov-Smirnov Test)
-- **Implementation**: A variant of a method (e.g., batch vs streaming)
-- **Detector**: Concrete implementation by a library (e.g., Evidently's KS Test)
-- **Adapter**: Bridge between library detectors and drift-benchmark interface
+| Concept            | Definition                                                     | Example                 |
+| ------------------ | -------------------------------------------------------------- | ----------------------- |
+| **Method**         | A drift detection algorithm                                    | Kolmogorov-Smirnov Test |
+| **Implementation** | A variant of a method                                          | batch vs streaming      |
+| **Detector**       | Concrete implementation by a library                           | Evidently's KS Test     |
+| **Adapter**        | Bridge between library detectors and drift-benchmark interface | EvidentiallyAdapter     |
 
 ## Project Structure
 
 ```text
 drift-benchmark/
-├── components/                  # Specific detector implementations
-├── configurations/              # Configuration files for benchmarks
-├── datasets/                    # Additional datasets for benchmarking from user
-├── docs/                        # Documentation files
-├── figures/                     # Generated figures and visualizations
-├── logs/                        # Log files for benchmark runs
-├── notebooks/                   # Example notebooks for usage
-├── results/                     # Output directory for benchmark results
-├── scripts/                     # Utility scripts for data generation and preprocessing
-├── src/drift_benchmark/         # Main package directory
-│   ├── __init__.py              # Package initialization
-│   ├── adapters/                # Adapters for different drift detection libraries
-│   ├── benchmark/               # Benchmarking runner and execution logic
-│   ├── constants/               # Constants and pydantic model definitions
-│   ├── data/                    # Data generation and utilities
-│   ├── detectors/               # Drift detection methods and implementations
-│   ├── evaluation/              # Evaluation engines and metrics
-│   ├── results/                 # Result storage and files generation
-│   └── settings.py              # Configuration settings
-├── tests/                       # Test directory
-├── LICENSE/                     # License file
-├── pyproject.toml               # Project configuration and dependencies
-├── README.md                    # Project documentation
-└── REQUIREMENTS.txt             # TDD requirements file
+├── 📁 components/                  # Specific detector implementations
+├── 📁 configurations/              # Configuration files for benchmarks
+├── 📁 datasets/                    # Additional datasets for benchmarking from user
+├── 📁 docs/                        # Documentation files
+├── 📁 figures/                     # Generated figures and visualizations
+├── 📁 logs/                        # Log files for benchmark runs
+├── 📁 notebooks/                   # Example notebooks for usage
+├── 📁 results/                     # Output directory for benchmark results
+├── 📁 scripts/                     # Utility scripts for data generation and preprocessing
+├── 📁 src/drift_benchmark/         # Main package directory
+│   ├── 📄 __init__.py              # Package initialization
+│   ├── 📁 adapters/                # Adapters for different drift detection libraries
+│   ├── 📁 benchmark/               # Benchmarking runner and execution logic
+│   ├── 📁 constants/               # Constants and pydantic model definitions
+│   ├── 📁 data/                    # Data generation and utilities
+│   ├── 📁 detectors/               # Drift detection methods and implementations
+│   ├── 📁 evaluation/              # Evaluation engines and metrics
+│   ├── 📁 results/                 # Result storage and files generation
+│   └── 📄 settings.py              # Configuration settings
+├── 📁 tests/                       # Test directory
+├── 📄 LICENSE/                     # License file
+├── 📄 pyproject.toml               # Project configuration and dependencies
+├── 📄 README.md                    # Project documentation
+└── 📄 REQUIREMENTS.txt             # TDD requirements file
 ```
 
-## Configuration settings
+## ⚙️ Configuration Settings
 
 **Settings Configuration:**
 
@@ -80,7 +84,7 @@ logger = settings.get_logger(__name__)
 settings.to_env_file("my_config.env")
 ```
 
-**Available Settings:**
+### 📊 Available Settings
 
 | Setting              | Type     | Default            | Description                                       | Environment Variable                 |
 | -------------------- | -------- | ------------------ | ------------------------------------------------- | ------------------------------------ |
@@ -95,38 +99,39 @@ settings.to_env_file("my_config.env")
 | `random_seed`        | int/None | `42`               | Random seed for reproducibility                   | `DRIFT_BENCHMARK_RANDOM_SEED`        |
 | `memory_limit_mb`    | int      | `4096`             | Memory limit in MB (512-32768)                    | `DRIFT_BENCHMARK_MEMORY_LIMIT_MB`    |
 
-**Configuration Methods:**
+### 🔧 Configuration Methods
 
-1. **Environment Variables:**
+#### 1. **Environment Variables:**
 
-   ```bash
-   export DRIFT_BENCHMARK_LOG_LEVEL=DEBUG
-   export DRIFT_BENCHMARK_MAX_WORKERS=8
-   export DRIFT_BENCHMARK_DATASETS_DIR=/data/drift-datasets
-   ```
+```bash
+export DRIFT_BENCHMARK_LOG_LEVEL=DEBUG
+export DRIFT_BENCHMARK_MAX_WORKERS=8
+export DRIFT_BENCHMARK_DATASETS_DIR=/data/drift-datasets
+```
 
-2. **`.env` File:**
+#### 2. **`.env` File:**
 
-   ```bash
-   # Copy example and customize
-   cp .env.example .env
-   # Edit .env file with your settings
-   ```
+```bash
+# Copy example and customize
+cp .env.example .env
+# Edit .env file with your settings
+```
 
-3. **Programmatic Configuration:**
+#### 3. **Programmatic Configuration:**
 
-   ```python
-   from drift_benchmark.settings import Settings
+```python
+from drift_benchmark.settings import Settings
 
-   # Create custom settings instance
-   custom_settings = Settings(
-       log_level="DEBUG",
-       max_workers=8,
-       datasets_dir="/custom/datasets"
-   )
-   ```
+# Create custom settings instance
+custom_settings = Settings(
+    log_level="DEBUG",
+    max_workers=8,
+    datasets_dir="/custom/datasets"
+)
+```
 
-**Path Properties:**
+### 📂 Path Properties
+
 All directory settings provide both string and Path object access:
 
 ```python
@@ -138,18 +143,19 @@ settings.components_path  # Path("/absolute/path/to/components")
 settings.results_path.mkdir(parents=True, exist_ok=True)
 ```
 
-## Adapters integrations
+## 🔗 Adapters Integrations
 
 This module contains the detector registry and base implementation framework.
 
-**Key Components:**
+### 🔑 Key Components
 
-- **BaseDetector**: Abstract base class defining the common interface for all detectors
-- **Registry System**: Dynamic loading and registration of detector implementations
-- **Alias Support**: Multiple naming conventions from different libraries
-- **Metadata Management**: Standardized detector information and capabilities
+| Component               | Description                                                         |
+| ----------------------- | ------------------------------------------------------------------- |
+| **BaseDetector**        | Abstract base class defining the common interface for all detectors |
+| **Registry System**     | Dynamic loading and registration of detector implementations        |
+| **Metadata Management** | Standardized detector information and capabilities                  |
 
-**BaseDetector Interface:**
+### 🏗️ BaseDetector Interface
 
 ```python
 from drift_benchmark.detectors.base import BaseDetector, register_method
@@ -170,7 +176,7 @@ class MyDetector(BaseDetector):
         """Return the current detection scores/statistics."""
 ```
 
-## How to run benchmarks
+## 🚀 How to Run Benchmarks
 
 The most simple way to run benchmarks is to use the `BenchmarkRunner` class, which handles configuration, execution, and result storage.
 
@@ -184,7 +190,7 @@ runner = BenchmarkRunner(config_file="config_example1.toml")
 results = runner.run()
 ```
 
-### Configuration System
+### 🔧 Configuration System
 
 The configuration system uses **Pydantic v2** for comprehensive validation and type safety:
 
@@ -196,33 +202,19 @@ config = BenchmarkConfig(
     data=DataConfig(...),
     detectors=DetectorConfig(...),
     evaluation=EvaluationConfig(...),
-    strategies=StrategyConfig(...)
 )
 ```
 
-**Metadata Model:**
+### 📋 Configuration Models
 
-- **name**: Name of the benchmark
-- **description**: Detailed description
-- **authors**: List of authors
-- **version**: Version of the benchmark
+| Model                        | Description                                                             |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| **Metadata Model**           | Name, description, authors, and version of the benchmark                |
+| **Data Configuration**       | List of datasets to use for benchmarking                                |
+| **Detectors Configuration**  | List of detector configurations to benchmark                            |
+| **Evaluation Configuration** | Cross-validation, significance tests, metrics, and performance settings |
 
-**Data Configuration:**
-
-- **datasets**: List of datasets to use for benchmarking
-
-**Detectors Configuration:**
-
-- **detectors**: List of detector configurations to benchmark
-
-**Evaluation Configuration:**
-
-- **cross_validation**: Enable cross-validation
-- **cv_folds**: Number of folds for cross-validation
-- **significance_tests**: Enable statistical significance tests
-- **confidence_level**: Confidence level for significance tests
-- **metrics**: List of metrics to evaluate (e.g., accuracy, precision)
-- **performance**: Performance metrics to collect (e.g., memory usage, CPU time)
+### 📄 Example Configuration
 
 Example configuration file (`config_example1.toml`):
 
@@ -259,119 +251,88 @@ performance_analysis   = ["rankings", "robustness", "heatmaps"]
 runtime_analysis       = ["memory_usage", "cpu_time"]
 ```
 
-### Benchmark Runtime Features
+### ⚡ Benchmark Runtime Features
 
-**Parallel Execution**:
+| Feature                | Description                                               |
+| ---------------------- | --------------------------------------------------------- |
+| **Parallel Execution** | Thread-based parallelism with configurable worker pools   |
+| **Timeout Management** | Per-detector timeout configuration with graceful handling |
+| **Memory Management**  | Efficient data handling for large datasets                |
+| **Progress Tracking**  | Real-time progress bars with detailed logging             |
 
-- Thread-based parallelism for detector evaluation
-- Configurable worker pools
-- Automatic load balancing
-- Memory-efficient task distribution
-- Default sequential execution for better timing accuracy
+### 📊 Statistical Analysis Features
 
-**Timeout Management**:
+| Feature                   | Description                                                        |
+| ------------------------- | ------------------------------------------------------------------ |
+| **Comprehensive Metrics** | Standard classification metrics, detection delay, ROC analysis     |
+| **Statistical Testing**   | Significance tests, effect size calculations, confidence intervals |
+| **Performance Analysis**  | Detector rankings, robustness analysis, performance matrices       |
+| **Run-time Analysis**     | Memory usage, CPU time, execution time profiling                   |
+| **Result Aggregation**    | Cross-validation analysis, trend analysis, statistical summaries   |
 
-- Per-detector timeout configuration
-- Graceful handling of slow detectors
-- Comprehensive error reporting
+### 📤 Output and Reports
 
-**Memory Management**:
+#### Multiple Output Formats
 
-- Efficient data handling for large datasets
-- Streaming result processing
-- Automatic cleanup of temporary files
+| Format   | Description                                 |
+| -------- | ------------------------------------------- |
+| **JSON** | Complete structured results with metadata   |
+| **CSV**  | Detailed metrics, rankings, and predictions |
+| **TOML** | Copy of used configuration                  |
 
-**Progress Tracking**:
-
-- Real-time progress bars with `tqdm`
-- Detailed logging at multiple levels
-- Performance timing and profiling
-
-### Statistical Analysis Features
-
-**Comprehensive Metrics**:
-
-- Standard classification metrics (accuracy, precision, recall, F1)
-- Detection delay analysis
-- ROC curve analysis
-
-**Statistical Testing**:
-
-- Significance tests between detectors (t-test, Mann-Whitney U)
-- Effect size calculations (Cohen's d)
-- Confidence intervals
-- Multiple comparison corrections
-
-**Performance Analysis**:
-
-- Detector rankings across multiple metrics
-- Robustness analysis across datasets
-- Performance matrices and heatmaps
-
-**Run-time Analysis**:
-
-- Memory usage profiling
-- CPU time profiling
-- Execution time breakdown by detector and dataset
-
-**Result Aggregation**:
-
-- Results grouped by detector and dataset
-- Statistical summaries (mean, std, percentiles)
-- Cross-validation analysis
-- Trend analysis
-
-### Export and Visualization
-
-**Multiple Export Formats**:
-
-- **JSON**: For the complete structured results with metadata.
-- **CSV**: For detailed metrics, rankings, and predictions.
-- **TOML**: Copy of used configuration.
-
-**Comprehensive Exports**:
+#### Comprehensive Multiformat Results
 
 ```text
 results/
-├── benchmark_results.json     # Complete structured results
-├── detector_*metric*.csv      # Performance metrics by detector
-├── config_info.toml           # Configuration used
-└── benchmark.log              # Detailed execution log
+├── 📄 benchmark_results.json     # Complete structured results
+├── 📄 detector_*metric*.csv      # Performance metrics by detector
+├── 📄 config_info.toml           # Configuration used
+└── 📄 benchmark.log              # Detailed execution log
 ```
 
-## How use data
+## 📊 How to Use Data
 
-**Key Features:**
+### 🔑 Key Features
 
-- **Configuration-Driven**: All data operations driven by strongly-typed Pydantic configurations
-- **Multiple Data Sources**: Support for synthetic, file-based, and sklearn datasets as scenarios
-- **Custom dataset loading**: Universal `load_dataset` function to use user-defined datasets
-- **Type Safety**: Full type hints and automatic validation throughout
+| Feature                    | Description                                                          |
+| -------------------------- | -------------------------------------------------------------------- |
+| **Configuration-Driven**   | All data operations driven by strongly-typed Pydantic configurations |
+| **Multiple Data Sources**  | Support for synthetic, file-based, and sklearn datasets as scenarios |
+| **Custom Dataset Loading** | Universal `load_dataset` function to use user-defined datasets       |
+| **Type Safety**            | Full type hints and automatic validation throughout                  |
 
-**Drift Classification:**
+### 📚 Drift Classification
 
-- **Concept**: Changes in the relationship between features and labels P(y|X)
-- **Covariate**: Changes in the distribution of input features P(X)
-- **Prior**: Shifts in the distribution of labels P(y)
+| Type          | Description                                                     | Example                       |
+| ------------- | --------------------------------------------------------------- | ----------------------------- |
+| **Concept**   | Changes in the relationship between features and labels P(y\|X) | Different decision boundaries |
+| **Covariate** | Changes in the distribution of input features P(X)              | Feature distribution shifts   |
+| **Prior**     | Shifts in the distribution of labels P(y)                       | Class proportion changes      |
 
-**Labeling Classification**:
+### 🏷️ Labeling Classification
 
-- **Supervised**: Data where all labels are known, used to train supervised algorithms
-- **Unsupervised**: Data where labels are not known, used for unsupervised algorithms
-- **Semi-supervised**: Data with some known labels, used for semi-supervised algorithms
+| Type                | Description                     | Use Case                    |
+| ------------------- | ------------------------------- | --------------------------- |
+| **Supervised**      | Data where all labels are known | Train supervised algorithms |
+| **Unsupervised**    | Data where labels are not known | Unsupervised algorithms     |
+| **Semi-supervised** | Data with some known labels     | Semi-supervised algorithms  |
 
-**Dimension Classification**:
+### 📏 Dimension Classification
 
-- **Univariate**: Single feature analysis
-- **Multivariate**: Multiple feature analysis
+| Type             | Description               |
+| ---------------- | ------------------------- |
+| **Univariate**   | Single feature analysis   |
+| **Multivariate** | Multiple feature analysis |
 
-**Data Types Classification:**
+### 📈 Data Types Classification
 
-- **Continuous**: Numerical data with continuous values
-- **Categorical**: Discrete data with finite categories
-- **Mixed**: Combination of continuous and categorical features
+| Type            | Description                                        |
+| --------------- | -------------------------------------------------- |
+| **Continuous**  | Numerical data with continuous values              |
+| **Categorical** | Discrete data with finite categories               |
+| **Mixed**       | Combination of continuous and categorical features |
 
-**Data interface:**
+### 🔧 Data Interface
 
 ```python
 from drift_benchmark.data import (
@@ -386,7 +347,7 @@ from drift_benchmark.data import (
 )
 ```
 
-**Core Components:**
+### 🏗️ Core Components
 
 ```python
 from drift_benchmark.constants.models import DatasetResult
@@ -401,22 +362,26 @@ class DatasetResult:
     metadata: DatasetMetadata    # Dataset metadata
 ```
 
-### Generators - Synthetic Data and Drift Simulation
+### 🎲 Generators - Synthetic Data and Drift Simulation
 
-**Available Generators:**
+#### Available Generators
 
-- **gaussian**: Multivariate normal distributions
-- **multimodal**: Multiple modes in feature distributions
-- **time_series**: Temporal data with trend and seasonality
+| Generator       | Description                              |
+| --------------- | ---------------------------------------- |
+| **gaussian**    | Multivariate normal distributions        |
+| **multimodal**  | Multiple modes in feature distributions  |
+| **time_series** | Temporal data with trend and seasonality |
 
-**Drift Patterns:**
+#### Drift Patterns
 
-- **sudden**: Abrupt change at specified position
-- **gradual**: Smooth transition over specified duration
-- **incremental**: Step-wise changes over time
-- **recurring**: Periodic drift patterns
+| Pattern         | Description                               |
+| --------------- | ----------------------------------------- |
+| **sudden**      | Abrupt change at specified position       |
+| **gradual**     | Smooth transition over specified duration |
+| **incremental** | Step-wise changes over time               |
+| **recurring**   | Periodic drift patterns                   |
 
-**Usage:**
+#### Usage Example
 
 ```python
 from drift_benchmark.data import gen_synthetic
@@ -441,20 +406,24 @@ config = SyntheticDataConfig(
 result = gen_synthetic(config)
 ```
 
-### Scenarios - Built-in Datasets with Drift
+### 🎭 Scenarios - Built-in Datasets with Drift
 
-**Available Scenarios:**
+#### Available Scenarios
 
-- **iris_species_drift**: Iris species drift - Setosa vs Versicolor/Virginica classification (class-based, COVARIATE/CONCEPT)
-- **iris_feature_drift**: Iris feature drift - samples with smaller vs larger measurements (feature-based, COVARIATE)
-- **wine_quality_drift**: Wine quality drift - class 0 vs classes 1&2 (class-based, COVARIATE/CONCEPT)
-- **wine_alcohol_drift**: Wine alcohol content drift - low vs high alcohol wines (feature-based, COVARIATE)
-- **breast_cancer_severity_drift**: Breast cancer severity drift - benign vs malignant (class-based, COVARIATE/CONCEPT)
-- **breast_cancer_size_drift**: Breast cancer tumor size drift - smaller vs larger tumors (feature-based, COVARIATE)
-- **diabetes_progression_drift**: Diabetes progression drift - low vs high progression scores (target-based, CONCEPT)
-- **digits_complexity_drift**: Digits complexity drift - simple vs complex digits (class-based, COVARIATE/CONCEPT)
+| Scenario                         | Description                                                        | Type              |
+| -------------------------------- | ------------------------------------------------------------------ | ----------------- |
+| **iris_species_drift**           | Iris species drift - Setosa vs Versicolor/Virginica classification | COVARIATE/CONCEPT |
+| **iris_feature_drift**           | Iris feature drift - samples with smaller vs larger measurements   | COVARIATE         |
+| **wine_quality_drift**           | Wine quality drift - class 0 vs classes 1&2                        | COVARIATE/CONCEPT |
+| **wine_alcohol_drift**           | Wine alcohol content drift - low vs high alcohol wines             | COVARIATE         |
+| **breast_cancer_severity_drift** | Breast cancer severity drift - benign vs malignant                 | COVARIATE/CONCEPT |
+| **breast_cancer_size_drift**     | Breast cancer tumor size drift - smaller vs larger tumors          | COVARIATE         |
+| **diabetes_progression_drift**   | Diabetes progression drift - low vs high progression scores        | CONCEPT           |
+| **digits_complexity_drift**      | Digits complexity drift - simple vs complex digits                 | COVARIATE/CONCEPT |
 
-> All these scenarios are Supervised because the underlying datasets provide labels/targets, and those labels are either used for splitting or available for evaluation. None are Unsupervised or Semi-Supervised by default.
+> **Note**: All these scenarios are Supervised because the underlying datasets provide labels/targets, and those labels are either used for splitting or available for evaluation. None are Unsupervised or Semi-Supervised by default.
+
+#### Scenario Loading Example
 
 ```python
 from drift_benchmark.data import get_scenarios, load_scenario
@@ -467,7 +436,7 @@ print(datasets.keys())  # ['iris_species_drift', 'iris_feature_drift', ...]
 dataresult = load_scenario("iris_species_drift")
 ```
 
-**Data Types and Validation:**
+#### Data Types and Validation
 
 All data configurations use comprehensive Pydantic models with automatic validation:
 
@@ -488,28 +457,34 @@ config = SyntheticDataConfig(
 )
 ```
 
-## Detectors Registry
+## 🔍 Detectors Registry
 
 Drift benchmark provides a centralized registry for drift detection methods through the `methods.toml` configuration file. It standardizes method metadata, implementation details, and execution modes so users can map the adapter detector to the correct method and implementation for benchmarking.
 
-**Detector Families:**
+### 👥 Detector Families
 
-- **STATISTICAL_TEST**: Hypothesis testing approaches
-- **DISTANCE_BASED**: Distribution distance measures
-- **STATISTICAL_PROCESS_CONTROL**: Control chart methods
-- **CHANGE_DETECTION**: Sequential change detection
-- **WINDOW_BASED**: Sliding window approaches
-- **ENSEMBLE**: Ensemble methods
-- **MACHINE_LEARNING**: ML-based approaches
+| Family                          | Description                    |
+| ------------------------------- | ------------------------------ |
+| **STATISTICAL_TEST**            | Hypothesis testing approaches  |
+| **DISTANCE_BASED**              | Distribution distance measures |
+| **STATISTICAL_PROCESS_CONTROL** | Control chart methods          |
+| **CHANGE_DETECTION**            | Sequential change detection    |
+| **WINDOW_BASED**                | Sliding window approaches      |
+| **ENSEMBLE**                    | Ensemble methods               |
+| **MACHINE_LEARNING**            | ML-based approaches            |
 
-**Execution Modes:**
+### ⚡ Execution Modes
 
-- **BATCH**: Process complete datasets at once
-- **STREAMING**: Process data incrementally as it arrives
+| Mode          | Description                              |
+| ------------- | ---------------------------------------- |
+| **BATCH**     | Process complete datasets at once        |
+| **STREAMING** | Process data incrementally as it arrives |
 
-**Hyperparameters:** Standardized hyperparameter names and types for each implementation, allowing users to configure detectors easily.
+### ⚙️ Hyperparameters
 
-**Method Metadata Structure:**
+Standardized hyperparameter names and types for each implementation, allowing users to configure detectors easily.
+
+### 📋 Method Metadata Structure
 
 ```toml
 [method_id]
@@ -529,53 +504,56 @@ Drift benchmark provides a centralized registry for drift detection methods thro
         references      = []  # Implementation-specific references
 ```
 
-## Final notes on defining adapters
+## 📝 Final Notes on Defining Adapters
 
 When defining a new adapter, follow these guidelines:
 
-1. **Performance Optimization**:
+### 🚀 Performance Optimization
 
-   - Avoid heavy computation in `fit()` method
-   - Avoid heavy computation in `detect()` method
-   - Cache expensive operations
-   - Use efficient data structures
-   - Minimize external library overhead
+| Guideline                     | Description                                            |
+| ----------------------------- | ------------------------------------------------------ |
+| **Avoid Heavy Computation**   | Minimize computation in `fit()` and `detect()` methods |
+| **Cache Operations**          | Cache expensive operations for reuse                   |
+| **Efficient Data Structures** | Use appropriate data structures for performance        |
+| **Minimize Library Overhead** | Reduce external library computational overhead         |
 
-2. **Documentation**: Include docstrings with:
-   - Method description and references
-   - Parameter specifications
-   - Return value descriptions
-   - Usage examples
+### 📚 Documentation
 
-## Testing
+Include docstrings with:
 
-Testing is a critical part of the drift-benchmark library development. The project is designed using TDD principles, ensuring that all components are thoroughly tested before implementation.
+- Method description and references
+- Parameter specifications
+- Return value descriptions
+- Usage examples
 
-**Test Structure:**
+## 🧪 Testing
+
+Testing is a critical part of the drift-benchmark library development. The project is designed using **TDD principles**, ensuring that all components are thoroughly tested before implementation.
+
+### 📁 Test Structure
 
 ```text
 tests/
-├── assets/                        # Test data and mock components
-│   ├── components/                # Mock detector implementations
-│   ├── configurations/            # Mock benchmark configurations
-│   ├── datasets/                  # Mock datasets for testing
-│   └── etc...                     # Additional assets to simplify fixtures
-├── conftest.py                    # Pytest root configuration and fixtures
-└── test_<module_name>/            # Test modules for each component
-    ├── conftest.py                # Pytest module configuration and fixtures
-    └── test_<requirments>.py      # Test modules for specific requirements
+├── 📁 assets/                        # Test data and mock components
+│   ├── 📁 components/                # Mock detector implementations
+│   ├── 📁 configurations/            # Mock benchmark configurations
+│   ├── 📁 datasets/                  # Mock datasets for testing
+│   └── 📁 etc...                     # Additional assets to simplify fixtures
+├── 📄 conftest.py                    # Pytest root configuration and fixtures
+└── 📁 test_<module_name>/            # Test modules for each component
+    ├── 📄 conftest.py                # Pytest module configuration and fixtures
+    └── 📄 test_<requirements>.py      # Test modules for specific requirements
 ```
 
-**Running Tests:**
+### 🚀 Running Tests
 
-```bash
-# Run all tests
-pytest tests/
+| Command                                                 | Description                  |
+| ------------------------------------------------------- | ---------------------------- |
+| `pytest tests/`                                         | Run all tests                |
+| `pytest tests/test_benchmark.py`                        | Run specific test modules    |
+| `pytest tests/test_detectors/`                          | Run directory-specific tests |
+| `pytest tests/ --cov=drift_benchmark --cov-report=html` | Run with coverage reporting  |
 
-# Run specific test modules
-pytest tests/test_benchmark.py
-pytest tests/test_detectors/
+---
 
-# Run with coverage
-pytest tests/ --cov=drift_benchmark --cov-report=html
-```
+**📋 Summary**: The drift-benchmark library provides a comprehensive, well-tested platform for benchmarking drift detection methods across multiple frameworks, with extensive configuration options, multiple data sources, and robust result management.
