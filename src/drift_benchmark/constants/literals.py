@@ -7,6 +7,26 @@ DriftType = Literal[
     "PRIOR",  # P(y) changes
 ]
 
+# Data types the detector can handle
+DataType = Literal[
+    "CONTINUOUS",  # Continuous numerical data
+    "CATEGORICAL",  # Categorical data
+    "MIXED",  # Mixed continuous and categorical data
+]
+
+# Data dimensionality the detector can handle
+DataDimension = Literal[
+    "UNIVARIATE",  # Single feature analysis
+    "MULTIVARIATE",  # Multiple features analysis simultaneously
+]
+
+# Algorithm type that uses the data
+DataAlgorithm = Literal[
+    "SUPERVISED",  # Requires labeled data
+    "UNSUPERVISED",  # Does not require labeled data
+    "SEMI_SUPERVISED",  # Uses both labeled and unlabeled data
+]
+
 # Execution mode of the detector
 ExecutionMode = Literal[
     "STREAMING",  # Process data points one by one
@@ -24,33 +44,6 @@ DetectorFamily = Literal[
     "MACHINE_LEARNING",  # Machine learning-based drift detection
 ]
 
-# Data dimensionality the detector can handle
-DataDimension = Literal[
-    "UNIVARIATE",  # Single feature analysis
-    "MULTIVARIATE",  # Multiple features analysis simultaneously
-]
-
-# Data types the detector can handle
-DataType = Literal[
-    "CONTINUOUS",  # Continuous numerical data
-    "CATEGORICAL",  # Categorical data
-    "MIXED",  # Mixed continuous and categorical data
-]
-
-# Algorithm type that uses the data
-DataAlgorithm = Literal[
-    "SUPERVISED",  # Requires labeled data
-    "UNSUPERVISED",  # Does not require labeled data
-    "SEMI_SUPERVISED",  # Uses both labeled and unlabeled data
-]
-
-# Dataset types for loading data
-DatasetType = Literal[
-    "SYNTHETIC",  # Generated synthetic data
-    "FILE",  # Load from file (CSV, Parquet, etc.)
-    "SKLEARN",  # Built-in scikit-learn datasets
-    "BUILTIN",  # Built-in datasets (legacy compatibility)
-]
 
 # Drift patterns for synthetic data generation
 DriftPattern = Literal[
@@ -58,8 +51,16 @@ DriftPattern = Literal[
     "GRADUAL",  # Smooth transition over specified duration
     "INCREMENTAL",  # Step-wise changes
     "RECURRING",  # Periodic drift patterns
-    "SEASONAL",  # Seasonal patterns in time series
 ]
+
+
+# Dataset types for loading data
+DatasetType = Literal[
+    "SYNTHETIC",  # Generated synthetic data
+    "FILE",  # Load from file (CSV, Parquet, etc.)
+    "SCENARIO",  # Built-in scikit-learn datasets
+]
+
 
 # Drift characteristics for synthetic data
 DriftCharacteristic = Literal[
@@ -81,66 +82,9 @@ DataGenerator = Literal[
 FileFormat = Literal[
     "CSV",  # Comma-separated values
     "PARQUET",  # Apache Parquet format
-    "EXCEL",  # Excel spreadsheet
     "JSON",  # JSON format
+    "MARKDOWN",  # Markdown format
     "DIRECTORY",  # Directory containing multiple files
-]
-
-# Preprocessing methods
-PreprocessingMethod = Literal[
-    "STANDARDIZE",  # Standardization (z-score normalization)
-    "NORMALIZE",  # Min-max normalization
-    "ROBUST_SCALE",  # Robust scaling using median and IQR
-    "HANDLE_MISSING",  # Missing value imputation
-    "ENCODE_CATEGORICAL",  # Categorical variable encoding
-    "PCA",  # Principal Component Analysis
-    "REMOVE_OUTLIERS",  # Outlier removal
-]
-
-# Scaling methods
-ScalingMethod = Literal[
-    "STANDARD",  # StandardScaler
-    "MINMAX",  # MinMaxScaler
-    "ROBUST",  # RobustScaler
-    "MAXABS",  # MaxAbsScaler
-    "QUANTILE",  # QuantileTransformer
-]
-
-# Missing value imputation strategies
-ImputationStrategy = Literal[
-    "MEAN",  # Mean imputation for numerical features
-    "MEDIAN",  # Median imputation for numerical features
-    "MODE",  # Mode imputation for categorical features
-    "CONSTANT",  # Constant value imputation
-    "FORWARD_FILL",  # Forward fill for time series
-    "BACKWARD_FILL",  # Backward fill for time series
-    "INTERPOLATE",  # Linear interpolation
-]
-
-# Categorical encoding methods
-EncodingMethod = Literal[
-    "ONEHOT",  # One-hot encoding
-    "PRIOR",  # Label encoding
-    "TARGET",  # Target encoding
-    "BINARY",  # Binary encoding
-    "ORDINAL",  # Ordinal encoding
-]
-
-# Outlier detection methods
-OutlierMethod = Literal[
-    "ISOLATION_FOREST",  # Isolation Forest
-    "LOCAL_OUTLIER_FACTOR",  # Local Outlier Factor
-    "ELLIPTIC_ENVELOPE",  # Elliptic Envelope
-    "ZSCORE",  # Z-score based outlier detection
-    "IQR",  # Interquartile Range method
-]
-
-# Export formats for benchmark results
-ExportFormat = Literal[
-    "CSV",  # Comma-separated values
-    "JSON",  # JavaScript Object Notation
-    "PICKLE",  # Python pickle format
-    "EXCEL",  # Microsoft Excel format
 ]
 
 # Logging levels
