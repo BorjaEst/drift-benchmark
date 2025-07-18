@@ -180,7 +180,7 @@ This module provides comprehensive, configuration-driven utilities for data load
 
 This module provides a centralized registry for drift detection methods through the `methods.toml` configuration file. It standardizes method metadata, implementation details, and execution modes so users can map the adapter detector to the correct method and implementation for benchmarking.
 
-### 📋 Registry Core Functions
+### 📋 Detectors Core
 
 | ID              | Requirement                   | Description                                                                                                                                |
 | --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -194,7 +194,7 @@ This module provides a centralized registry for drift detection methods through 
 | **REQ-DET-008** | **TOML Schema Validation**    | methods.toml must be validated against schema with proper error messages for invalid entries                                               |
 | **REQ-DET-009** | **Extensible Design**         | Registry must support dynamic addition of new methods without code changes, only TOML updates                                              |
 
-### 👥 Detector Families Support
+### 👥 Detectors Families
 
 | ID              | Requirement                            | Description                                                                                                     |
 | --------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -207,7 +207,7 @@ This module provides a centralized registry for drift detection methods through 
 | **REQ-DET-016** | **Machine Learning Family**            | Registry must support MACHINE_LEARNING family for ML-based approaches                                           |
 | **REQ-DET-017** | **Family Validation**                  | Registry must validate that method families match MethodFamily literal values and raise error for invalid types |
 
-### ⚡ Execution Modes Support
+### ⚡ Detectors Execution
 
 | ID              | Requirement                   | Description                                                                                                      |
 | --------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -215,7 +215,7 @@ This module provides a centralized registry for drift detection methods through 
 | **REQ-DET-019** | **Streaming Execution Mode**  | Registry must support STREAMING execution mode for methods that process data incrementally as it arrives         |
 | **REQ-DET-020** | **Execution Mode Validation** | Registry must validate that execution modes match ExecutionMode literal values and raise error for invalid modes |
 
-### 📊 Drift Types Support
+### 📊 Detectors DriftTypes
 
 | ID              | Requirement                 | Description                                                                                              |
 | --------------- | --------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -224,40 +224,40 @@ This module provides a centralized registry for drift detection methods through 
 | **REQ-DET-023** | **Prior Drift Support**     | Registry must support PRIOR drift type for changes in label distributions P(y)                           |
 | **REQ-DET-024** | **Drift Type Validation**   | Registry must validate that drift types match DriftType literal values and raise error for invalid types |
 
-### 📏 Data Characteristics Support
+### 📏 Detectors DataTypes
 
-| ID              | Requirement                         | Description                                                                                  |
-| --------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
-| **REQ-DET-025** | **Univariate Data Dimension**       | Registry must support UNIVARIATE data dimension for single feature analysis                  |
-| **REQ-DET-026** | **Multivariate Data Dimension**     | Registry must support MULTIVARIATE data dimension for multiple feature analysis              |
-| **REQ-DET-027** | **Continuous Data Type**            | Registry must support CONTINUOUS data type for numerical data with continuous values         |
-| **REQ-DET-028** | **Categorical Data Type**           | Registry must support CATEGORICAL data type for discrete data with finite categories         |
-| **REQ-DET-029** | **Mixed Data Type**                 | Registry must support MIXED data type for combination of continuous and categorical features |
-| **REQ-DET-030** | **Data Characteristics Validation** | Registry must validate data_dimension and data_types against respective literal values       |
+| ID              | Requirement                         | Description                                                                                            |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **REQ-DET-025** | **Univariate Data Dimension**       | Registry must support UNIVARIATE data dimension for single feature analysis                            |
+| **REQ-DET-026** | **Multivariate Data Dimension**     | Registry must support MULTIVARIATE data dimension for multiple feature analysis                        |
+| **REQ-DET-027** | **Continuous Data Type**            | Registry must support CONTINUOUS data type for numerical data with continuous values                   |
+| **REQ-DET-028** | **Categorical Data Type**           | Registry must support CATEGORICAL data type for discrete data with finite categories                   |
+| **REQ-DET-029** | **Mixed Data Type**                 | Registry must support MIXED data type for combination of continuous and categorical features           |
+| **REQ-DET-030** | **Data Characteristics Validation** | Registry must validate data_dimension and data_types against respective literal values                 |
+| **REQ-DET-031** | **Requires Labels Field**           | Each method must specify requires_labels boolean indicating if method needs labeled data for operation |
 
-### ⚙️ Hyperparameters and Configuration
+### ⚙️ Detectors Hyperparameters
 
 | ID              | Requirement                   | Description                                                                                                  |
 | --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **REQ-DET-031** | **Hyperparameter Definition** | Each implementation must define standardized hyperparameter names and types for easy detector configuration  |
-| **REQ-DET-032** | **Hyperparameter Validation** | Registry must validate that hyperparameters are defined as lists of strings in implementation configurations |
-| **REQ-DET-033** | **Default Parameter Values**  | Registry should support optional default values for hyperparameters in implementation metadata               |
+| **REQ-DET-032** | **Hyperparameter Definition** | Each implementation must define standardized hyperparameter names and types for easy detector configuration  |
+| **REQ-DET-033** | **Hyperparameter Validation** | Registry must validate that hyperparameters are defined as lists of strings in implementation configurations |
+| **REQ-DET-034** | **Default Parameter Values**  | Registry should support optional default values for hyperparameters in implementation metadata               |
 
-### 📚 References and Documentation
+### 📚 Detectors References
 
 | ID              | Requirement                   | Description                                                                                 |
 | --------------- | ----------------------------- | ------------------------------------------------------------------------------------------- |
-| **REQ-DET-034** | **Academic References**       | Each method must include academic references as URLs to original papers or documentation    |
-| **REQ-DET-035** | **Implementation References** | Each implementation may include implementation-specific references for variant details      |
-| **REQ-DET-036** | **Reference Validation**      | Registry must validate that references are provided as lists of strings (URLs or citations) |
+| **REQ-DET-035** | **Academic References**       | Each method must include academic references as URLs to original papers or documentation    |
+| **REQ-DET-036** | **Implementation References** | Each implementation may include implementation-specific references for variant details      |
+| **REQ-DET-037** | **Reference Validation**      | Registry must validate that references are provided as lists of strings (URLs or citations) |
 
-### 🔄 Method Metadata Structure
+### 🔄 Detectors Structure
 
 | ID              | Requirement                        | Description                                                                                                                          |
 | --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **REQ-DET-037** | **Method Metadata Schema**         | Methods must follow TOML schema: name, description, drift_types, family, data_dimension, data_types, requires_labels, references     |
-| **REQ-DET-038** | **Implementation Metadata Schema** | Implementations must follow TOML schema: name, execution_mode, hyperparameters, references under [method_id.implementations.impl_id] |
-| **REQ-DET-039** | **Requires Labels Field**          | Each method must specify requires_labels boolean indicating if method needs labeled data for operation                               |
+| **REQ-DET-038** | **Method Metadata Schema**         | Methods must follow TOML schema: name, description, drift_types, family, data_dimension, data_types, requires_labels, references     |
+| **REQ-DET-039** | **Implementation Metadata Schema** | Implementations must follow TOML schema: name, execution_mode, hyperparameters, references under [method_id.implementations.impl_id] |
 | **REQ-DET-040** | **Nested Structure Validation**    | Registry must validate nested TOML structure with method-level and implementation-level configurations                               |
 
 ## 📊 Evaluation Module
@@ -337,7 +337,7 @@ This module provides a comprehensive results management system for the drift-ben
 
 This module provides comprehensive configuration management for the drift-benchmark library using Pydantic v2 models for type safety and validation. It manages all application configuration through environment variables, .env files, and programmatic access.
 
-### 🔧 Core Settings Management
+### 🔧 Settings Core
 
 | ID              | Requirement               | Description                                                                                                 |
 | --------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -352,7 +352,7 @@ This module provides comprehensive configuration management for the drift-benchm
 | **REQ-SET-009** | **Settings Export**       | Must provide `to_env_file(path: str)` method to export current settings to .env format                      |
 | **REQ-SET-010** | **Singleton Access**      | Must provide global `settings` instance for consistent access across the application                        |
 
-### ⚙️ Configuration Fields
+### ⚙️ Settings Fields
 
 | ID              | Requirement                  | Description                                                                                                 |
 | --------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -367,7 +367,7 @@ This module provides comprehensive configuration management for the drift-benchm
 | **REQ-SET-019** | **Random Seed Setting**      | Must provide `random_seed` setting (default: 42) for reproducibility, optional int/None                     |
 | **REQ-SET-020** | **Memory Limit Setting**     | Must provide `memory_limit_mb` setting (default: 4096) with validation (512-32768 MB)                       |
 
-### 🔒 Validation Rules
+### 🔒 Settings Validation
 
 | ID              | Requirement                  | Description                                                                                                   |
 | --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -377,7 +377,7 @@ This module provides comprehensive configuration management for the drift-benchm
 | **REQ-SET-024** | **Path Validation**          | Must validate that directory paths are accessible and can be created if they don't exist                      |
 | **REQ-SET-025** | **Environment Variable Map** | Must map all settings to environment variables with DRIFT*BENCHMARK* prefix (e.g., DRIFT_BENCHMARK_LOG_LEVEL) |
 
-### 🛠️ Configuration Methods
+### 🛠️ Settings Methods
 
 | ID              | Requirement               | Description                                                                                             |
 | --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
