@@ -7,7 +7,7 @@ This module provides adapters for integrating various drift detection libraries 
 ### Base module
 
 - Adapters can inherit from `BaseAdapter` to standardize the interface for different drift detection libraries (so benchmark runner can use them interchangeably).
-- BaseDetector should contain internal variables that point to the drift detection method_id and implementation_id and the detector class.
+- BaseDetector must expose `method_id` and `implementation_id` properties that return string identifiers matching the methods registry and the detector class.
 - BaseDetector implements `metadata` class method to return standard metadata about the method and implementation.
 - BaseDetector should implement `preprocess` method to handle any necessary preprocessing of the input data before drift detection (e.g. convert data from pandas DataFrame to numpy array).
 - BaseDetector defines an abstract method `fit` to train the drift detection model on the provided data. This method is timed for performance measurement.
@@ -20,7 +20,7 @@ This module provides adapters for integrating various drift detection libraries 
 - Registry module should provide a way to register new adapters dynamically.
 - It should allow users to easily add new adapters without modifying the core library code.
 - The registry should maintain a mapping of adapter names to their respective classes for easy lookup.
-- It should provide a method to retrieve an adapter by name, ensuring that the correct adapter is used for the specified drift detection library.
+- Registry must provide `get_adapter(name: str)` that returns the adapter class or raises `AdapterNotFoundError` with available options when the specified adapter is not found.
 
 ## Benchmark Module
 
@@ -41,7 +41,7 @@ This module contains the benchmark runner to benchmark adapters against each oth
 ### Strategies module
 
 - The strategies module contains the execution strategies for running benchmarks.
-- `Sequential` strategy runs benchmarks one after another
+- `Sequential` strategy must execute benchmarks in deterministic order, preserving timing accuracy and ensuring identical results across runs with the same configuration.
 
 > For the moment we are going to implement only the sequential strategy, but the architecture is designed to allow easy addition of parallel strategies in the future.
 
