@@ -1,375 +1,261 @@
 """
-Detectors module for drift-benchmark.
+Detectors module - Centralized registry for drift detection methods.
 
-This module provides access to drift detection methods defined in methods.toml.
-It offers functions to load, filter, and search for methods based on various criteria.
+This module provides a centralized registry for drift detection methods through
+the methods.toml configuration file. It standardizes method metadata,
+implementation details, and execution modes.
 """
 
-import os
 from functools import lru_cache
-from itertools import chain
-from typing import Dict, List, Optional, Set, Union
+from pathlib import Path
+from typing import Any, Dict, List
 
-import tomli
+import toml
 
-from drift_benchmark.constants.literals import DataDimension, DataType, DetectorFamily, DriftType, ExecutionMode
-from drift_benchmark.constants.models import DetectorData, MethodData
+# Path to the methods.toml configuration file
+METHODS_TOML_PATH = Path(__file__).parent / "methods.toml"
 
-# Path to methods.toml file
-METHODS_TOML = os.path.join(os.path.dirname(__file__), "methods.toml")
+
+class MethodNotFoundError(Exception):
+    """Raised when a requested method is not found in the registry."""
+
+    pass
+
+
+class ImplementationNotFoundError(Exception):
+    """Raised when a requested implementation is not found."""
+
+    pass
+
+
+def _load_methods_toml() -> str:
+    """Load methods.toml content. Separated for easier testing."""
+    if not METHODS_TOML_PATH.exists():
+        raise FileNotFoundError(f"Methods configuration file not found: {METHODS_TOML_PATH}")
+    return METHODS_TOML_PATH.read_text()
 
 
 @lru_cache(maxsize=1)
-def load_methods() -> Dict[str, MethodData]:
-    """Load methods from the methods.toml file.
+def load_methods() -> Dict[str, Dict[str, Any]]:
+    """
+    Load all drift detection methods from methods.toml with LRU cache.
 
     Returns:
-        Dict[str, MethodData]: Dictionary of methods indexed by method_id
+        Dict mapping method IDs to their complete configuration
+
+    Raises:
+        FileNotFoundError: If methods.toml file doesn't exist
+        ValueError: If TOML file has validation errors
     """
-    with open(METHODS_TOML, "rb") as f:
-        data = tomli.load(f)
-    return {k: MethodData.model_validate(v) for k, v in data.items()}
+    try:
+        content = _load_methods_toml()
+        methods = toml.loads(content)
+
+        # Validate the loaded methods
+        _validate_methods_schema(methods)
+
+        return methods
+    except toml.TomlDecodeError as e:
+        raise ValueError(f"Invalid TOML format in methods.toml: {e}")
 
 
-def get_method(method_id: str) -> Optional[MethodData]:
-    """Get a method by its ID.
+def get_method(method_id: str) -> Dict[str, Any]:
+    """
+    Get method information by ID.
 
     Args:
-        method_id: The ID of the method to retrieve
+        method_id: The unique identifier for the method
 
     Returns:
-        The method data if found, None otherwise
-    """
-    return load_methods().get(method_id)
+        Dictionary containing method information
 
-
-def get_detector(method_id: str, implementation_id: str) -> Optional[DetectorData]:
-    """Get a specific detector implementation.
-
-    Args:
-        method_id: The ID of the method
-        implementation_id: The ID of the implementation
-
-    Returns:
-        The detector metadata if found, None otherwise
-    """
-    method = get_method(method_id)
-    if not method:
-        return None
-
-    implementation = method.implementations.get(implementation_id)
-    if not implementation:
-        return None
-
-    return DetectorData(
-        name=method.name,
-        description=method.description,
-        drift_types=method.drift_types,
-        family=method.family,
-        data_dimension=method.data_dimension,
-        data_types=method.data_types,
-        requires_labels=method.requires_labels,
-        references=method.references,
-        implementation=implementation,
-    )
-
-
-def list_all_methods() -> List[MethodData]:
-    """Get all available methods.
-
-    Returns:
-        List of all method objects
-    """
-    return list(load_methods().values())
-
-
-def list_all_detectors() -> List[DetectorData]:
-    """Get all detector implementations from all methods.
-
-    Returns:
-        List of all detector metadata objects
-    """
-    detectors = []
-    for method in load_methods().values():
-        for impl in method.implementations.values():
-            detectors.append(
-                DetectorData(
-                    name=method.name,
-                    description=method.description,
-                    drift_types=method.drift_types,
-                    family=method.family,
-                    data_dimension=method.data_dimension,
-                    data_types=method.data_types,
-                    requires_labels=method.requires_labels,
-                    references=method.references,
-                    implementation=impl,
-                )
-            )
-    return detectors
-
-
-def _normalize_filter_param(param: Optional[Union[str, List[str]]]) -> Optional[List[str]]:
-    """Normalize filter parameters to lists for consistent handling."""
-    if param is None:
-        return None
-    return [param] if isinstance(param, str) else param
-
-
-def filter_methods(
-    drift_types: Optional[Union[DriftType, List[DriftType]]] = None,
-    family: Optional[DetectorFamily] = None,
-    data_dimension: Optional[DataDimension] = None,
-    data_types: Optional[Union[DataType, List[DataType]]] = None,
-    requires_labels: Optional[bool] = None,
-    method_ids: Optional[Union[str, List[str]]] = None,
-) -> List[MethodData]:
-    """Filter methods based on various criteria.
-
-    Args:
-        drift_types: Filter by drift type(s)
-        family: Filter by algorithm family
-        data_dimension: Filter by data dimensionality
-        data_types: Filter by supported data types
-        requires_labels: Filter by whether method requires labels
-        method_ids: Filter by specific method IDs
-
-    Returns:
-        Filtered list of methods
+    Raises:
+        MethodNotFoundError: If method_id is not found
     """
     methods = load_methods()
 
-    # Normalize parameters
-    drift_types_list = _normalize_filter_param(drift_types)
-    data_types_list = _normalize_filter_param(data_types)
-    method_ids_list = _normalize_filter_param(method_ids)
+    if method_id not in methods:
+        available_methods = list(methods.keys())
+        raise MethodNotFoundError(f"Method '{method_id}' not found. Available methods: {available_methods}")
 
-    # Apply filters
-    filtered = []
-    for method_id, method in methods.items():
-        # Check all filter conditions
-        if method_ids_list and method_id not in method_ids_list:
-            continue
-        if drift_types_list and not any(dt in method.drift_types for dt in drift_types_list):
-            continue
-        if family and method.family != family:
-            continue
-        if data_dimension and method.data_dimension != data_dimension:
-            continue
-        if data_types_list and not any(dt in method.data_types for dt in data_types_list):
-            continue
-        if requires_labels is not None and method.requires_labels != requires_labels:
-            continue
-
-        filtered.append(method)
-
-    return filtered
+    return methods[method_id]
 
 
-def filter_detectors(
-    drift_types: Optional[Union[DriftType, List[DriftType]]] = None,
-    execution_mode: Optional[ExecutionMode] = None,
-    family: Optional[DetectorFamily] = None,
-    data_dimension: Optional[DataDimension] = None,
-    data_types: Optional[Union[DataType, List[DataType]]] = None,
-    requires_labels: Optional[bool] = None,
-    method_ids: Optional[Union[str, List[str]]] = None,
-    implementation_ids: Optional[Union[str, List[str]]] = None,
-) -> List[DetectorData]:
-    """Filter detector implementations based on various criteria.
+def get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]:
+    """
+    Get implementation details for a specific method and implementation.
 
     Args:
-        drift_types: Filter by drift type(s)
-        execution_mode: Filter by execution mode
-        family: Filter by algorithm family
-        data_dimension: Filter by data dimensionality
-        data_types: Filter by supported data types
-        requires_labels: Filter by whether method requires labels
-        method_ids: Filter by specific method IDs
-        implementation_ids: Filter by specific implementation IDs
+        method_id: The unique identifier for the method
+        impl_id: The unique identifier for the implementation
 
     Returns:
-        Filtered list of detector metadata
+        Dictionary containing implementation information
+
+    Raises:
+        MethodNotFoundError: If method_id is not found
+        ImplementationNotFoundError: If impl_id is not found for the method
     """
-    # First filter methods
-    filtered_methods = filter_methods(
-        drift_types=drift_types,
-        family=family,
-        data_dimension=data_dimension,
-        data_types=data_types,
-        requires_labels=requires_labels,
-        method_ids=method_ids,
-    )
+    method = get_method(method_id)  # This will raise MethodNotFoundError if needed
 
-    # Normalize implementation IDs
-    implementation_ids_list = _normalize_filter_param(implementation_ids)
+    if "implementations" not in method or impl_id not in method["implementations"]:
+        available_impls = list(method.get("implementations", {}).keys())
+        raise ImplementationNotFoundError(
+            f"Implementation '{impl_id}' not found for method '{method_id}'. " f"Available implementations: {available_impls}"
+        )
 
-    # Filter implementations
-    detectors = []
-    for method in filtered_methods:
-        for impl_id, impl in method.implementations.items():
-            # Check implementation-specific filters
-            if execution_mode and impl.execution_mode != execution_mode:
-                continue
-            if implementation_ids_list and impl_id not in implementation_ids_list:
-                continue
-
-            detectors.append(
-                DetectorData(
-                    name=method.name,
-                    description=method.description,
-                    drift_types=method.drift_types,
-                    family=method.family,
-                    data_dimension=method.data_dimension,
-                    data_types=method.data_types,
-                    requires_labels=method.requires_labels,
-                    references=method.references,
-                    implementation=impl,
-                )
-            )
-
-    return detectors
+    return method["implementations"][impl_id]
 
 
-# Category extraction functions
-def get_drift_types() -> Set[DriftType]:
-    """Get all available drift types."""
-    return set(chain.from_iterable(method.drift_types for method in load_methods().values()))
-
-
-def get_families() -> Set[DetectorFamily]:
-    """Get all available detector families."""
-    return {method.family for method in load_methods().values()}
-
-
-def get_data_dimensions() -> Set[DataDimension]:
-    """Get all available data dimensions."""
-    return {method.data_dimension for method in load_methods().values()}
-
-
-def get_data_types() -> Set[DataType]:
-    """Get all available data types."""
-    return set(chain.from_iterable(method.data_types for method in load_methods().values()))
-
-
-def get_execution_modes() -> Set[ExecutionMode]:
-    """Get all available execution modes."""
-    return {impl.execution_mode for method in load_methods().values() for impl in method.implementations.values()}
-
-
-# Summary and statistics
-def get_summary() -> Dict[str, int]:
-    """Get a summary of methods by category.
+def list_methods() -> List[str]:
+    """
+    Get list of all available method IDs.
 
     Returns:
-        Counts of methods by different categories
+        Sorted list of method IDs
     """
     methods = load_methods()
-    all_detectors = list_all_detectors()
+    return sorted(list(methods.keys()))
 
-    summary = {
-        "total_methods": len(methods),
-        "total_detectors": len(all_detectors),
-        "batch_detectors": len([d for d in all_detectors if d.implementation.execution_mode == "BATCH"]),
-        "streaming_detectors": len([d for d in all_detectors if d.implementation.execution_mode == "STREAMING"]),
-        "univariate_methods": len([m for m in methods.values() if m.data_dimension == "UNIVARIATE"]),
-        "multivariate_methods": len([m for m in methods.values() if m.data_dimension == "MULTIVARIATE"]),
-        "supervised_methods": len([m for m in methods.values() if m.requires_labels]),
-        "unsupervised_methods": len([m for m in methods.values() if not m.requires_labels]),
+
+def list_implementations(method_id: str) -> List[str]:
+    """
+    Get list of all implementation IDs for a specific method.
+
+    Args:
+        method_id: The unique identifier for the method
+
+    Returns:
+        Sorted list of implementation IDs for the method
+
+    Raises:
+        MethodNotFoundError: If method_id is not found
+    """
+    method = get_method(method_id)  # This will raise MethodNotFoundError if needed
+    implementations = method.get("implementations", {})
+    return sorted(list(implementations.keys()))
+
+
+def _validate_methods_schema(methods: Dict[str, Any]) -> None:
+    """
+    Validate the methods dictionary against expected schema.
+
+    Args:
+        methods: Dictionary of methods to validate
+
+    Raises:
+        ValueError: If validation fails
+    """
+    # Valid enumeration values
+    VALID_FAMILIES = {
+        "STATISTICAL_TEST",
+        "DISTANCE_BASED",
+        "STATISTICAL_PROCESS_CONTROL",
+        "CHANGE_DETECTION",
+        "WINDOW_BASED",
+        "ENSEMBLE",
+        "MACHINE_LEARNING",
     }
+    VALID_EXECUTION_MODES = {"BATCH", "STREAMING"}
+    VALID_DRIFT_TYPES = {"COVARIATE", "CONCEPT", "PRIOR"}
+    VALID_DATA_DIMENSIONS = {"UNIVARIATE", "MULTIVARIATE"}
+    VALID_DATA_TYPES = {"CONTINUOUS", "CATEGORICAL", "MIXED"}
 
-    # Add counts by drift type
-    for drift_type in get_drift_types():
-        summary[f"drift_type_{drift_type.lower()}"] = len([m for m in methods.values() if drift_type in m.drift_types])
+    for method_id, method_data in methods.items():
+        # Validate method-level required fields
+        required_method_fields = ["name", "description", "drift_types", "family", "data_dimension", "data_types", "requires_labels"]
 
-    # Add counts by family
-    for family in get_families():
-        summary[f"family_{family.lower()}"] = len([m for m in methods.values() if m.family == family])
+        for field in required_method_fields:
+            if field not in method_data:
+                raise ValueError(f"Method '{method_id}' missing required field: {field}")
 
-    return summary
+        # Validate family
+        if method_data["family"] not in VALID_FAMILIES:
+            raise ValueError(f"Invalid family '{method_data['family']}' in method '{method_id}'")
+
+        # Validate drift_types is a list
+        if not isinstance(method_data["drift_types"], list):
+            raise ValueError(f"Field 'drift_types' must be a list in method '{method_id}'")
+
+        # Validate drift types
+        for drift_type in method_data["drift_types"]:
+            if drift_type not in VALID_DRIFT_TYPES:
+                raise ValueError(f"Invalid drift type '{drift_type}' in method '{method_id}'")
+
+        # Validate data_dimension
+        if method_data["data_dimension"] not in VALID_DATA_DIMENSIONS:
+            raise ValueError(f"Invalid data dimension '{method_data['data_dimension']}' in method '{method_id}'")
+
+        # Validate data_types is a list
+        if not isinstance(method_data["data_types"], list):
+            raise ValueError(f"Field 'data_types' must be a list in method '{method_id}'")
+
+        # Validate data types
+        for data_type in method_data["data_types"]:
+            if data_type not in VALID_DATA_TYPES:
+                raise ValueError(f"Invalid data type '{data_type}' in method '{method_id}'")
+
+        # Validate requires_labels is boolean
+        if not isinstance(method_data["requires_labels"], bool):
+            raise ValueError(f"Field 'requires_labels' must be boolean in method '{method_id}'")
+
+        # Validate references is list
+        if not isinstance(method_data.get("references", []), list):
+            raise ValueError(f"Field 'references' must be a list in method '{method_id}'")
+
+        # Validate references elements are strings
+        for ref in method_data.get("references", []):
+            if not isinstance(ref, str):
+                raise ValueError(f"All references must be strings in method '{method_id}', found {type(ref).__name__}: {ref}")
+
+        # Validate implementations
+        if "implementations" in method_data:
+            for impl_id, impl_data in method_data["implementations"].items():
+                # Validate implementation-level required fields
+                required_impl_fields = ["name", "execution_mode", "hyperparameters", "references"]
+
+                for field in required_impl_fields:
+                    if field not in impl_data:
+                        raise ValueError(f"Implementation '{impl_id}' in method '{method_id}' missing required field: {field}")
+
+                # Validate execution mode
+                if impl_data["execution_mode"] not in VALID_EXECUTION_MODES:
+                    raise ValueError(
+                        f"Invalid execution mode '{impl_data['execution_mode']}' in implementation " f"'{impl_id}' of method '{method_id}'"
+                    )
+
+                # Validate hyperparameters is list
+                if not isinstance(impl_data["hyperparameters"], list):
+                    raise ValueError(f"Field 'hyperparameters' must be a list in implementation " f"'{impl_id}' of method '{method_id}'")
+
+                # Validate hyperparameters elements are strings
+                for param in impl_data["hyperparameters"]:
+                    if not isinstance(param, str):
+                        raise ValueError(
+                            f"All hyperparameters must be strings in implementation "
+                            f"'{impl_id}' of method '{method_id}', found {type(param).__name__}: {param}"
+                        )
+
+                # Validate references is list
+                if not isinstance(impl_data["references"], list):
+                    raise ValueError(f"Field 'references' must be a list in implementation " f"'{impl_id}' of method '{method_id}'")
+
+                # Validate references elements are strings
+                for ref in impl_data["references"]:
+                    if not isinstance(ref, str):
+                        raise ValueError(
+                            f"All references must be strings in implementation "
+                            f"'{impl_id}' of method '{method_id}', found {type(ref).__name__}: {ref}"
+                        )
 
 
-# Utility functions
-def method_exists(method_id: str) -> bool:
-    """Check if a method exists by ID."""
-    return method_id in load_methods()
-
-
-def detector_exists(method_id: str, implementation_id: str) -> bool:
-    """Check if a detector implementation exists."""
-    method = get_method(method_id)
-    return method is not None and implementation_id in method.implementations
-
-
-def get_method_implementation_count(method_id: str) -> int:
-    """Get the number of implementations for a method."""
-    method = get_method(method_id)
-    return len(method.implementations) if method else 0
-
-
-def get_method_ids() -> List[str]:
-    """Get all method IDs."""
-    return list(load_methods().keys())
-
-
-def get_detector_ids() -> List[tuple[str, str]]:
-    """Get all detector IDs as (method_id, implementation_id) tuples."""
-    return [(method_id, impl_id) for method_id, method in load_methods().items() for impl_id in method.implementations.keys()]
-
-
-# Backward compatibility aliases
-get_methods = load_methods
-get_method_by_id = get_method
-get_detector_by_id = get_detector
-get_all_detectors = list_all_detectors
-get_available_drift_types = get_drift_types
-get_available_families = get_families
-get_available_data_dimensions = get_data_dimensions
-get_available_data_types = get_data_types
-get_available_execution_modes = get_execution_modes
-get_methods_summary = get_summary
-
-
-if __name__ == "__main__":
-    """Demonstrate usage of the detectors module."""
-    print("=== Detectors Module Demo ===\n")
-
-    # 1. Load all methods
-    print("1. Loading methods:")
-    methods = load_methods()
-    print(f"   Total methods: {len(methods)}")
-
-    # 2. Get specific method
-    print("\n2. Get specific method:")
-    ks_method = get_method("kolmogorov_smirnov")
-    if ks_method:
-        print(f"   Method: {ks_method.name}")
-        print(f"   Implementations: {list(ks_method.implementations.keys())}")
-
-    # 3. Get specific detector
-    print("\n3. Get specific detector:")
-    detector = get_detector("kolmogorov_smirnov", "ks_batch")
-    if detector:
-        print(f"   Detector: {detector.implementation.name}")
-        print(f"   Execution mode: {detector.implementation.execution_mode}")
-
-    # 4. Filter examples
-    print("\n4. Filtering examples:")
-    batch_detectors = filter_detectors(execution_mode="BATCH")
-    streaming_detectors = filter_detectors(execution_mode="STREAMING")
-    print(f"   Batch detectors: {len(batch_detectors)}")
-    print(f"   Streaming detectors: {len(streaming_detectors)}")
-
-    # 5. Summary
-    print("\n5. Summary:")
-    summary = get_summary()
-    for key, value in summary.items():
-        print(f"   {key}: {value}")
-
-    # 6. Available categories
-    print("\n6. Available categories:")
-    print(f"   Drift types: {sorted(get_drift_types())}")
-    print(f"   Families: {sorted(get_families())}")
-    print(f"   Data dimensions: {sorted(get_data_dimensions())}")
-    print(f"   Execution modes: {sorted(get_execution_modes())}")
-
-    print("\n=== Demo Complete ===")
+# Public API
+__all__ = [
+    "load_methods",
+    "get_method",
+    "get_implementation",
+    "list_methods",
+    "list_implementations",
+    "MethodNotFoundError",
+    "ImplementationNotFoundError",
+]

@@ -36,7 +36,17 @@ def mock_methods_registry():
             load_methods.cache_clear()
     except (ImportError, AttributeError):
         pass
+
     yield
+
+    # Clear cache after each test
+    try:
+        from drift_benchmark.detectors import load_methods
+
+        if hasattr(load_methods, "cache_clear"):
+            load_methods.cache_clear()
+    except (ImportError, AttributeError):
+        pass
 
 
 @pytest.fixture(scope="module")

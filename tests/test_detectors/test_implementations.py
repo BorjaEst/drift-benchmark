@@ -52,9 +52,9 @@ class TestHyperparameterManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(hyperparameter_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(hyperparameter_method)
 
             # Act: Load and verify hyperparameter definitions
             standard_impl = get_implementation("configurable_detector", "standard_impl")
@@ -94,9 +94,9 @@ class TestHyperparameterManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(configurable_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(configurable_method)
 
             # Act: Retrieve implementation hyperparameters
             impl = get_implementation("ml_detector", "neural_network")
@@ -129,9 +129,9 @@ class TestHyperparameterManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_hyperparams_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(invalid_hyperparams_method)
 
             # Act & Assert: Should raise validation error for non-list hyperparameters
             with pytest.raises(ValueError) as exc_info:
@@ -161,14 +161,39 @@ class TestHyperparameterManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_param_types_method)
+        # This test simulates TOML that would have non-string values after parsing
+        # We'll directly mock the parsed content instead of trying to serialize invalid TOML
 
-            # Act & Assert: Should raise validation error for non-string parameters
-            with pytest.raises(ValueError) as exc_info:
-                load_methods()
-            assert "hyperparameters" in str(exc_info.value).lower()
+        with patch("drift_benchmark.detectors.toml.loads") as mock_toml_loads:
+            with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+                mock_load.return_value = "dummy_content"
+
+                # Return parsed content with invalid types
+                mock_toml_loads.return_value = {
+                    "invalid_param_types_method": {
+                        "name": "Invalid Param Types Method",
+                        "description": "Method with non-string hyperparameters",
+                        "drift_types": ["COVARIATE"],
+                        "family": "STATISTICAL_TEST",
+                        "data_dimension": "UNIVARIATE",
+                        "data_types": ["CONTINUOUS"],
+                        "requires_labels": False,
+                        "references": [],
+                        "implementations": {
+                            "invalid_impl": {
+                                "name": "Invalid Implementation",
+                                "execution_mode": "BATCH",
+                                "hyperparameters": ["valid_param", 123, {"invalid": "dict"}],  # Non-string values
+                                "references": [],
+                            }
+                        },
+                    }
+                }
+
+                # Act & Assert: Should raise validation error for non-string parameters
+                with pytest.raises(ValueError) as exc_info:
+                    load_methods()
+                assert "hyperparameters" in str(exc_info.value).lower()
 
     def test_should_support_default_parameter_values(self, mock_methods_registry):
         """REQ-DET-034: Registry should support optional default values for hyperparameters"""
@@ -196,9 +221,9 @@ class TestHyperparameterManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(method_with_defaults)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(method_with_defaults)
 
             # Act: Load implementation with potential defaults
             impl = get_implementation("detector_with_defaults", "impl_with_defaults")
@@ -235,9 +260,9 @@ class TestReferenceManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(method_with_references)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(method_with_references)
 
             # Act: Load method and verify references
             method = get_method("well_documented_method")
@@ -276,9 +301,9 @@ class TestReferenceManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(method_with_impl_refs)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(method_with_impl_refs)
 
             # Act: Load implementations and verify specific references
             original_impl = get_implementation("method_with_variants", "original_impl")
@@ -308,9 +333,9 @@ class TestReferenceManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_references_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(invalid_references_method)
 
             # Act & Assert: Should raise validation error for non-list references
             with pytest.raises(ValueError) as exc_info:
@@ -340,9 +365,9 @@ class TestReferenceManagement:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(method_with_empty_refs)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(method_with_empty_refs)
 
             # Act: Load method with empty references
             method = get_method("minimal_method")
@@ -379,9 +404,9 @@ class TestTOMLSchema:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(complete_method_schema)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(complete_method_schema)
 
             # Act: Load and validate complete schema
             method = get_method("complete_method")
@@ -436,9 +461,9 @@ class TestTOMLSchema:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(method_with_complete_impl)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(method_with_complete_impl)
 
             # Act: Load and validate implementation schema
             impl = get_implementation("method_complete_impl", "complete_impl")
@@ -496,9 +521,9 @@ class TestTOMLSchema:
             },
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(nested_structure_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(nested_structure_method)
 
             # Act: Load nested structure
             methods = load_methods()
@@ -542,9 +567,9 @@ class TestTOMLSchema:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_nested_structure)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(invalid_nested_structure)
 
             # Act & Assert: Should raise validation error for invalid structure
             with pytest.raises(ValueError) as exc_info:
@@ -566,10 +591,10 @@ class TestTOMLSchema:
         assert len(ks_method["implementations"]) >= 2
 
         # Validate implementation structure
-        scipy_impl = ks_method["implementations"]["scipy_ks"]
-        assert scipy_impl["execution_mode"] == "BATCH"
-        assert "alpha" in scipy_impl["hyperparameters"]
+        batch_impl = ks_method["implementations"]["ks_batch"]
+        assert batch_impl["execution_mode"] == "BATCH"
+        assert "threshold" in batch_impl["hyperparameters"]
 
-        river_impl = ks_method["implementations"]["river_ks"]
-        assert river_impl["execution_mode"] == "STREAMING"
-        assert "window_size" in river_impl["hyperparameters"]
+        incremental_impl = ks_method["implementations"]["ks_incremental"]
+        assert incremental_impl["execution_mode"] == "STREAMING"
+        assert "window_size" in incremental_impl["hyperparameters"]

@@ -43,9 +43,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(statistical_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(statistical_method)
 
             # Act: Load and verify statistical test family
             method = get_method("kolmogorov_smirnov")
@@ -77,9 +77,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(distance_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(distance_method)
 
             # Act: Load and verify distance-based family
             method = get_method("maximum_mean_discrepancy")
@@ -111,9 +111,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(spc_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(spc_method)
 
             # Act: Load and verify SPC family
             method = get_method("ewma_control_chart")
@@ -144,9 +144,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(change_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(change_method)
 
             # Act: Load and verify change detection family
             method = get_method("page_hinkley")
@@ -177,9 +177,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(window_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(window_method)
 
             # Act: Load and verify window-based family
             method = get_method("sliding_window_detector")
@@ -210,9 +210,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(ensemble_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(ensemble_method)
 
             # Act: Load and verify ensemble family
             method = get_method("ensemble_detector")
@@ -243,9 +243,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(ml_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(ml_method)
 
             # Act: Load and verify ML family
             method = get_method("autoencoder_detector")
@@ -269,9 +269,9 @@ class TestMethodFamilies:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_family_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(invalid_family_method)
 
             # Act & Assert: Should raise validation error for invalid family
             with pytest.raises(ValueError) as exc_info:
@@ -306,9 +306,9 @@ class TestExecutionModes:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(batch_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(batch_method)
 
             # Act: Load and verify batch execution mode
             method = get_method("batch_detector")
@@ -340,9 +340,9 @@ class TestExecutionModes:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(streaming_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(streaming_method)
 
             # Act: Load and verify streaming execution mode
             method = get_method("streaming_detector")
@@ -374,14 +374,14 @@ class TestExecutionModes:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_mode_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(invalid_mode_method)
 
             # Act & Assert: Should raise validation error for invalid execution mode
             with pytest.raises(ValueError) as exc_info:
                 load_methods()
-            assert "execution_mode" in str(exc_info.value).lower()
+            assert "execution mode" in str(exc_info.value).lower()
             assert "invalid_mode" in str(exc_info.value).lower()
 
 
@@ -404,9 +404,9 @@ class TestDriftTypeSupport:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(covariate_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(covariate_method)
 
             # Act: Load and verify covariate drift support
             method = get_method("covariate_detector")
@@ -432,9 +432,9 @@ class TestDriftTypeSupport:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(concept_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(concept_method)
 
             # Act: Load and verify concept drift support
             method = get_method("concept_detector")
@@ -460,9 +460,9 @@ class TestDriftTypeSupport:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(prior_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(prior_method)
 
             # Act: Load and verify prior drift support
             method = get_method("prior_detector")
@@ -486,9 +486,9 @@ class TestDriftTypeSupport:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(multi_drift_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(multi_drift_method)
 
             # Act: Load and verify multiple drift type support
             method = get_method("multi_drift_detector")
@@ -514,9 +514,9 @@ class TestDriftTypeSupport:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_drift_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(invalid_drift_method)
 
             # Act & Assert: Should raise validation error for invalid drift type
             with pytest.raises(ValueError) as exc_info:
@@ -544,9 +544,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(univariate_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(univariate_method)
 
             # Act: Load and verify univariate dimension support
             method = get_method("univariate_detector")
@@ -570,9 +570,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(multivariate_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(multivariate_method)
 
             # Act: Load and verify multivariate dimension support
             method = get_method("multivariate_detector")
@@ -596,9 +596,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(continuous_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(continuous_method)
 
             # Act: Load and verify continuous data type support
             method = get_method("continuous_detector")
@@ -622,9 +622,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(categorical_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(categorical_method)
 
             # Act: Load and verify categorical data type support
             method = get_method("categorical_detector")
@@ -648,9 +648,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(mixed_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(mixed_method)
 
             # Act: Load and verify mixed data type support
             method = get_method("mixed_detector")
@@ -674,9 +674,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(multi_type_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(multi_type_method)
 
             # Act: Load and verify multiple data type support
             method = get_method("multi_type_detector")
@@ -701,15 +701,15 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(invalid_characteristics_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(invalid_characteristics_method)
 
             # Act & Assert: Should raise validation error for invalid characteristics
             with pytest.raises(ValueError) as exc_info:
                 load_methods()
             error_msg = str(exc_info.value).lower()
-            assert "data_dimension" in error_msg or "data_type" in error_msg
+            assert "data dimension" in error_msg or "data type" in error_msg
 
     def test_should_specify_label_requirements(self, mock_methods_registry):
         """REQ-DET-031: Each method must specify requires_labels boolean"""
@@ -728,9 +728,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(labeled_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(labeled_method)
 
             # Act: Load and verify label requirements
             method = get_method("labeled_detector")
@@ -754,9 +754,9 @@ class TestDataCharacteristics:
             }
         }
 
-        with patch("drift_benchmark.detectors.Path") as mock_path:
-            mock_path.return_value.exists.return_value = True
-            mock_path.return_value.read_text.return_value = toml.dumps(unlabeled_method)
+        with patch("drift_benchmark.detectors._load_methods_toml") as mock_load:
+            # Clear cache before test
+            mock_load.return_value = toml.dumps(unlabeled_method)
 
             # Act: Load and verify no label requirements
             method = get_method("unlabeled_detector")
