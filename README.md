@@ -212,43 +212,42 @@ config = BenchmarkConfig(
 | **Metadata Model**           | Name, description, authors, and version of the benchmark                |
 | **Data Configuration**       | List of datasets to use for benchmarking                                |
 | **Detectors Configuration**  | List of detector configurations to benchmark                            |
-| **Evaluation Configuration** | Cross-validation, significance tests, metrics, and performance settings |
+| **Evaluation Configuration** | Comprehensive evaluation metrics, statistical tests, and analysis tools |
 
-### 📄 Example Configuration
+### 📄 Configuration Example
 
-Example configuration file (`config_example1.toml`):
+Minimalistic configuration file (`config_simple.toml`):
 
 ```toml
 [metadata]
-name        = "Modern Drift Detection Benchmark"
-description = "Example using the new compositional dataset configuration structure"
-author      = "Drift Benchmark Team"
-version     = "2.0.0"
+name = "Simple Drift Detection Benchmark"
+description = "Basic benchmark example"
+author = "Drift Benchmark Team"
+version = "1.0.0"
 
 [[data.datasets]]
-name        = "iris_dataset"
-type        = "scenario"
-description = "Classic Iris dataset for testing"
+name = "iris_dataset"
+type = "scenario"
 config.scenario_name = "iris_species_drift"
 
 [[detectors.algorithms]]
-adapter           = "evidently_adapter"
-method_id         = "kolmogorov_smirnov"
+adapter = "evidently_adapter"
+method_id = "kolmogorov_smirnov"
 implementation_id = "ks_batch"
-parameters        = { threshold = 0.05 }
+parameters = { threshold = 0.05 }
 
 [[detectors.algorithms]]
-adapter           = "alibi_adapter"
-method_id         = "kolmogorov_smirnov"
+adapter = "alibi_adapter"
+method_id = "kolmogorov_smirnov"
 implementation_id = "ks_batch"
-parameters        = { threshold = 0.05 }
+parameters = { threshold = 0.05 }
 
 [evaluation]
-classification_metrics = ["accuracy", "precision"]
-detection_metrics      = ["detection_delay", "roc_curve"]
-statistical_tests      = ["ttest", "mannwhitneyu"]
-performance_analysis   = ["rankings", "robustness", "heatmaps"]
-runtime_analysis       = ["memory_usage", "cpu_time"]
+classification_metrics = ["accuracy", "precision", "recall"]
+detection_metrics = ["detection_delay", "auc_score"]
+statistical_tests = ["ttest", "mannwhitneyu"]
+performance_analysis = ["rankings", "statistical_significance"]
+runtime_analysis = ["memory_usage", "cpu_time"]
 ```
 
 ### ⚡ Benchmark Runtime Features
@@ -260,15 +259,14 @@ runtime_analysis       = ["memory_usage", "cpu_time"]
 | **Memory Management**  | Efficient data handling for large datasets                |
 | **Progress Tracking**  | Real-time progress bars with detailed logging             |
 
-### 📊 Statistical Analysis Features
+### 📊 Evaluation Engine Features
 
-| Feature                   | Description                                                        |
-| ------------------------- | ------------------------------------------------------------------ |
-| **Comprehensive Metrics** | Standard classification metrics, detection delay, ROC analysis     |
-| **Statistical Testing**   | Significance tests, effect size calculations, confidence intervals |
-| **Performance Analysis**  | Detector rankings, robustness analysis, performance matrices       |
-| **Run-time Analysis**     | Memory usage, CPU time, execution time profiling                   |
-| **Result Aggregation**    | Cross-validation analysis, trend analysis, statistical summaries   |
+| Feature                              | Description                                               |
+| ------------------------------------ | --------------------------------------------------------- |
+| **Detection timing analysis**        | ROC analysis, detection delay, and alarm rate assessment  |
+| **Statistical significance testing** | Parametric and non-parametric tests for method comparison |
+| **Method rankings and comparison**   | Statistical comparison analysis with confidence intervals |
+| **Performance profiling**            | Training/inference timing and memory usage analysis       |
 
 ### 📤 Output and Reports
 
@@ -280,14 +278,17 @@ runtime_analysis       = ["memory_usage", "cpu_time"]
 | **CSV**  | Detailed metrics, rankings, and predictions |
 | **TOML** | Copy of used configuration                  |
 
-#### Comprehensive Multiformat Results
+#### Results Directory Structure
 
 ```text
 results/
-├── 📄 benchmark_results.json     # Complete structured results
-├── 📄 detector_*metric*.csv      # Performance metrics by detector
-├── 📄 config_info.toml           # Configuration used
-└── 📄 benchmark.log              # Detailed execution log
+├── 📄 benchmark_results.json     # Complete structured results with all metrics
+├── 📄 detector_*metric*.csv      # Performance metrics by detector and dataset
+├── 📄 statistical_tests.csv      # Statistical test results and p-values
+├── 📄 rankings_analysis.csv      # Detector rankings with confidence intervals
+├── 📄 runtime_analysis.csv       # Memory usage and timing analysis
+├── 📄 config_info.toml           # Configuration used for reproducibility
+└── 📄 benchmark.log              # Detailed execution log with timestamps
 ```
 
 ## 📊 How to Use Data
