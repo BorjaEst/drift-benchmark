@@ -79,15 +79,29 @@ This module contains the benchmark runner to benchmark adapters against each oth
 
 ### 📝 Literals Module
 
-| ID              | Requirement                 | Description                                                                                                    |
-| --------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **REQ-LIT-001** | **Drift Type Literals**     | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                   |
-| **REQ-LIT-002** | **Data Type Literals**      | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                               |
-| **REQ-LIT-003** | **Dimension Literals**      | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                  |
-| **REQ-LIT-004** | **Labeling Literals**       | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                |
-| **REQ-LIT-005** | **Execution Mode Literals** | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                          |
-| **REQ-LIT-006** | **Method Family Literals**  | Must define `MethodFamily` literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "MACHINE_LEARNING", etc. |
-| **REQ-LIT-007** | **Drift Pattern Literals**  | Must define `DriftPattern` literal with values: "SUDDEN", "GRADUAL", "INCREMENTAL", "RECURRING"                |
+| ID              | Requirement                        | Description                                                                                                                            |
+| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-LIT-001** | **Drift Type Literals**            | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                                           |
+| **REQ-LIT-002** | **Data Type Literals**             | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                                       |
+| **REQ-LIT-003** | **Dimension Literals**             | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                          |
+| **REQ-LIT-004** | **Labeling Literals**              | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                        |
+| **REQ-LIT-005** | **Execution Mode Literals**        | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                                  |
+| **REQ-LIT-006** | **Method Family Literals**         | Must define `MethodFamily` literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "MACHINE_LEARNING", etc.                         |
+| **REQ-LIT-007** | **Drift Pattern Literals**         | Must define `DriftPattern` literal with values: "SUDDEN", "GRADUAL", "INCREMENTAL", "RECURRING"                                        |
+| **REQ-LIT-008** | **Dataset Source Literals**        | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC", "SCENARIO"                                                       |
+| **REQ-LIT-009** | **Drift Characteristic Literals**  | Must define `DriftCharacteristic` literal with values: "MEAN_SHIFT", "VARIANCE_SHIFT", "CORRELATION_SHIFT", "DISTRIBUTION_SHIFT"       |
+| **REQ-LIT-010** | **Data Generator Literals**        | Must define `DataGenerator` literal with values: "GAUSSIAN", "MIXED", "MULTIMODAL", "TIME_SERIES"                                      |
+| **REQ-LIT-011** | **File Format Literals**           | Must define `FileFormat` literal with values: "CSV", "PARQUET", "MARKDOWN", "JSON", "DIRECTORY"                                        |
+| **REQ-LIT-013** | **Log Level Literals**             | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                                            |
+| **REQ-LIT-014** | **Classification Metric Literals** | Must define `ClassificationMetric` literal with values: "ACCURACY", "PRECISION", "RECALL", "F1_SCORE", "SPECIFICITY", "SENSITIVITY"    |
+| **REQ-LIT-015** | **Rate Metric Literals**           | Must define `RateMetric` literal with values: "TRUE_POSITIVE_RATE", "TRUE_NEGATIVE_RATE", "FALSE_POSITIVE_RATE", "FALSE_NEGATIVE_RATE" |
+| **REQ-LIT-016** | **ROC Metric Literals**            | Must define `ROCMetric` literal with values: "AUC_ROC", "AUC_PR"                                                                       |
+| **REQ-LIT-017** | **Detection Metric Literals**      | Must define `DetectionMetric` literal with values: "DETECTION_DELAY", "DETECTION_RATE", "MISSED_DETECTION_RATE"                        |
+| **REQ-LIT-018** | **Performance Metric Literals**    | Must define `PerformanceMetric` literal with values: "COMPUTATION_TIME", "MEMORY_USAGE", "THROUGHPUT"                                  |
+| **REQ-LIT-019** | **Score Metric Literals**          | Must define `ScoreMetric` literal with values: "DRIFT_SCORE", "P_VALUE", "CONFIDENCE_SCORE"                                            |
+| **REQ-LIT-020** | **Comparative Metric Literals**    | Must define `ComparativeMetric` literal with values: "RELATIVE_ACCURACY", "IMPROVEMENT_RATIO", "RANKING_SCORE"                         |
+| **REQ-LIT-021** | **Metric Union Type**              | Must define `Metric` as union of all metric literal types for comprehensive evaluation support                                         |
+| **REQ-LIT-022** | **Detection Result Literals**      | Must define `DetectionResult` literal with values: "true_positive", "true_negative", "false_positive", "false_negative"                |
 
 ### 🏗️ Models Module
 
