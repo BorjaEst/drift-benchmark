@@ -158,9 +158,9 @@ This module contains the detector registry and base implementation framework.
 ### 🏗️ BaseDetector Interface
 
 ```python
-from drift_benchmark.detectors.base import BaseDetector, register_method
+from drift_benchmark import BaseDetector, register_detector
 
-@register_method("method_id", "implementation_id")
+@register_detector("method_id", "implementation_id")
 class MyDetector(BaseDetector):
 
     def preprocess(self, data: DatasetResult, **kwargs) -> Any:
