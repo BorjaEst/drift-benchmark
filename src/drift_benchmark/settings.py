@@ -172,12 +172,25 @@ class Settings(BaseSettings):
         # Ensure logs directory exists
         self.logs_path.mkdir(parents=True, exist_ok=True)
 
-        # Configure the root logger
-        logging.basicConfig(
-            level=getattr(logging, self.log_level),
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            handlers=[logging.StreamHandler(), logging.FileHandler(self.logs_path / "drift_benchmark.log")],
-        )
+        # Get the root logger and clear any existing handlers
+        root_logger = logging.getLogger()
+        root_logger.handlers.clear()
+
+        # Set the logging level
+        root_logger.setLevel(getattr(logging, self.log_level))
+
+        # Create formatter
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+        # Create and add console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        root_logger.addHandler(console_handler)
+
+        # Create and add file handler
+        file_handler = logging.FileHandler(self.logs_path / "drift_benchmark.log")
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
 
     def get_logger(self, name: str) -> logging.Logger:
         """Get a configured logger instance."""
