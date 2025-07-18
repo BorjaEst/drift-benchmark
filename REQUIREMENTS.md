@@ -180,7 +180,7 @@ This module provides comprehensive, configuration-driven utilities for data load
 
 This module provides a centralized registry for drift detection methods through the `methods.toml` configuration file. It standardizes method metadata, implementation details, and execution modes so users can map the adapter detector to the correct method and implementation for benchmarking.
 
-### 📋 Registry Core & Operations
+### 📋 Detectors Registry
 
 | ID              | Requirement                   | Description                                                                                                                                |
 | --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -194,7 +194,7 @@ This module provides a centralized registry for drift detection methods through 
 | **REQ-DET-008** | **TOML Schema Validation**    | methods.toml must be validated against schema with proper error messages for invalid entries                                               |
 | **REQ-DET-009** | **Extensible Design**         | Registry must support dynamic addition of new methods without code changes, only TOML updates                                              |
 
-### 🏷️ Method Characteristics
+### 🏷️ Detectors Metadata
 
 | ID              | Requirement                            | Description                                                                                                      |
 | --------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -221,7 +221,7 @@ This module provides a centralized registry for drift detection methods through 
 | **REQ-DET-030** | **Data Characteristics Validation**    | Registry must validate data_dimension and data_types against respective literal values                           |
 | **REQ-DET-031** | **Requires Labels Field**              | Each method must specify requires_labels boolean indicating if method needs labeled data for operation           |
 
-### ⚙️ Configuration & Metadata
+### ⚙️ Detectors Implementations
 
 | ID              | Requirement                        | Description                                                                                                                          |
 | --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
