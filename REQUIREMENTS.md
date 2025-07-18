@@ -267,11 +267,13 @@ This module provides a comprehensive results management system for the drift-ben
 
 ## ⚙️ Settings Module
 
-This module provides comprehensive configuration management for the drift-benchmark library using Pydantic v2 models for type safety and validation.
+This module provides comprehensive configuration management for the drift-benchmark library using Pydantic v2 models for type safety and validation. It manages all application configuration through environment variables, .env files, and programmatic access.
+
+### 🔧 Core Settings Management
 
 | ID              | Requirement               | Description                                                                                                 |
 | --------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **REQ-SET-001** | **Settings Model**        | Must define `Settings` Pydantic model with all configuration fields and proper defaults                     |
+| **REQ-SET-001** | **Settings Model**        | Must define `Settings` Pydantic-settings model with all configuration fields and proper defaults            |
 | **REQ-SET-002** | **Environment Variables** | All settings must be configurable via `DRIFT_BENCHMARK_` prefixed environment variables                     |
 | **REQ-SET-003** | **Env File Support**      | Must automatically load settings from `.env` file in project root if present                                |
 | **REQ-SET-004** | **Path Resolution**       | Must automatically convert relative paths to absolute and expand `~` for user home directory                |
@@ -280,8 +282,42 @@ This module provides comprehensive configuration management for the drift-benchm
 | **REQ-SET-007** | **Logging Setup**         | Must provide `setup_logging()` method that configures file and console handlers based on settings           |
 | **REQ-SET-008** | **Logger Factory**        | Must provide `get_logger(name: str) -> Logger` method that returns properly configured logger instances     |
 | **REQ-SET-009** | **Settings Export**       | Must provide `to_env_file(path: str)` method to export current settings to .env format                      |
-| **REQ-SET-010** | **Validation Rules**      | Must validate setting constraints: max_workers (1-32), memory_limit_mb (512-32768), log_level enum values   |
-| **REQ-SET-011** | **Singleton Access**      | Must provide global `settings` instance for consistent access across the application                        |
+| **REQ-SET-010** | **Singleton Access**      | Must provide global `settings` instance for consistent access across the application                        |
+
+### ⚙️ Configuration Fields
+
+| ID              | Requirement                  | Description                                                                                                 |
+| --------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **REQ-SET-011** | **Components Directory**     | Must provide `components_dir` setting (default: "components") for detector implementations directory        |
+| **REQ-SET-012** | **Configurations Directory** | Must provide `configurations_dir` setting (default: "configurations") for benchmark configs directory       |
+| **REQ-SET-013** | **Datasets Directory**       | Must provide `datasets_dir` setting (default: "datasets") for datasets directory                            |
+| **REQ-SET-014** | **Results Directory**        | Must provide `results_dir` setting (default: "results") for results output directory                        |
+| **REQ-SET-015** | **Logs Directory**           | Must provide `logs_dir` setting (default: "logs") for log files directory                                   |
+| **REQ-SET-016** | **Log Level Setting**        | Must provide `log_level` setting (default: "INFO") with enum validation (DEBUG/INFO/WARNING/ERROR/CRITICAL) |
+| **REQ-SET-017** | **Caching Setting**          | Must provide `enable_caching` setting (default: true) for method registry caching                           |
+| **REQ-SET-018** | **Max Workers Setting**      | Must provide `max_workers` setting (default: 4) with validation (1-32, auto-limited by CPU)                 |
+| **REQ-SET-019** | **Random Seed Setting**      | Must provide `random_seed` setting (default: 42) for reproducibility, optional int/None                     |
+| **REQ-SET-020** | **Memory Limit Setting**     | Must provide `memory_limit_mb` setting (default: 4096) with validation (512-32768 MB)                       |
+
+### 🔒 Validation Rules
+
+| ID              | Requirement                  | Description                                                                                                   |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **REQ-SET-021** | **Max Workers Validation**   | Must validate max_workers is between 1-32 and not exceed available CPU cores                                  |
+| **REQ-SET-022** | **Memory Limit Validation**  | Must validate memory_limit_mb is between 512-32768 MB                                                         |
+| **REQ-SET-023** | **Log Level Validation**     | Must validate log_level is one of: DEBUG, INFO, WARNING, ERROR, CRITICAL                                      |
+| **REQ-SET-024** | **Path Validation**          | Must validate that directory paths are accessible and can be created if they don't exist                      |
+| **REQ-SET-025** | **Environment Variable Map** | Must map all settings to environment variables with DRIFT*BENCHMARK* prefix (e.g., DRIFT_BENCHMARK_LOG_LEVEL) |
+
+### 🛠️ Configuration Methods
+
+| ID              | Requirement               | Description                                                                                             |
+| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **REQ-SET-026** | **Programmatic Config**   | Must support creating custom Settings instances with overridden values for testing and customization    |
+| **REQ-SET-027** | **Environment Override**  | Environment variables must take precedence over .env file values and defaults                           |
+| **REQ-SET-028** | **Settings Inheritance**  | Must support creating Settings instances that inherit from global settings with selective overrides     |
+| **REQ-SET-029** | **Configuration Context** | Must provide context manager for temporary settings overrides during testing                            |
+| **REQ-SET-030** | **Settings Validation**   | Must validate all settings on instantiation and provide clear error messages for invalid configurations |
 
 ## 🚫 Error Handling Module
 
