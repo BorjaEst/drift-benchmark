@@ -9,7 +9,7 @@ import abc
 import time
 from typing import Any, Dict, Optional, Type
 
-from drift_benchmark.constants.models import DatasetResult, DetectorData
+from drift_benchmark.constants.models import DatasetResult, DetectorData, ScoreResult
 from drift_benchmark.detectors import detector_exists, get_detector
 
 
@@ -151,12 +151,12 @@ class BaseDetector(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def score(self) -> Dict[str, float]:
+    def score(self) -> ScoreResult:
         """
         Return the current detection scores/statistics.
 
         Returns:
-            Dictionary with detection scores (e.g., p-values, distances, statistics)
+            ScoreResult object containing detection scores and statistics
         """
         pass
 

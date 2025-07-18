@@ -279,6 +279,28 @@ class SyntheticDataConfig(ParametrizedModel):
         description="Generator-specific parameters",
     )
 
+    @model_validator(mode="after")
+    def validate_drift_configuration(self) -> "SyntheticDataConfig":
+        """Validate drift configuration consistency."""
+        # GRADUAL drift pattern requires drift_duration
+        if self.drift_pattern == "GRADUAL" and self.drift_duration is None:
+            raise ValueError("GRADUAL drift pattern requires drift_duration to be specified")
+
+        # SUDDEN drift should not have drift_duration
+        if self.drift_pattern == "SUDDEN" and self.drift_duration is not None:
+            raise ValueError("SUDDEN drift pattern should not have drift_duration specified")
+
+        # Validate affected features are within bounds
+        if self.drift_affected_features is not None:
+            max_feature_idx = max(self.drift_affected_features) if self.drift_affected_features else -1
+            if max_feature_idx >= self.n_features:
+                raise ValueError(f"drift_affected_features contains index {max_feature_idx} but only {self.n_features} features exist")
+
+            if min(self.drift_affected_features) < 0:
+                raise ValueError("drift_affected_features cannot contain negative indices")
+
+        return self
+
 
 class FileDataConfig(BaseDriftBenchmarkModel):
     """Configuration for file-based data loading."""
@@ -352,6 +374,35 @@ class FileDataConfig(BaseDriftBenchmarkModel):
         gt=0,
         description="Window size for sliding window analysis",
     )
+
+    @model_validator(mode="after")
+    def validate_file_configuration(self) -> "FileDataConfig":
+        """Validate file configuration consistency."""
+        from pathlib import Path
+
+        # Validate file exists if path is provided
+        if self.file_path:
+            path = Path(self.file_path)
+            if not path.exists():
+                raise ValueError(f"Data file does not exist: {self.file_path}")
+
+            # Validate file extension matches format if format is specified
+            if self.file_format:
+                extension = path.suffix.lower()
+                if self.file_format == "CSV" and extension not in [".csv", ".txt"]:
+                    raise ValueError(f"CSV format specified but file has extension: {extension}")
+                elif self.file_format == "PARQUET" and extension != ".parquet":
+                    raise ValueError(f"PARQUET format specified but file has extension: {extension}")
+                elif self.file_format == "JSON" and extension != ".json":
+                    raise ValueError(f"JSON format specified but file has extension: {extension}")
+
+        # Validate drift configuration consistency
+        if self.drift_points is not None and self.drift_labels is not None:
+            if len(self.drift_points) != len(self.drift_labels):
+                raise ValueError("drift_points and drift_labels must have the same length when both are provided")
+
+        return self
+
     stride: Optional[int] = Field(
         default=None,
         gt=0,
@@ -949,6 +1000,45 @@ class BenchmarkConfig(BaseDriftBenchmarkModel):
     def get_total_combinations(self) -> int:
         """Get total number of detector-dataset combinations."""
         return self.get_detector_count() * self.get_dataset_count() * self.settings.n_runs
+
+    @model_validator(mode="after")
+    def validate_benchmark_configuration(self) -> "BenchmarkConfig":
+        """Validate benchmark configuration consistency."""
+        # Validate that we have at least one dataset and one detector
+        if not self.data.datasets:
+            raise ValueError("At least one dataset must be configured")
+
+        if not self.detectors.algorithms:
+            raise ValueError("At least one detector must be configured")
+
+        # Validate run settings
+        if self.settings.n_runs <= 0:
+            raise ValueError("n_runs must be greater than 0")
+
+        # Validate memory limits if set
+        if hasattr(self.settings, "memory_limit") and self.settings.memory_limit is not None:
+            if self.settings.memory_limit <= 0:
+                raise ValueError("memory_limit must be greater than 0 if specified")
+
+        # Validate output directory exists if specified
+        if hasattr(self.output, "results_dir") and self.output.results_dir:
+            from pathlib import Path
+
+            results_path = Path(self.output.results_dir)
+            if not results_path.parent.exists():
+                raise ValueError(f"Parent directory for results_dir does not exist: {results_path.parent}")
+
+        # Validate dataset names are unique
+        dataset_names = [ds.name for ds in self.data.datasets]
+        if len(dataset_names) != len(set(dataset_names)):
+            raise ValueError("Dataset names must be unique")
+
+        # Validate detector names are unique
+        detector_names = [det.name for det in self.detectors.algorithms]
+        if len(detector_names) != len(set(detector_names)):
+            raise ValueError("Detector names must be unique")
+
+        return self
 
 
 # =============================================================================

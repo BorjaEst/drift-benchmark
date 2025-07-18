@@ -214,6 +214,7 @@ def optimize_result_storage(evaluation: DriftEvaluationResult) -> DriftEvaluatio
             optimized_pred = DetectorPrediction(
                 dataset_name=pred.dataset_name,
                 window_id=pred.window_id,
+                run_id=pred.run_id,
                 has_true_drift=pred.has_true_drift,
                 detected_drift=pred.detected_drift,
                 detection_time=pred.detection_time,
