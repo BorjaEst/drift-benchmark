@@ -2,11 +2,43 @@
 
 > **Note**: Each requirement has a unique identifier (REQ-XXX-YYY) for easy reference and traceability in tests.
 
-**NEEDED REQUIREMENTS**:
+## 🛡️ Resource Management Module
 
-- **Resource Management**: Memory limits, cleanup, graceful shutdown
-- **Logging Integration**: How all modules use centralized logging
-- **Benchmark Orchestration**: Complete end-to-end execution workflow
+This module defines how the drift-benchmark library manages system resources including memory limits, cleanup, and graceful shutdown to ensure reliable operation and prevent resource exhaustion.
+
+| ID              | Requirement                     | Description                                                                                                                |
+| --------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-RSC-001** | **Memory Limit Enforcement**    | BenchmarkRunner must monitor memory usage during execution and terminate with BenchmarkExecutionError if limit is exceeded |
+| **REQ-RSC-002** | **Memory Usage Tracking**       | All detector operations must track peak memory usage and include memory metadata in DetectorResult                         |
+| **REQ-RSC-003** | **Resource Cleanup on Exit**    | BenchmarkRunner must ensure proper cleanup of all resources (file handles, memory, processes) during normal and error exit |
+| **REQ-RSC-004** | **Graceful Shutdown Handling**  | Application must handle SIGINT and SIGTERM signals to perform cleanup before termination                                   |
+| **REQ-RSC-005** | **Detector Resource Isolation** | Each detector execution must be isolated to prevent resource leaks from affecting subsequent detector runs                 |
+| **REQ-RSC-006** | **Memory Cleanup Between Runs** | BenchmarkRunner must explicitly release detector instances and preprocessed data after each detector-dataset evaluation    |
+| **REQ-RSC-007** | **File Handle Management**      | All file operations must use context managers or explicit close() calls to prevent file handle leaks                       |
+| **REQ-RSC-008** | **Temporary Resource Cleanup**  | Any temporary files or directories created during benchmark execution must be cleaned up before process termination        |
+| **REQ-RSC-009** | **Memory Limit Configuration**  | Memory limits must be configurable through settings.memory_limit_mb with validation between 512-32768 MB                   |
+| **REQ-RSC-010** | **Resource Monitoring Logging** | Resource usage violations and cleanup actions must be logged using the centralized logging system                          |
+
+> Resource management ensures benchmarks run reliably without exhausting system resources. Memory limits prevent runaway processes, while cleanup ensures consistent benchmark environments.
+
+## 📋 Logging Integration Module
+
+This module defines how all components use the centralized logging system to provide consistent, traceable execution logs throughout the drift-benchmark library.
+
+| ID              | Requirement                       | Description                                                                                                              |
+| --------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-LOG-001** | **Centralized Logger Access**     | All modules must use `settings.get_logger(__name__)` to obtain properly configured logger instances                      |
+| **REQ-LOG-002** | **Consistent Log Formatting**     | All log messages must follow standard format: timestamp, level, module, message with structured context where applicable |
+| **REQ-LOG-003** | **Error Logging Standardization** | All error handling must log errors using appropriate levels: ERROR for failures, WARNING for recoverable issues          |
+| **REQ-LOG-004** | **Benchmark Progress Logging**    | BenchmarkRunner must log progress milestones: benchmark start/end, dataset loading, detector execution phases            |
+| **REQ-LOG-005** | **Configuration Logging**         | Settings and configuration loading must log key configuration values and validation results                              |
+| **REQ-LOG-006** | **Performance Metrics Logging**   | Detector execution times, memory usage, and resource statistics must be logged at INFO level                             |
+| **REQ-LOG-007** | **Log Level Respect**             | All modules must respect the configured log level and avoid logging below the configured threshold                       |
+| **REQ-LOG-008** | **Structured Context Logging**    | Log messages must include relevant context (detector_id, dataset_name, method_id) as structured fields where applicable  |
+| **REQ-LOG-009** | **File and Console Output**       | Logging configuration must support both file output (benchmark.log) and console output based on settings                 |
+| **REQ-LOG-010** | **Log File Management**           | Log files must be created in configured logs directory with proper rotation and cleanup policies                         |
+
+> Centralized logging ensures consistent debugging information across all modules. All components use the same logger configuration for unified log analysis and troubleshooting.
 
 ## � Error Propagation Module
 
