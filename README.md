@@ -45,14 +45,16 @@ drift-benchmark/
 ├── 📁 results/                     # Output directory for benchmark results
 ├── 📁 scripts/                     # Utility scripts for data generation and preprocessing
 ├── 📁 src/drift_benchmark/         # Main package directory
-│   ├── 📄 __init__.py              # Package initialization
 │   ├── 📁 adapters/                # Adapters for different drift detection libraries
 │   ├── 📁 benchmark/               # Benchmarking runner and execution logic
-│   ├── 📁 constants/               # Constants and pydantic model definitions
 │   ├── 📁 data/                    # Data generation and utilities
 │   ├── 📁 detectors/               # Drift detection methods and implementations
+│   ├── 📁 models/                  # Pydantic model definitions
 │   ├── 📁 evaluation/              # Evaluation engines and metrics
 │   ├── 📁 results/                 # Result storage and files generation
+│   ├── 📄 __init__.py              # Package initialization
+│   ├── 📄 exceptions.py            # Custom exceptions
+│   ├── 📄 literals.py              # Package literals
 │   └── 📄 settings.py              # Configuration settings
 ├── 📁 tests/                       # Test directory
 ├── 📄 LICENSE/                     # License file
@@ -195,22 +197,22 @@ results = runner.run()
 The configuration system uses **Pydantic v2** for comprehensive validation and type safety:
 
 ```python
-from drift_benchmark.models import BenchmarkConfig, MetadataModel, DataConfig, ...
+from drift_benchmark.models import BenchmarkConfig, BenchmarkMetadata, DatasetConfig, ...
 
 config = BenchmarkConfig(
-    metadata=MetadataModel(...),
-    data=DataConfig(...),
+    metadata=BenchmarkMetadata(...),
+    data=DatasetConfig(...),
     detectors=DetectorConfig(...),
     evaluation=EvaluationConfig(...),
 )
 ```
 
-### 📋 Configuration Models
+### 📋 Models to configure and describe Benchmark
 
 | Model                        | Description                                                             |
 | ---------------------------- | ----------------------------------------------------------------------- |
-| **Metadata Model**           | Name, description, authors, and version of the benchmark                |
-| **Data Configuration**       | List of datasets to use for benchmarking                                |
+| **Benchmark Metadata**       | Name, description, authors, and version of the benchmark                |
+| **Dataset Configuration**    | List of datasets to use for benchmarking                                |
 | **Detectors Configuration**  | List of detector configurations to benchmark                            |
 | **Evaluation Configuration** | Comprehensive evaluation metrics, statistical tests, and analysis tools |
 

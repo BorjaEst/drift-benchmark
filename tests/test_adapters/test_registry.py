@@ -136,11 +136,12 @@ class TestDetectorLookup:
         """REQ-REG-003: get_detector_class() must return Type[BaseDetector] for valid IDs."""
         from tests.test_adapters.conftest import MockDetector
 
-        registry = AdapterRegistry()
+        registry = empty_adapter_registry
 
-        # Setup mock to return the detector class
-        registry.get_detector_class.return_value = MockDetector
+        # Actually register the detector using the real API
+        registry.register_detector("test_method", "test_impl", MockDetector)
 
+        # Test retrieval using the real API
         detector_class = registry.get_detector_class("test_method", "test_impl")
 
         assert detector_class is MockDetector
@@ -161,9 +162,12 @@ class TestDetectorLookup:
         """REQ-REG-003: Retrieved detector class should be instantiable."""
         from tests.test_adapters.conftest import MockDetector
 
-        registry = AdapterRegistry()
-        registry.get_detector_class.return_value = MockDetector
+        registry = empty_adapter_registry
 
+        # Actually register the detector
+        registry.register_detector("test_method", "test_impl", MockDetector)
+
+        # Test retrieval and instantiation
         detector_class = registry.get_detector_class("test_method", "test_impl")
         instance = detector_class()
 
@@ -176,46 +180,41 @@ class TestMissingDetectorError:
 
     def test_should_raise_detector_not_found_error_when_detector_missing(self, empty_adapter_registry, mock_detector_exceptions):
         """REQ-REG-004: get_detector_class() must raise DetectorNotFoundError when detector doesn't exist."""
-        registry = AdapterRegistry()
+        from drift_benchmark.adapters.exceptions import DetectorNotFoundError
 
-        # Configure mock to raise the expected error
-        registry.get_detector_class.side_effect = mock_detector_exceptions["DetectorNotFoundError"]("Detector not found")
+        registry = empty_adapter_registry
 
-        with pytest.raises(Exception) as exc_info:  # Would be DetectorNotFoundError
+        # Try to get a detector that doesn't exist
+        with pytest.raises(DetectorNotFoundError) as exc_info:
             registry.get_detector_class("nonexistent_method", "nonexistent_impl")
 
-        assert exc_info.value is not None
+        assert "not found" in str(exc_info.value)
 
     def test_should_include_available_combinations_when_error_raised(self, empty_adapter_registry, mock_detector_exceptions):
         """REQ-REG-004: Error must include available (method_id, implementation_id) combinations."""
+        from drift_benchmark.adapters.exceptions import DetectorNotFoundError
         from tests.test_adapters.conftest import MockDetector
 
-        registry = AdapterRegistry()
+        registry = empty_adapter_registry
 
         # Setup available detectors
-        registry._registry[("method1", "impl1")] = MockDetector
-        registry._registry[("method2", "impl2")] = MockDetector
-        registry.list_detectors.return_value = [("method1", "impl1"), ("method2", "impl2")]
+        registry.register_detector("method1", "impl1", MockDetector)
+        registry.register_detector("method2", "impl2", MockDetector)
 
-        # Configure error with available combinations
-        available_combinations = registry.list_detectors()
-        error_msg = f"Available combinations: {available_combinations}"
-        registry.get_detector_class.side_effect = mock_detector_exceptions["DetectorNotFoundError"](error_msg)
-
-        with pytest.raises(Exception) as exc_info:
-            registry.get_detector_class("invalid", "invalid")
+        # Test that lookup failure includes available combinations
+        with pytest.raises(DetectorNotFoundError) as exc_info:
+            registry.get_detector_class("invalid_method", "invalid_impl")
 
         # Error message should contain available combinations
-        assert "method1" in str(exc_info.value) or "Available" in str(exc_info.value)
+        assert "method1" in str(exc_info.value) or "method2" in str(exc_info.value)
 
     def test_should_provide_helpful_error_message_when_lookup_fails(self, empty_adapter_registry, mock_detector_exceptions):
         """REQ-REG-004: Error message must be helpful for debugging."""
-        registry = AdapterRegistry()
+        from drift_benchmark.adapters.exceptions import DetectorNotFoundError
 
-        helpful_message = "Detector (invalid_method, invalid_impl) not found. Available: [('valid_method', 'valid_impl')]"
-        registry.get_detector_class.side_effect = mock_detector_exceptions["DetectorNotFoundError"](helpful_message)
+        registry = empty_adapter_registry
 
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(DetectorNotFoundError) as exc_info:
             registry.get_detector_class("invalid_method", "invalid_impl")
 
         error_message = str(exc_info.value)
@@ -234,11 +233,14 @@ class TestListAvailableDetectors:
 
     def test_should_return_list_of_tuples_when_called(self, empty_adapter_registry):
         """REQ-REG-005: list_detectors() must return List[Tuple[str, str]]."""
-        registry = AdapterRegistry()
+        registry = empty_adapter_registry
 
-        # Setup mock return value
-        expected_detectors = [("kolmogorov_smirnov", "ks_batch"), ("kolmogorov_smirnov", "ks_streaming"), ("drift_test", "test_impl")]
-        registry.list_detectors.return_value = expected_detectors
+        # Register some test detectors
+        from tests.test_adapters.conftest import MockDetector
+
+        registry.register_detector("kolmogorov_smirnov", "ks_batch", MockDetector)
+        registry.register_detector("kolmogorov_smirnov", "ks_streaming", MockDetector)
+        registry.register_detector("drift_test", "test_impl", MockDetector)
 
         result = registry.list_detectors()
 
@@ -250,15 +252,12 @@ class TestListAvailableDetectors:
         """REQ-REG-005: list_detectors() must return all registered combinations."""
         from tests.test_adapters.conftest import MockDetector
 
-        registry = AdapterRegistry()
+        registry = empty_adapter_registry
 
         # Register multiple detectors
-        registry._registry[("method1", "impl1")] = MockDetector
-        registry._registry[("method2", "impl2")] = MockDetector
-        registry._registry[("method1", "impl2")] = MockDetector
-
-        # Mock list_detectors to return keys
-        registry.list_detectors.return_value = list(registry._registry.keys())
+        registry.register_detector("method1", "impl1", MockDetector)
+        registry.register_detector("method2", "impl2", MockDetector)
+        registry.register_detector("method1", "impl2", MockDetector)
 
         result = registry.list_detectors()
 
@@ -269,8 +268,7 @@ class TestListAvailableDetectors:
 
     def test_should_return_empty_list_when_no_detectors_registered(self, empty_adapter_registry):
         """REQ-REG-005: list_detectors() must return empty list when no detectors registered."""
-        registry = AdapterRegistry()
-        registry.list_detectors.return_value = []
+        registry = empty_adapter_registry
 
         result = registry.list_detectors()
 
@@ -319,11 +317,10 @@ class TestAdapterModuleDiscovery:
         """REQ-REG-006: discover_adapters() must register discovered Detector classes."""
         from tests.test_adapters.conftest import MockDetector
 
-        registry = AdapterRegistry()
+        registry = empty_adapter_registry
 
         # Simulate discovery registering detectors
-        registry._registry[("discovered_method", "discovered_impl")] = MockDetector
-        registry.list_detectors.return_value = [("discovered_method", "discovered_impl")]
+        registry.register_detector("discovered_method", "discovered_impl", MockDetector)
 
         # After discovery, detector should be available
         detectors = registry.list_detectors()
@@ -553,18 +550,16 @@ class TestRegistryIntegrationWorkflow:
         """Integration test: Complete detector registration and retrieval workflow."""
         from tests.test_adapters.conftest import MockDetector
 
-        registry = AdapterRegistry()
+        registry = empty_adapter_registry
 
         # Step 1: Register detector
-        registry._registry[("ks_test", "batch")] = MockDetector
+        registry.register_detector("ks_test", "batch", MockDetector)
 
         # Step 2: List available detectors
-        registry.list_detectors.return_value = [("ks_test", "batch")]
         available = registry.list_detectors()
         assert ("ks_test", "batch") in available
 
         # Step 3: Retrieve detector class
-        registry.get_detector_class.return_value = MockDetector
         detector_class = registry.get_detector_class("ks_test", "batch")
 
         # Step 4: Instantiate detector
@@ -582,11 +577,10 @@ class TestRegistryIntegrationWorkflow:
 
         # Step 2: Verify registration occurred
         # In real implementation, decorator would register the class
-        registry = AdapterRegistry()
-        registry._registry[("decorated_method", "decorated_impl")] = DecoratedDetector
+        registry = empty_adapter_registry
+        registry.register_detector("decorated_method", "decorated_impl", DecoratedDetector)
 
         # Step 3: Retrieve and use
-        registry.get_detector_class.return_value = DecoratedDetector
         detector_class = registry.get_detector_class("decorated_method", "decorated_impl")
 
         assert detector_class is DecoratedDetector

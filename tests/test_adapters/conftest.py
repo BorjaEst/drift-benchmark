@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Type
 from unittest.mock import Mock, patch
 
+import pandas as pd
 import pytest
 
 from drift_benchmark.adapters.base import BaseDetector
@@ -17,61 +18,65 @@ from drift_benchmark.constants.models import DatasetResult, DetectorMetadata, Sc
 
 
 class MockDetector(BaseDetector):
-    """Mock detector implementation for testing BaseDetector interface."""
+    """Mock detector for testing purposes."""
 
     def __init__(self, method_id: str = "test_method", implementation_id: str = "test_implementation"):
+        """Initialize the mock detector."""
         self._method_id = method_id
         self._implementation_id = implementation_id
-        self._fitted = False
-        self._last_score = None
+        super().__init__()
+        # Set up a default score result for testing
+        self._last_score = ScoreResult(
+            drift_detected=True,
+            drift_score=0.8,
+            threshold=0.5,
+            p_value=0.02,
+            confidence_interval=None,
+            metadata={"method": self.method_id, "implementation": self.implementation_id},
+        )
 
     @property
     def method_id(self) -> str:
+        """Return the method identifier."""
         return self._method_id
 
     @property
     def implementation_id(self) -> str:
+        """Return the implementation identifier."""
         return self._implementation_id
 
     @classmethod
     def metadata(cls) -> DetectorMetadata:
+        """Return detector metadata."""
         return DetectorMetadata(
             method_id="test_method",
             implementation_id="test_implementation",
             name="Test Detector",
             description="Mock detector for testing",
-            category="statistical",
+            category="test",
             data_type="tabular",
             streaming=False,
         )
 
     def preprocess(self, data: DatasetResult, **kwargs) -> Any:
-        """Mock preprocessing that returns the X_test data."""
+        """Mock preprocessing that returns X_test."""
         return data.X_test
 
     def fit(self, preprocessed_data: Any, **kwargs) -> "MockDetector":
-        """Mock fit method that marks detector as fitted."""
+        """Mock fitting."""
         self._fitted = True
         return self
 
     def detect(self, preprocessed_data: Any, **kwargs) -> bool:
-        """Mock detect method that returns True if fitted."""
+        """Mock detection that returns True."""
         if not self._fitted:
             raise RuntimeError("Detector must be fitted before detection")
+
+        # Update last score for testing
+        self._last_score = ScoreResult(
+            drift_detected=True, drift_score=0.8, threshold=0.5, p_value=0.02, confidence_interval=None, metadata={"method": self.method_id}
+        )
         return True
-
-    def score(self) -> ScoreResult:
-        """Mock score method that returns test score result."""
-        if self._last_score is None:
-            self._last_score = ScoreResult(
-                drift_detected=True, drift_score=0.8, threshold=0.5, p_value=0.02, confidence_interval=(0.7, 0.9)
-            )
-        return self._last_score
-
-    def reset(self) -> None:
-        """Mock reset method that clears fitted state."""
-        self._fitted = False
-        self._last_score = None
 
 
 class InvalidDetector:
@@ -125,72 +130,17 @@ def mock_methods_registry():
 @pytest.fixture
 def empty_adapter_registry():
     """Provide a clean adapter registry for testing."""
-    with patch("drift_benchmark.adapters.registry.AdapterRegistry") as MockRegistryClass:
-        mock_registry = Mock()
-        mock_registry._registry = {}
-        mock_registry.get_detector_class.side_effect = lambda m, i: MockRegistryClass._registry.get((m, i))
-        mock_registry.list_detectors.return_value = list(MockRegistryClass._registry.keys())
-        mock_registry.clear_registry.side_effect = lambda: MockRegistryClass._registry.clear()
-        MockRegistryClass.return_value = mock_registry
-        yield mock_registry
+    from drift_benchmark.adapters.registry import AdapterRegistry, clear_registry
 
+    # Clear the global registry to start fresh
+    clear_registry()
 
-@pytest.fixture
-def sample_adapter_directory(tmp_path: Path):
-    """Create a temporary directory with adapter modules for testing discovery."""
-    adapter_dir = tmp_path / "adapters"
-    adapter_dir.mkdir()
+    # Return a new clean registry instance
+    registry = AdapterRegistry()
+    yield registry
 
-    # Create a valid adapter module
-    adapter_file = adapter_dir / "test_adapter.py"
-    adapter_file.write_text(
-        """
-from drift_benchmark.adapters.base import BaseDetector, register_detector
-from drift_benchmark.constants.models import DetectorMetadata, DatasetResult, ScoreResult
-
-@register_detector("test_method", "test_impl")
-class TestAdapter(BaseDetector):
-    @property
-    def method_id(self) -> str:
-        return "test_method"
-    
-    @property
-    def implementation_id(self) -> str:
-        return "test_impl"
-    
-    @classmethod
-    def metadata(cls) -> DetectorMetadata:
-        return DetectorMetadata(
-            method_id="test_method",
-            implementation_id="test_impl",
-            name="Test Adapter",
-            description="Test adapter for discovery",
-            category="statistical",
-            data_type="tabular",
-            streaming=False,
-        )
-    
-    def preprocess(self, data: DatasetResult, **kwargs):
-        return data.X_test
-    
-    def fit(self, preprocessed_data, **kwargs):
-        return self
-    
-    def detect(self, preprocessed_data, **kwargs) -> bool:
-        return True
-    
-    def score(self) -> ScoreResult:
-        return ScoreResult(drift_detected=True, drift_score=0.8, threshold=0.5, p_value=0.02)
-    
-    def reset(self) -> None:
-        pass
-"""
-    )
-
-    # Create an __init__.py file
-    (adapter_dir / "__init__.py").write_text("")
-
-    return adapter_dir
+    # Clean up after test
+    clear_registry()
 
 
 @pytest.fixture
