@@ -4,12 +4,30 @@
 
 **NEEDED REQUIREMENTS**:
 
-- **Data Flow Pipeline**: How data moves between Data → Adapters → Evaluation → Results
 - **Configuration Loading**: How BenchmarkConfig is loaded and validated
 - **Error Propagation**: How errors flow between modules
 - **Resource Management**: Memory limits, cleanup, graceful shutdown
 - **Logging Integration**: How all modules use centralized logging
 - **Benchmark Orchestration**: Complete end-to-end execution workflow
+
+## 🔄 Data Flow Pipeline
+
+This module defines how data moves through the benchmark system orchestrated by BenchmarkRunner: Data → Adapters → Evaluation → Results, with clear stage responsibilities and handoffs.
+
+| ID              | Requirement                         | Description                                                                                                                              |
+| --------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-FLW-001** | **BenchmarkRunner Data Loading**    | BenchmarkRunner must load all datasets specified in BenchmarkConfig during initialization, creating DatasetResult instances              |
+| **REQ-FLW-002** | **BenchmarkRunner Detector Setup**  | BenchmarkRunner must instantiate all configured detectors from registry during initialization, validating method_id/implementation_id    |
+| **REQ-FLW-003** | **Detector Preprocessing Phase**    | For each detector-dataset pair, BenchmarkRunner must call detector.preprocess() to transform DatasetResult into detector-specific format |
+| **REQ-FLW-004** | **Detector Training Phase**         | BenchmarkRunner must call detector.fit(preprocessed_reference_data) to train each detector on reference data                             |
+| **REQ-FLW-005** | **Detector Detection Phase**        | BenchmarkRunner must call detector.detect(preprocessed_test_data) to get drift detection boolean result                                  |
+| **REQ-FLW-006** | **Detector Scoring Phase**          | BenchmarkRunner must call detector.score() to collect drift scores and package into DetectorResult with timing/memory metadata           |
+| **REQ-FLW-007** | **Evaluation Engine Processing**    | BenchmarkRunner must pass all DetectorResult instances to EvaluationEngine for metrics calculation and statistical analysis              |
+| **REQ-FLW-008** | **Results Storage Coordination**    | BenchmarkRunner must coordinate with Results module to save BenchmarkResult to timestamped directory with all required file formats      |
+| **REQ-FLW-009** | **Stage Error Isolation**           | BenchmarkRunner must isolate errors at each stage, logging failures and continuing with remaining detector-dataset combinations          |
+| **REQ-FLW-010** | **Resource Cleanup Between Stages** | BenchmarkRunner must release detector instances and preprocessed data after each detector-dataset evaluation to manage memory usage      |
+
+> BenchmarkRunner orchestrates the entire pipeline, ensuring data flows correctly between stages while handling errors gracefully and managing resources efficiently. Each detector processes one dataset at a time in isolation.
 
 ## 🚀 Module Initialization Order
 
