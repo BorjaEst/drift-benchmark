@@ -4,7 +4,6 @@
 
 **NEEDED REQUIREMENTS**:
 
-- **Configuration Loading**: How BenchmarkConfig is loaded and validated
 - **Error Propagation**: How errors flow between modules
 - **Resource Management**: Memory limits, cleanup, graceful shutdown
 - **Logging Integration**: How all modules use centralized logging
@@ -28,6 +27,25 @@ This module defines how data moves through the benchmark system orchestrated by 
 | **REQ-FLW-010** | **Resource Cleanup Between Stages** | BenchmarkRunner must release detector instances and preprocessed data after each detector-dataset evaluation to manage memory usage      |
 
 > BenchmarkRunner orchestrates the entire pipeline, ensuring data flows correctly between stages while handling errors gracefully and managing resources efficiently. Each detector processes one dataset at a time in isolation.
+
+## ⚙️ Configuration Loading
+
+This module defines how BenchmarkConfig is loaded, validated, and processed. It ensures type safety through Pydantic v2 validation and provides clear error handling for configuration issues.
+
+| ID              | Requirement                       | Description                                                                                                                                |
+| --------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-CFG-001** | **TOML File Loading**             | BenchmarkRunner must load BenchmarkConfig from .toml files using `BenchmarkConfig.from_toml(path: str) -> BenchmarkConfig`                 |
+| **REQ-CFG-002** | **Pydantic V2 Validation**        | BenchmarkConfig must use Pydantic v2 BaseModel with automatic field validation for all nested configuration models                         |
+| **REQ-CFG-003** | **Path Resolution**               | Configuration loading must resolve relative file paths to absolute paths and validate file existence for dataset configurations            |
+| **REQ-CFG-004** | **Configuration Validation**      | BenchmarkConfig must validate detector method_id/implementation_id existence in the methods registry during model validation               |
+| **REQ-CFG-005** | **Error Context Reporting**       | Configuration validation errors must include clear context about which field failed validation and provide correction suggestions          |
+| **REQ-CFG-006** | **Default Value Handling**        | BenchmarkConfig must provide sensible defaults for optional fields (output formats, evaluation metrics, detector parameters)               |
+| **REQ-CFG-007** | **Cross-Model Consistency**       | BenchmarkConfig must validate consistency between related fields (e.g., drift_type in datasets matches detector capabilities)              |
+| **REQ-CFG-008** | **Nested Configuration Support**  | BenchmarkConfig must support nested models (MetadataConfig, DatasetsConfig, DetectorsConfig, EvaluationConfig) with independent validation |
+| **REQ-CFG-009** | **Configuration Serialization**   | BenchmarkConfig must support round-trip serialization (to_toml/from_toml) preserving all configuration data                                |
+| **REQ-CFG-010** | **Environment Variable Override** | Configuration loading must allow environment variable overrides for critical settings like results_dir and log_level                       |
+
+> BenchmarkConfig uses Pydantic v2 for automatic validation. Most validation is handled by Pydantic's built-in mechanisms (type checking, field constraints, custom validators). The configuration system is responsible for loading TOML files and resolving paths, while Pydantic handles the data validation automatically.
 
 ## 🚀 Module Initialization Order
 
