@@ -361,7 +361,7 @@ class DatasetResult:
     X_test: pd.DataFrame         # Test data features
     y_ref: Optional[pd.Series]   # Reference data targets
     y_test: Optional[pd.Series]  # Test data targets
-    drift_info: DriftInfo        # Drift metadata
+    drift_info: DriftMetadata        # Drift metadata
     metadata: DatasetMetadata    # Dataset metadata
 ```
 

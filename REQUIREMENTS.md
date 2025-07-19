@@ -249,51 +249,11 @@ This module provides adapters for integrating various drift detection libraries 
 | **REQ-REG-008** | **Registry Validation**           | Must validate that registered Detector classes inherit from `BaseDetector` and have valid method_id/implementation_id in methods.toml |
 | **REQ-REG-009** | **Clear Registry**                | Must provide `clear_registry()` method to remove all registrations (primarily for testing)                                            |
 
-## 🏃‍♂️ Benchmark Module
-
-This module contains the benchmark runner to benchmark adapters against each other. It provides a flexible and extensible framework for running benchmarks on drift detection methods.
-
-### 📊 Benchmark Module
-
-| ID              | Requirement                   | Description                                                                                                  |
-| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **REQ-BEN-001** | **Benchmark Class Interface** | `Benchmark` class must accept `BenchmarkConfig` in constructor and provide `run() -> BenchmarkResult` method |
-| **REQ-BEN-002** | **Configuration Validation**  | `Benchmark.__init__(config: BenchmarkConfig)` must validate all detector configurations exist in registry    |
-| **REQ-BEN-003** | **Dataset Loading**           | `Benchmark` must load all datasets specified in config and validate they conform to `DatasetResult` format   |
-| **REQ-BEN-004** | **Detector Instantiation**    | `Benchmark` must instantiate all configured detectors and validate they implement `BaseDetector` interface   |
-| **REQ-BEN-005** | **Sequential Execution**      | `Benchmark.run()` must execute detectors sequentially on each dataset using the configured strategy          |
-| **REQ-BEN-006** | **Error Handling**            | `Benchmark.run()` must catch detector errors, log them, and continue with remaining detectors                |
-| **REQ-BEN-007** | **Progress Tracking**         | `Benchmark.run()` must emit progress events with current detector, dataset, and completion percentage        |
-| **REQ-BEN-008** | **Result Aggregation**        | `Benchmark.run()` must collect all detector results and return consolidated `BenchmarkResult`                |
-| **REQ-BEN-009** | **Resource Cleanup**          | `Benchmark` must ensure proper cleanup of detector instances and loaded datasets after execution             |
-
-### 🎯 Runner Module
-
-| ID              | Requirement                  | Description                                                                                                          |
-| --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **REQ-RUN-001** | **BenchmarkRunner Class**    | `BenchmarkRunner` must provide high-level interface for running benchmarks from configuration files or objects       |
-| **REQ-RUN-002** | **Config File Loading**      | `BenchmarkRunner.from_config_file(path: str) -> BenchmarkRunner` must load and validate TOML configuration files     |
-| **REQ-RUN-003** | **Multiple Dataset Support** | `BenchmarkRunner` must support benchmarking across multiple datasets specified in configuration                      |
-| **REQ-RUN-004** | **Result Storage**           | `BenchmarkRunner.run()` must automatically save results to configured output directory with standardized file naming |
-| **REQ-RUN-005** | **Logging Integration**      | `BenchmarkRunner` must integrate with settings logging configuration and log execution details                       |
-
-### ⚡ Strategies Module
-
-| ID              | Requirement                 | Description                                                                                                                                                 |
-| --------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-STR-001** | **Strategy Base Class**     | `ExecutionStrategy` must be abstract base class with `execute(detectors: List[BaseDetector], datasets: List[DatasetResult]) -> List[DetectorResult]` method |
-| **REQ-STR-002** | **Sequential Strategy**     | `SequentialStrategy` must execute detectors in deterministic order, one at a time, preserving timing accuracy                                               |
-| **REQ-STR-003** | **Error Isolation**         | `SequentialStrategy` must isolate detector failures and continue execution with remaining detectors                                                         |
-| **REQ-STR-004** | **Deterministic Results**   | `SequentialStrategy` must ensure identical results across runs with same configuration and random seed                                                      |
-| **REQ-STR-005** | **Performance Measurement** | All strategies must measure and record fit_time, detect_time, and memory_usage for each detector execution                                                  |
-
-> **Note**: For the moment we are going to implement only the sequential strategy, but the architecture is designed to allow easy addition of parallel strategies in the future.
-
 ## 📊 Data Module
 
 This module provides comprehensive, configuration-driven utilities for data loading, preprocessing, and synthetic drift generation. It supports multiple data sources and formats while maintaining consistent interfaces for drift detection benchmarking.
 
-### 🗂️ Scenario Loading
+### 🗂️ Scenario Data
 
 | ID              | Requirement              | Description                                                                                                                 |
 | --------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
@@ -302,7 +262,7 @@ This module provides comprehensive, configuration-driven utilities for data load
 | **REQ-DAT-003** | **Scenario Validation**  | Loaded scenarios must include validated drift characteristics with drift_type, drift_position, and has_drift properties     |
 | **REQ-DAT-004** | **Metadata Consistency** | All scenarios must provide consistent metadata including name, data_types, dimension, labeling, and sample counts           |
 
-### 🎲 Synthetic Data Generation
+### 🎲 Synthetic Data
 
 | ID              | Requirement                 | Description                                                                                                                |
 | --------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -314,7 +274,7 @@ This module provides comprehensive, configuration-driven utilities for data load
 | **REQ-DAT-106** | **Gaussian Generator**      | Must implement gaussian generator for multivariate normal distributions with configurable drift                            |
 | **REQ-DAT-107** | **Parameter Validation**    | Synthetic config must validate: n_samples > 0, n_features > 0, 0 <= drift_position <= 1, drift_magnitude > 0               |
 
-### 📁 File Dataset Loading
+### 📁 File Data
 
 | ID              | Requirement                | Description                                                                                                      |
 | --------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -440,3 +400,43 @@ This module provides common utility functions and helpers used throughout the dr
 | **REQ-UTL-004** | **Data Type Inference**     | Must provide `infer_data_types(df: pd.DataFrame) -> DataType` that determines if data is continuous/categorical   |
 | **REQ-UTL-005** | **Path Utilities**          | Must provide `resolve_path(path: str) -> Path` that handles relative paths, ~, and environment variable expansion |
 | **REQ-UTL-006** | **Validation Helpers**      | Must provide common validation functions for file existence, directory permissions, and data format checks        |
+
+## 🏃‍♂️ Benchmark Module
+
+This module contains the benchmark runner to benchmark adapters against each other. It provides a flexible and extensible framework for running benchmarks on drift detection methods.
+
+### 📊 Benchmark Module
+
+| ID              | Requirement                   | Description                                                                                                  |
+| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **REQ-BEN-001** | **Benchmark Class Interface** | `Benchmark` class must accept `BenchmarkConfig` in constructor and provide `run() -> BenchmarkResult` method |
+| **REQ-BEN-002** | **Configuration Validation**  | `Benchmark.__init__(config: BenchmarkConfig)` must validate all detector configurations exist in registry    |
+| **REQ-BEN-003** | **Dataset Loading**           | `Benchmark` must load all datasets specified in config and validate they conform to `DatasetResult` format   |
+| **REQ-BEN-004** | **Detector Instantiation**    | `Benchmark` must instantiate all configured detectors and validate they implement `BaseDetector` interface   |
+| **REQ-BEN-005** | **Sequential Execution**      | `Benchmark.run()` must execute detectors sequentially on each dataset using the configured strategy          |
+| **REQ-BEN-006** | **Error Handling**            | `Benchmark.run()` must catch detector errors, log them, and continue with remaining detectors                |
+| **REQ-BEN-007** | **Progress Tracking**         | `Benchmark.run()` must emit progress events with current detector, dataset, and completion percentage        |
+| **REQ-BEN-008** | **Result Aggregation**        | `Benchmark.run()` must collect all detector results and return consolidated `BenchmarkResult`                |
+| **REQ-BEN-009** | **Resource Cleanup**          | `Benchmark` must ensure proper cleanup of detector instances and loaded datasets after execution             |
+
+### 🎯 Runner Module
+
+| ID              | Requirement                  | Description                                                                                                          |
+| --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **REQ-RUN-001** | **BenchmarkRunner Class**    | `BenchmarkRunner` must provide high-level interface for running benchmarks from configuration files or objects       |
+| **REQ-RUN-002** | **Config File Loading**      | `BenchmarkRunner.from_config_file(path: str) -> BenchmarkRunner` must load and validate TOML configuration files     |
+| **REQ-RUN-003** | **Multiple Dataset Support** | `BenchmarkRunner` must support benchmarking across multiple datasets specified in configuration                      |
+| **REQ-RUN-004** | **Result Storage**           | `BenchmarkRunner.run()` must automatically save results to configured output directory with standardized file naming |
+| **REQ-RUN-005** | **Logging Integration**      | `BenchmarkRunner` must integrate with settings logging configuration and log execution details                       |
+
+### ⚡ Strategies Module
+
+| ID              | Requirement                 | Description                                                                                                                                                 |
+| --------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-STR-001** | **Strategy Base Class**     | `ExecutionStrategy` must be abstract base class with `execute(detectors: List[BaseDetector], datasets: List[DatasetResult]) -> List[DetectorResult]` method |
+| **REQ-STR-002** | **Sequential Strategy**     | `SequentialStrategy` must execute detectors in deterministic order, one at a time, preserving timing accuracy                                               |
+| **REQ-STR-003** | **Error Isolation**         | `SequentialStrategy` must isolate detector failures and continue execution with remaining detectors                                                         |
+| **REQ-STR-004** | **Deterministic Results**   | `SequentialStrategy` must ensure identical results across runs with same configuration and random seed                                                      |
+| **REQ-STR-005** | **Performance Measurement** | All strategies must measure and record fit_time, detect_time, and memory_usage for each detector execution                                                  |
+
+> **Note**: For the moment we are going to implement only the sequential strategy, but the architecture is designed to allow easy addition of parallel strategies in the future.
