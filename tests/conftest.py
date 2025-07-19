@@ -16,15 +16,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from drift_benchmark.models.core import (
+from drift_benchmark.models import (
     BenchmarkConfig,
-    DataConfig,
+    BenchmarkMetadata,
+    DatasetConfig,
     DatasetMetadata,
     DatasetResult,
     DetectorConfig,
-    DriftInfo,
+    DriftMetadata,
     EvaluationConfig,
-    MetadataModel,
     ScoreResult,
 )
 from drift_benchmark.settings import Settings
@@ -104,7 +104,7 @@ def sample_drift_dataset() -> DatasetResult:
     )
     y_test = pd.Series(np.random.choice([0, 1], n_test, p=[0.3, 0.7]))  # Label shift
 
-    drift_info = DriftInfo(drift_type="COVARIATE", drift_position=0.5, drift_magnitude=1.5, drift_pattern="SUDDEN")
+    drift_info = DriftMetadata(drift_type="COVARIATE", drift_position=0.5, drift_magnitude=1.5, drift_pattern="SUDDEN")
 
     metadata = DatasetMetadata(
         name="test_drift_dataset",
@@ -137,7 +137,7 @@ def sample_no_drift_dataset() -> DatasetResult:
     y_ref = pd.Series(np.random.choice([0, 1], n_samples))
     y_test = pd.Series(np.random.choice([0, 1], n_samples))
 
-    drift_info = DriftInfo(drift_type=None, drift_position=None, drift_magnitude=0.0, drift_pattern=None)
+    drift_info = DriftMetadata(drift_type=None, drift_position=None, drift_magnitude=0.0, drift_pattern=None)
 
     metadata = DatasetMetadata(
         name="test_no_drift_dataset",
@@ -170,10 +170,10 @@ def mock_score_result() -> ScoreResult:
 def sample_benchmark_config(test_workspace: Path) -> BenchmarkConfig:
     """Provide a realistic benchmark configuration for testing."""
     return BenchmarkConfig(
-        metadata=MetadataModel(
+        metadata=BenchmarkMetadata(
             name="Test Benchmark", description="Comprehensive benchmark for testing", author="Test Author", version="1.0.0"
         ),
-        data=DataConfig(datasets=[{"name": "test_dataset", "type": "scenario", "config": {"scenario_name": "iris_species_drift"}}]),
+        data=DatasetConfig(datasets=[{"name": "test_dataset", "type": "scenario", "config": {"scenario_name": "iris_species_drift"}}]),
         detectors=DetectorConfig(
             algorithms=[
                 {
