@@ -40,6 +40,25 @@ This module defines how all components use the centralized logging system to pro
 
 > Centralized logging ensures consistent debugging information across all modules. All components use the same logger configuration for unified log analysis and troubleshooting.
 
+## 🏃‍♂️ Benchmark Orchestration Module
+
+This module defines the end-to-end benchmarking workflow that coordinates data loading, detector execution, evaluation, and result storage to provide comprehensive drift detection performance analysis.
+
+| ID              | Requirement                         | Description                                                                                                                              |
+| --------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-BCH-001** | **BenchmarkRunner Configuration**   | BenchmarkRunner must accept BenchmarkConfig from file path or object and validate all configuration elements during initialization       |
+| **REQ-BCH-002** | **Sequential Detector Execution**   | BenchmarkRunner must execute each detector on each dataset sequentially to ensure deterministic results and accurate timing measurement  |
+| **REQ-BCH-003** | **Complete Workflow Orchestration** | BenchmarkRunner must coordinate the full pipeline: data loading → detector setup → preprocessing → fit → detect → score → evaluation     |
+| **REQ-BCH-004** | **Progress Tracking**               | BenchmarkRunner must track and log progress through each stage of the benchmark with detector and dataset context                        |
+| **REQ-BCH-005** | **Result Collection**               | BenchmarkRunner must collect all DetectorResult instances and coordinate with evaluation engine to produce comprehensive BenchmarkResult |
+| **REQ-BCH-006** | **Error Isolation and Recovery**    | BenchmarkRunner must isolate detector failures and continue execution with remaining detectors, logging errors appropriately             |
+| **REQ-BCH-007** | **Automatic Result Storage**        | BenchmarkRunner must automatically save results to timestamped directories with all required formats (JSON, CSV, logs)                   |
+| **REQ-BCH-008** | **Execution Timing Measurement**    | BenchmarkRunner must measure and record execution time for each detector operation (fit, detect, score) with high precision              |
+| **REQ-BCH-009** | **Memory Usage Monitoring**         | BenchmarkRunner must monitor and record memory usage during detector execution and include in performance metrics                        |
+| **REQ-BCH-010** | **Benchmark Reproducibility**       | BenchmarkRunner must ensure reproducible results by using configured random seeds and deterministic execution order                      |
+
+> BenchmarkRunner provides the main interface for running end-to-end benchmarks. It handles the complete workflow from configuration loading to result storage while ensuring reliability and reproducibility.
+
 ## � Error Propagation Module
 
 This module defines how errors flow between modules to provide clear error handling and debugging information throughout the drift-benchmark library.
