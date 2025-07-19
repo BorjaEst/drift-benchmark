@@ -99,6 +99,20 @@
 | **REQ-LIT-020** | **Metric Union Type**              | Must define `Metric` as union of all metric literal types for comprehensive evaluation support                                         |
 | **REQ-LIT-021** | **Detection Result Literals**      | Must define `DetectionResult` literal with values: "true_positive", "true_negative", "false_positive", "false_negative"                |
 
+## 🔧 Utilities Module
+
+This module provides common utility functions and helpers used throughout the drift-benchmark library.
+
+| ID              | Requirement                 | Description                                                                                                       |
+| --------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **REQ-UTL-001** | **Timing Decorator**        | Must provide `@timing` decorator that measures execution time and returns results with timing metadata            |
+| **REQ-UTL-002** | **Memory Monitoring**       | Must provide `@monitor_memory` decorator that tracks peak memory usage during function execution                  |
+| **REQ-UTL-003** | **Random State Management** | Must provide `set_random(seed: int)` that sets numpy, pandas, and Python random seeds for reproducibility         |
+| **REQ-UTL-004** | **Data Type Inference**     | Must provide `infer_dtypes(df: pd.DataFrame) -> DataType` that determines if data is continuous/categorical       |
+| **REQ-UTL-005** | **Path Utilities**          | Must provide `resolve_path(path: str) -> Path` that handles relative paths, ~, and environment variable expansion |
+| **REQ-UTL-006** | **Resource Existence**      | Must provide `exists(path: str) -> bool` that checks if the file/directory exists at the given path               |
+| **REQ-UTL-007** | **Resource Permission**     | Must provide `permissions(path: str) -> bool` that checks if the resource is writable and sufficient disk space   |
+
 ## ⚙️ Settings Module
 
 This module provides comprehensive configuration management for the drift-benchmark library using Pydantic v2 models for type safety and validation. It manages all application configuration through environment variables, .env files, and programmatic access.
@@ -179,14 +193,26 @@ This module defines custom exceptions for the drift-benchmark library to provide
 
 This module contains the data models used throughout the drift-benchmark library. It provides a consistent structure for configurations, datasets, detector metadata, and score results organized into specialized submodules following Pydantic v2 best practices.
 
-### Models Core
+### 🔧 Cross-Model Requirements
 
-| ID              | Requirement                  | Description                                                                                                |
-| --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **REQ-MOD-001** | **Pydantic BaseModel**       | All data models must inherit from Pydantic v2 `BaseModel` for automatic validation and serialization       |
-| **REQ-MOD-002** | **Field Validation**         | Models must use Pydantic `Field()` with constraints (gt, ge, le, lt) for automatic data quality validation |
-| **REQ-MOD-003** | **Custom Validators**        | Models must use `@field_validator` and `@model_validator` decorators for business logic validation         |
-| **REQ-MOD-004** | **ValidationError Handling** | Application must catch and transform Pydantic `ValidationError` into user-friendly error messages          |
+| ID              | Requirement                  | Description                                                                                                         |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **REQ-MOD-001** | **Pydantic BaseModel**       | All data models must inherit from Pydantic v2 `BaseModel` for automatic validation and serialization                |
+| **REQ-MOD-002** | **Field Validation**         | Models must use Pydantic `Field()` with constraints (gt, ge, le, lt) for automatic data quality validation          |
+| **REQ-MOD-003** | **Custom Validators**        | Models must use `@field_validator` and `@model_validator` decorators for business logic validation                  |
+| **REQ-MOD-004** | **ValidationError Handling** | Application must catch and transform Pydantic `ValidationError` into user-friendly error messages                   |
+| **REQ-MOD-005** | **Model Type Safety**        | Models must use Literal types from literals module for enumerated fields                                            |
+| **REQ-MOD-006** | **Model Inheritance**        | Related models must share common base classes where appropriate to ensure consistency and reduce code duplication   |
+| **REQ-MOD-007** | **Model Relationships**      | Models must properly reference each other using appropriate foreign key patterns and maintain referential integrity |
+| **REQ-MOD-008** | **Model Composition**        | Models must support composition patterns allowing complex models to be built from simpler components                |
+| **REQ-MOD-009** | **Model Versioning**         | Models must support version information to handle schema evolution and backward compatibility                       |
+| **REQ-MOD-010** | **Model Documentation**      | Model fields must include comprehensive docstrings and examples for clear API documentation                         |
+| **REQ-MOD-011** | **Model Error Handling**     | Models must provide clear, actionable error messages for validation failures with suggestions for correction        |
+| **REQ-MOD-012** | **Model Serialization**      | Models must support consistent serialization/deserialization across JSON, TOML, and Python dict formats             |
+| **REQ-MOD-013** | **Model Path Validation**    | File path fields in configs must auto-resolve relative paths to absolute and validate existence where required      |
+| **REQ-MOD-014** | **Model Default Values**     | Models must provide sensible defaults for optional fields to simplify user configuration.                           |
+| **REQ-MOD-015** | **Model Reusability**        | Models must support inheritance and composition patterns for reusable configuration components                      |
+| **REQ-MOD-016** | **Model Consistency**        | Models must ensure consistency between related fields (e.g., drift_type matches has_drift boolean)                  |
 
 > **NOTE**: This module ensures that all data exchanged within the drift-benchmark library is well-structured, validated, and type-safe, supporting maintainable and robust development. All models use Pydantic v2 for automatic validation. No separate quality validation module needed.
 
@@ -217,7 +243,8 @@ This module contains the data models used throughout the drift-benchmark library
 | --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-CFG-201** | **DetectorsConfig Model** | Must define `DetectorsConfig` with fields: detectors, execution, timeout for detector execution configuration             |
 | **REQ-CFG-202** | **DetectorConfig Model**  | Must define `DetectorConfig` with fields: method_id, implementation_id, parameters, enabled for individual detector setup |
-| **REQ-CFG-203** | **ExecutionConfig Model** | Must define `ExecutionConfig` with fields: mode, max_workers, timeout, retry_policy for execution strategy configuration  |
+
+> Execution configuration (max_workers, timeout, etc.) is provided at Settings level.
 
 #### 📈 Evaluation Configuration Models
 
@@ -227,17 +254,13 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-CFG-302** | **MetricsConfig Model**    | Must define `MetricsConfig` with fields: classification, detection, performance, custom for metric selection configuration      |
 | **REQ-CFG-303** | **ThresholdsConfig Model** | Must define `ThresholdsConfig` with fields: significance_level, confidence_level, detection_threshold for evaluation thresholds |
 
-#### 🛠️ Configuration Validation & Features
+#### 🛠️ Configuration Models Features
 
-| ID              | Requirement                   | Description                                                                                                    |
-| --------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **REQ-CFG-401** | **Config Validation Rules**   | Configuration models must include Pydantic v2 validators for field constraints and cross-field validation      |
-| **REQ-CFG-402** | **Config Type Safety**        | Configuration models must use Literal types from literals module for enumerated fields                         |
-| **REQ-CFG-403** | **Config Path Validation**    | File path fields in configs must auto-resolve relative paths to absolute and validate existence where required |
-| **REQ-CFG-404** | **Config JSON Serialization** | Configuration models must support JSON/TOML serialization/deserialization with proper path and enum handling   |
-| **REQ-CFG-405** | **Config Default Values**     | Configuration models must provide sensible defaults for optional fields to simplify user configuration.        |
-| **REQ-CFG-406** | **Config Inheritance**        | Configuration models must support inheritance and composition patterns for reusable configuration components   |
-| **REQ-CFG-407** | **Config Templates**          | Configuration system must support template-based configuration generation for common benchmark scenarios       |
+| ID              | Requirement                | Description                                                                                                    |
+| --------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **REQ-CFG-403** | **Config Path Validation** | File path fields in configs must auto-resolve relative paths to absolute and validate existence where required |
+| **REQ-CFG-405** | **Config Default Values**  | Configuration models must provide sensible defaults for optional fields to simplify user configuration.        |
+| **REQ-CFG-407** | **Config Templates**       | Configuration system must support template-based configuration generation for common benchmark scenarios       |
 
 > "Sensible defaults" are values that reflect best practices in drift benchmarking, align with typical benchmarking frameworks, and follow recommendations from the drift detection literature. Defaults should ensure reproducibility, minimize user friction, and provide robust starting points for new users.
 
@@ -267,15 +290,6 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-MET-202** | **MemoryMetadata Model**   | Must define `MemoryMetadata` with fields: peak_memory, average_memory, memory_delta, gc_collections for memory tracking      |
 | **REQ-MET-203** | **ResourceMetadata Model** | Must define `ResourceMetadata` with fields: cpu_usage, memory_usage, disk_io, network_io for comprehensive resource tracking |
 
-#### 🛠️ Metadata Validation & Features
-
-| ID              | Requirement                     | Description                                                                                                 |
-| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **REQ-MET-301** | **Metadata Validation Rules**   | Metadata models must include Pydantic v2 validators for field constraints (e.g., 0 <= drift_position <= 1)  |
-| **REQ-MET-302** | **Metadata Type Safety**        | Metadata models must use Literal types from literals module for enumerated fields                           |
-| **REQ-MET-303** | **Metadata JSON Serialization** | Metadata models must support JSON serialization/deserialization with proper datetime and enum handling      |
-| **REQ-MET-304** | **Metadata Consistency**        | Metadata models must ensure consistency between related fields (e.g., drift_type matches has_drift boolean) |
-
 ### 📈 Result Models
 
 #### 🏆 Core Result Models
@@ -302,42 +316,12 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-RES-200** | **ComparisonResult Model** | Must define `ComparisonResult` with fields: method_a, method_b, statistical_test, p_value, effect_size for method comparison |
 | **REQ-RES-200** | **RankingResult Model**    | Must define `RankingResult` with fields: method_rankings, confidence_intervals, critical_differences for method rankings     |
 
-#### 🛠️ Result Validation & Features
+#### 🛠️ Result Models Features
 
-| ID              | Requirement                   | Description                                                                                                         |
-| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **REQ-RES-300** | **Result Validation Rules**   | Result models must include Pydantic v2 validators for field constraints and result consistency                      |
-| **REQ-RES-300** | **Result Type Safety**        | Result models must use Literal types from literals module for enumerated fields                                     |
-| **REQ-RES-300** | **Result JSON Serialization** | Result models must support JSON serialization/deserialization with proper numerical precision and datetime handling |
-| **REQ-RES-300** | **Result Aggregation**        | Result models must support aggregation methods for combining multiple detector/evaluation results                   |
-| **REQ-RES-300** | **Result Export Support**     | Result models must support export to various formats (JSON, CSV, Parquet) for analysis and reporting                |
-
-### 🔧 Cross-Model Requirements
-
-#### 🏗️ Model Architecture
-
-| ID              | Requirement             | Description                                                                                                         |
-| --------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **REQ-XMD-001** | **Model Inheritance**   | Related models must share common base classes where appropriate to ensure consistency and reduce code duplication   |
-| **REQ-XMD-002** | **Model Relationships** | Models must properly reference each other using appropriate foreign key patterns and maintain referential integrity |
-| **REQ-XMD-003** | **Model Composition**   | Models must support composition patterns allowing complex models to be built from simpler components                |
-
-#### 📋 Model Management
-
-| ID              | Requirement              | Description                                                                                                  |
-| --------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| **REQ-XMD-10X** | **Model Versioning**     | All models must support version information to handle schema evolution and backward compatibility            |
-| **REQ-XMD-10X** | **Model Documentation**  | All model fields must include comprehensive docstrings and examples for clear API documentation              |
-| **REQ-XMD-10X** | **Model Error Handling** | Models must provide clear, actionable error messages for validation failures with suggestions for correction |
-
-#### 🔄 Model Operations
-
-| ID              | Requirement              | Description                                                                                                      |
-| --------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| **REQ-XMD-20X** | **Model Serialization**  | All models must support consistent serialization/deserialization across JSON, TOML, and Python dict formats      |
-| **REQ-XMD-20X** | **Model Validation**     | All models must implement comprehensive validation with clear error messages and field-level constraint checking |
-| **REQ-XMD-20X** | **Model Transformation** | Models must support transformation methods for converting between different model types and formats              |
-| **REQ-XMD-20X** | **Model Comparison**     | Models must support equality comparison and diff operations for testing and debugging purposes                   |
+| ID              | Requirement               | Description                                                                                          |
+| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **REQ-RES-300** | **Result Aggregation**    | Result models must support aggregation methods for combining multiple detector/evaluation results    |
+| **REQ-RES-300** | **Result Export Support** | Result models must support export to various formats (JSON, CSV, Parquet) for analysis and reporting |
 
 ## 🔍 Detectors Module
 
@@ -564,19 +548,6 @@ This module provides a comprehensive results management system for the drift-ben
 | **REQ-RES-012** | **File Write Validation**      | Must validate all files are successfully written and contain expected data before completing benchmark                           |
 
 > Results are stored in timestamped folders within the configured results directory to ensure reproducibility and prevent conflicts.
-
-## 🔧 Utilities Module
-
-This module provides common utility functions and helpers used throughout the drift-benchmark library.
-
-| ID              | Requirement                 | Description                                                                                                                                                                |
-| --------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-UTL-001** | **Timing Decorator**        | Must provide `@timing` decorator that measures execution time and returns results with timing metadata                                                                     |
-| **REQ-UTL-002** | **Memory Monitoring**       | Must provide `@monitor_memory` decorator that tracks peak memory usage during function execution                                                                           |
-| **REQ-UTL-003** | **Random State Management** | Must provide `set_random_state(seed: int)` that sets numpy, pandas, and Python random seeds for reproducibility                                                            |
-| **REQ-UTL-004** | **Data Type Inference**     | Must provide `infer_data_types(df: pd.DataFrame) -> DataType` that determines if data is continuous/categorical                                                            |
-| **REQ-UTL-005** | **Path Utilities**          | Must provide `resolve_path(path: str) -> Path` that handles relative paths, ~, and environment variable expansion                                                          |
-| **REQ-UTL-006** | **Validation Helpers** 📏   | Must provide common validation functions for file existence, directory permissions, and data format checks **[SPECIFY - What validations? Return types? Error handling?]** |
 
 ## 🏃‍♂️ Benchmark Module
 
