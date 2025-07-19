@@ -2,6 +2,18 @@
 
 > **Note**: Each requirement has a unique identifier (REQ-XXX-YYY) for easy reference and traceability in tests.
 
+## 🔧 **VALIDATION STRATEGY**
+
+**Pydantic v2 Automatic Validation**: All data models use Pydantic v2 for automatic type and constraint validation. Requirements focus on:
+
+- **Business Logic Validation**: Custom validators for domain-specific rules (registry existence, path accessibility)
+- **Schema Compliance**: Structure and required fields for configs and data models
+- **Integration Success**: Successful loading/instantiation rather than format validation
+
+**Manual validation requirements are only specified for business logic that cannot be handled by Pydantic's built-in mechanisms.**
+
+---
+
 1. **Add missing REQ-LIT-012** (marked below)
 2. **Define all referenced model types** (marked with 🔍)
 3. **Quantify vague requirements** (marked with 📏)
@@ -153,10 +165,10 @@ This module provides comprehensive configuration management for the drift-benchm
 
 | ID              | Requirement                  | Description                                                                                                   |
 | --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **REQ-SET-201** | **Max Workers Validation**   | Must validate max_workers is between 1-32 and not exceed available CPU cores                                  |
-| **REQ-SET-202** | **Memory Limit Validation**  | Must validate memory_limit_mb is between 512-32768 MB                                                         |
-| **REQ-SET-203** | **Log Level Validation**     | Must validate log_level is one of: DEBUG, INFO, WARNING, ERROR, CRITICAL                                      |
-| **REQ-SET-204** | **Path Validation**          | Must validate that directory paths are accessible and can be created if they don't exist.                     |
+| **REQ-SET-201** | **Max Workers Constraints**  | Must use Pydantic `Field(ge=1, le=32)` and custom validator to not exceed available CPU cores                 |
+| **REQ-SET-202** | **Memory Limit Constraints** | Must use Pydantic `Field(ge=512, le=32768)` to constrain memory_limit_mb between 512-32768 MB                 |
+| **REQ-SET-203** | **Log Level Constraints**    | Must use `LogLevel` literal type from literals module for automatic enum validation                           |
+| **REQ-SET-204** | **Path Accessibility Check** | Must use custom validator to verify directory paths are accessible and can be created if they don't exist     |
 | **REQ-SET-205** | **Environment Variable Map** | Must map all settings to environment variables with DRIFT*BENCHMARK* prefix (e.g., DRIFT_BENCHMARK_LOG_LEVEL) |
 
 > A path is considered "accessible" if the process has write permissions and sufficient disk space to create files in the directory. Validation must check for write access and available space, raising a clear error if requirements are not met.
@@ -329,44 +341,34 @@ This module provides a centralized registry for drift detection methods through 
 
 ### 📋 Detectors Registry
 
-| ID              | Requirement                   | Description                                                                                                                                |
-| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **REQ-DET-001** | **Methods Registry Loading**  | Must provide `load_methods() -> Dict[str, Dict[str, Any]]` that loads methods from methods.toml with LRU cache                             |
-| **REQ-DET-002** | **Method Validation**         | Each method in methods.toml must have required fields: name, description, drift_types, family, data_dimension, data_types, requires_labels |
-| **REQ-DET-003** | **Implementation Validation** | Each implementation must have required fields: name, execution_mode, hyperparameters, references                                           |
-| **REQ-DET-004** | **Method Lookup**             | Must provide `get_method(method_id: str) -> Dict[str, Any]` that returns method info or raises MethodNotFoundError                         |
-| **REQ-DET-005** | **Implementation Lookup**     | Must provide `get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]` or raises ImplementationNotFoundError                    |
-| **REQ-DET-006** | **List Methods**              | Must provide `list_methods() -> List[str]` that returns all available method IDs                                                           |
-| **REQ-DET-007** | **List Implementations**      | Must provide `list_implementations(method_id: str) -> List[str]` that returns implementation IDs for a method                              |
-| **REQ-DET-008** | **TOML Schema Validation**    | methods.toml must be validated against schema with proper error messages for invalid entries                                               |
-| **REQ-DET-009** | **Extensible Design**         | Registry must support dynamic addition of new methods without code changes, only TOML updates                                              |
+| ID              | Requirement                  | Description                                                                                                                                |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-DET-001** | **Methods Registry Loading** | Must provide `load_methods() -> Dict[str, Dict[str, Any]]` that loads methods from methods.toml with LRU cache                             |
+| **REQ-DET-002** | **Method Schema Compliance** | Each method in methods.toml must have required fields: name, description, drift_types, family, data_dimension, data_types, requires_labels |
+| **REQ-DET-003** | **Implementation Schema**    | Each implementation must have required fields: name, execution_mode, hyperparameters, references                                           |
+| **REQ-DET-004** | **Method Lookup**            | Must provide `get_method(method_id: str) -> Dict[str, Any]` that returns method info or raises MethodNotFoundError                         |
+| **REQ-DET-005** | **Implementation Lookup**    | Must provide `get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]` or raises ImplementationNotFoundError                    |
+| **REQ-DET-006** | **List Methods**             | Must provide `list_methods() -> List[str]` that returns all available method IDs                                                           |
+| **REQ-DET-007** | **List Implementations**     | Must provide `list_implementations(method_id: str) -> List[str]` that returns implementation IDs for a method                              |
+| **REQ-DET-008** | **TOML Schema Validation**   | methods.toml must be validated using Pydantic models with literal types for automatic constraint checking                                  |
+| **REQ-DET-009** | **Extensible Design**        | Registry must support dynamic addition of new methods without code changes, only TOML updates                                              |
 
 ### 🏷️ Detectors Metadata
 
-| ID              | Requirement                            | Description                                                                                                      |
-| --------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **REQ-DET-1XX** | **Statistical Test Family**            | Registry must support STATISTICAL_TEST family for hypothesis testing approaches                                  |
-| **REQ-DET-1XX** | **Distance Based Family**              | Registry must support DISTANCE_BASED family for distribution distance measures                                   |
-| **REQ-DET-1XX** | **Statistical Process Control Family** | Registry must support STATISTICAL_PROCESS_CONTROL family for control chart methods                               |
-| **REQ-DET-1XX** | **Change Detection Family**            | Registry must support CHANGE_DETECTION family for sequential change detection                                    |
-| **REQ-DET-1XX** | **Window Based Family**                | Registry must support WINDOW_BASED family for sliding window approaches                                          |
-| **REQ-DET-1XX** | **Ensemble Family**                    | Registry must support ENSEMBLE family for ensemble methods                                                       |
-| **REQ-DET-1XX** | **Machine Learning Family**            | Registry must support MACHINE_LEARNING family for ML-based approaches                                            |
-| **REQ-DET-1XX** | **Family Validation**                  | Registry must validate that method families match MethodFamily literal values and raise error for invalid types  |
-| **REQ-DET-1XX** | **Batch Execution Mode**               | Registry must support BATCH execution mode for methods that process complete datasets at once                    |
-| **REQ-DET-1XX** | **Streaming Execution Mode**           | Registry must support STREAMING execution mode for methods that process data incrementally as it arrives         |
-| **REQ-DET-1XX** | **Execution Mode Validation**          | Registry must validate that execution modes match ExecutionMode literal values and raise error for invalid modes |
-| **REQ-DET-1XX** | **Covariate Drift Support**            | Registry must support COVARIATE drift type for changes in input feature distributions P(X)                       |
-| **REQ-DET-1XX** | **Concept Drift Support**              | Registry must support CONCEPT drift type for changes in relationship between features and labels P(y\|X)         |
-| **REQ-DET-1XX** | **Prior Drift Support**                | Registry must support PRIOR drift type for changes in label distributions P(y)                                   |
-| **REQ-DET-1XX** | **Drift Type Validation**              | Registry must validate that drift types match DriftType literal values and raise error for invalid types         |
-| **REQ-DET-1XX** | **Univariate Data Dimension**          | Registry must support UNIVARIATE data dimension for single feature analysis                                      |
-| **REQ-DET-1XX** | **Multivariate Data Dimension**        | Registry must support MULTIVARIATE data dimension for multiple feature analysis                                  |
-| **REQ-DET-1XX** | **Continuous Data Type**               | Registry must support CONTINUOUS data type for numerical data with continuous values                             |
-| **REQ-DET-1XX** | **Categorical Data Type**              | Registry must support CATEGORICAL data type for discrete data with finite categories                             |
-| **REQ-DET-1XX** | **Mixed Data Type**                    | Registry must support MIXED data type for combination of continuous and categorical features                     |
-| **REQ-DET-1XX** | **Data Characteristics Validation**    | Registry must validate data_dimension and data_types against respective literal values                           |
-| **REQ-DET-1XX** | **Requires Labels Field**              | Each method must specify requires_labels boolean indicating if method needs labeled data for operation           |
+| ID              | Requirement                            | Description                                                                                            |
+| --------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **REQ-DET-1XX** | **Statistical Test Family**            | Registry must support STATISTICAL_TEST family for hypothesis testing approaches                        |
+| **REQ-DET-1XX** | **Distance Based Family**              | Registry must support DISTANCE_BASED family for distribution distance measures                         |
+| **REQ-DET-1XX** | **Statistical Process Control Family** | Registry must support STATISTICAL_PROCESS_CONTROL family for control chart methods                     |
+| **REQ-DET-1XX** | **Change Detection Family**            | Registry must support CHANGE_DETECTION family for sequential change detection                          |
+| **REQ-DET-1XX** | **Window Based Family**                | Registry must support WINDOW_BASED family for sliding window approaches                                |
+| **REQ-DET-1XX** | **Ensemble Family**                    | Registry must support ENSEMBLE family for ensemble methods                                             |
+| **REQ-DET-1XX** | **Machine Learning Family**            | Registry must support MACHINE_LEARNING family for ML-based approaches                                  |
+| **REQ-DET-1XX** | **Family Support**                     | Registry must support all MethodFamily literal values: STATISTICAL_TEST, DISTANCE_BASED, etc.          |
+| **REQ-DET-1XX** | **Execution Mode Support**             | Registry must support all ExecutionMode literal values: BATCH, STREAMING                               |
+| **REQ-DET-1XX** | **Drift Type Support**                 | Registry must support all DriftType literal values: COVARIATE, CONCEPT, PRIOR                          |
+| **REQ-DET-1XX** | **Data Characteristics Support**       | Registry must support all DataDimension and DataType literal values for method compatibility           |
+| **REQ-DET-1XX** | **Requires Labels Field**              | Each method must specify requires_labels boolean indicating if method needs labeled data for operation |
 
 ### ⚙️ Detectors Implementations
 
@@ -555,17 +557,25 @@ This module contains the benchmark runner to benchmark adapters against each oth
 
 ### 📊 Core Benchmark
 
-| ID              | Requirement                   | Description                                                                                                                                                                     |
-| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-BEN-001** | **Benchmark Class Interface** | `Benchmark` class must accept `BenchmarkConfig` in constructor and provide `run() -> BenchmarkResult` method                                                                    |
-| **REQ-BEN-002** | **Configuration Validation**  | `Benchmark.__init__(config: BenchmarkConfig)` must validate all detector configurations exist in registry                                                                       |
-| **REQ-BEN-003** | **Dataset Loading**           | `Benchmark` must load all datasets specified in config and validate they conform to `DatasetResult` format                                                                      |
-| **REQ-BEN-004** | **Detector Instantiation**    | `Benchmark` must instantiate all configured detectors and validate they implement `BaseDetector` interface                                                                      |
-| **REQ-BEN-005** | **Sequential Execution**      | `Benchmark.run()` must execute detectors sequentially on each dataset using the configured strategy                                                                             |
-| **REQ-BEN-006** | **Error Handling** 📏         | `Benchmark.run()` must catch detector errors, log them, and continue with remaining detectors **[SPECIFY - Error recovery strategy, logging format, partial results handling]** |
-| **REQ-BEN-007** | **Progress Tracking** 📏      | `Benchmark.run()` must emit progress events with current detector, dataset, and completion percentage **[DEFINE - Event format, callback mechanism, update frequency]**         |
-| **REQ-BEN-008** | **Result Aggregation**        | `Benchmark.run()` must collect all detector results and return consolidated `BenchmarkResult`                                                                                   |
-| **REQ-BEN-009** | **Resource Cleanup** 📏       | `Benchmark` must ensure proper cleanup of detector instances and loaded datasets after execution **[SPECIFY - Cleanup sequence, memory deallocation, file handles]**            |
+| ID              | Requirement                   | Description                                                                                                                    |
+| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-BEN-001** | **Benchmark Class Interface** | `Benchmark` class must accept `BenchmarkConfig` in constructor and provide `run() -> BenchmarkResult` method                   |
+| **REQ-BEN-002** | **Configuration Validation**  | `Benchmark.__init__(config: BenchmarkConfig)` must validate all detector configurations exist in registry                      |
+| **REQ-BEN-003** | **Dataset Loading**           | `Benchmark.__init__(config: BenchmarkConfig)` must successfully load all data specified in config as `DatasetResult` instances |
+| **REQ-BEN-004** | **Detector Instantiation**    | `Benchmark.__init__(config: BenchmarkConfig)` must successfully instantiate all configured detectors from the registry         |
+| **REQ-BEN-005** | **Sequential Execution**      | `Benchmark.run()` must execute detectors sequentially on each dataset using the configured strategy                            |
+| **REQ-BEN-006** | **Error Handling** 📏         | `Benchmark.run()` must catch detector errors, log them, and continue with remaining detectors.                                 |
+| **REQ-BEN-007** | **Progress Tracking** 📏      | `Benchmark.run()` must emit progress events after each detector-dataset execution.                                             |
+| **REQ-BEN-008** | **Result Aggregation**        | `Benchmark.run()` must collect all detector results and return consolidated `BenchmarkResult`                                  |
+| **REQ-BEN-009** | **Resource Cleanup** 📏       | `Benchmark.run()` must ensure proper cleanup of detector instances and loaded datasets after execution.                        |
+
+> **Error recovery strategy:** If a detector fails, the error is logged using the configured logger with error type, detector ID, dataset, and exception details. No result is produced for failed detectors—these detectors are excluded from evaluation and do not appear in the final benchmark result consolidation.  
+> **Partial results handling:** Only successful detector runs are included in the aggregated results.  
+> **Event format:** Each event includes the current detector ID, dataset name, completed/total steps, and percentage complete.  
+> **Callback mechanism:** Progress events are emitted via a user-supplied callback function or logged if no callback is provided.  
+> **Update frequency:** Progress is updated after every detector-dataset pair is processed.
+
+> After each detector-dataset evaluation, immediately release all references to the detector and associated data to enable garbage collection. Explicitly close or delete any open file handles, temporary files, or memory-mapped resources used during execution. The cleanup sequence must guarantee that no unnecessary objects remain in memory once their evaluation is complete, minimizing memory footprint and preventing resource leaks. If a detector has already been evaluated, it must be removed from memory before proceeding to the next evaluation. All cleanup actions must be robust to errors and logged for traceability.
 
 ### 🎯 Benchmark Runner
 
@@ -588,17 +598,3 @@ This module contains the benchmark runner to benchmark adapters against each oth
 | **REQ-STR-005** | **Performance Measurement** | All strategies must measure and record fit_time, detect_time, and memory_usage for each detector execution                                                  |
 
 > **Note**: For the moment we are going to implement only the sequential strategy, but the architecture is designed to allow easy addition of parallel strategies in the future.
-
-### 📊 Benchmark Module
-
-| ID              | Requirement                   | Description                                                                                                                                                                     |
-| --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-BEN-001** | **Benchmark Class Interface** | `Benchmark` class must accept `BenchmarkConfig` in constructor and provide `run() -> BenchmarkResult` method                                                                    |
-| **REQ-BEN-002** | **Configuration Validation**  | `Benchmark.__init__(config: BenchmarkConfig)` must validate all detector configurations exist in registry                                                                       |
-| **REQ-BEN-003** | **Dataset Loading**           | `Benchmark` must load all datasets specified in config and validate they conform to `DatasetResult` format                                                                      |
-| **REQ-BEN-004** | **Detector Instantiation**    | `Benchmark` must instantiate all configured detectors and validate they implement `BaseDetector` interface                                                                      |
-| **REQ-BEN-005** | **Sequential Execution**      | `Benchmark.run()` must execute detectors sequentially on each dataset using the configured strategy                                                                             |
-| **REQ-BEN-006** | **Error Handling** 📏         | `Benchmark.run()` must catch detector errors, log them, and continue with remaining detectors **[SPECIFY - Error recovery strategy, logging format, partial results handling]** |
-| **REQ-BEN-007** | **Progress Tracking** 📏      | `Benchmark.run()` must emit progress events with current detector, dataset, and completion percentage **[DEFINE - Event format, callback mechanism, update frequency]**         |
-| **REQ-BEN-008** | **Result Aggregation**        | `Benchmark.run()` must collect all detector results and return consolidated `BenchmarkResult`                                                                                   |
-| **REQ-BEN-009** | **Resource Cleanup** 📏       | `Benchmark` must ensure proper cleanup of detector instances and loaded datasets after execution **[SPECIFY - Cleanup sequence, memory deallocation, file handles]**            |
