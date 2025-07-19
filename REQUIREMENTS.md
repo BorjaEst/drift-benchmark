@@ -2,31 +2,10 @@
 
 > **Note**: Each requirement has a unique identifier (REQ-XXX-YYY) for easy reference and traceability in tests.
 
-## 🔧 **VALIDATION STRATEGY**
-
-**Pydantic v2 Automatic Validation**: All data models use Pydantic v2 for automatic type and constraint validation. Requirements focus on:
-
-- **Business Logic Validation**: Custom validators for domain-specific rules (registry existence, path accessibility)
-- **Schema Compliance**: Structure and required fields for configs and data models
-- **Integration Success**: Successful loading/instantiation rather than format validation
-
-**Manual validation requirements are only specified for business logic that cannot be handled by Pydantic's built-in mechanisms.**
-
----
-
-1. **Add missing REQ-LIT-012** (marked below)
-2. **Define all referenced model types** (marked with 🔍)
-3. **Quantify vague requirements** (marked with 📏)
-4. **Add core workflow requirements** (marked with ➕)
-5. **Complete incomplete specifications** (marked with ❗)
-
-### ➕ MISSING CORE WORKFLOW REQUIREMENTS
-
-**🚨 CRITICAL GAP**: No requirements specify how modules interact or main application workflow
-
 **NEEDED REQUIREMENTS**:
 
-- **Main Application Entry Point**: CLI interface, command structure, argument parsing
+- **Main Application Entry Point**: BenchmarkRunner class interface, configuration loading from TOML files, programmatic benchmark execution
+- **CLI Interface**: Command-line interface, argument parsing, subcommands for benchmark operations, configuration validation
 - **Module Initialization Order**: Which modules load first, dependency resolution
 - **Data Flow Pipeline**: How data moves between Data → Adapters → Evaluation → Results
 - **Configuration Loading**: How BenchmarkConfig is loaded and validated
@@ -34,56 +13,6 @@
 - **Resource Management**: Memory limits, cleanup, graceful shutdown
 - **Logging Integration**: How all modules use centralized logging
 - **Benchmark Orchestration**: Complete end-to-end execution workflow
-
-## � IMPLEMENTATION READINESS SUMMARY
-
-### ❌ **BLOCKERS** (Must Fix Before Implementation)
-
-1. **🚨 Missing REQ-LIT-012** - Breaks requirement traceability
-2. **🔍 Undefined Model Types** (5+ models):
-   - `SyntheticConfig` (REQ-DAT-102, REQ-DAT-107)
-   - `DatafileConfig` (REQ-DAT-201, REQ-DAT-202, REQ-DAT-203)
-   - `ValidationConfig` (REQ-DAT-301)
-   - `ValidationResult` (REQ-DAT-301, REQ-DAT-302, REQ-DAT-306)
-3. **➕ Missing Core Workflow Requirements** (8+ needed):
-   - Main application entry point and CLI interface
-   - Module initialization and dependency order
-   - Complete data flow pipeline specification
-   - Configuration loading and validation workflow
-   - Error propagation between modules
-   - Resource management and cleanup
-   - Logging integration across modules
-   - End-to-end benchmark orchestration
-
-### ⚠️ **IMPROVEMENTS NEEDED** (Address for Quality)
-
-1. **❗ Incomplete Specifications**:
-   - REQ-LIT-006: Complete MethodFamily literal values (remove "etc.")
-2. **📏 Vague Requirements** (10+ need quantification):
-   - REQ-SET-018: Define "auto-limited by CPU" algorithm
-   - REQ-SET-020: Specify memory limit enforcement mechanism
-   - REQ-SET-024: Define "accessible" path criteria
-   - REQ-SET-030: Define "clear" error message format
-   - REQ-ERR-007: Specify required error context fields
-   - REQ-CFG-018: Define "sensible" defaults for each model
-   - REQ-DAT-304: Quantify minimum sample size requirements
-   - REQ-DAT-502: Define "excessive" memory consumption threshold
-   - REQ-RES-007: Complete file naming convention for all types
-   - REQ-RES-008: Define "meaningful" error message format
-   - REQ-UTL-006: Specify validation functions and interfaces
-   - REQ-BEN-006: Define error recovery and logging strategy
-   - REQ-BEN-007: Define progress event format and mechanism
-   - REQ-BEN-009: Specify resource cleanup sequence
-
-### 🎯 **RECOMMENDATIONS**
-
-1. **Phase 1** - Fix blockers: Add REQ-LIT-012, define all missing models, add core workflow requirements
-2. **Phase 2** - Complete specifications: Remove "etc." and undefined references
-3. **Phase 3** - Quantify vague requirements: Replace subjective terms with measurable criteria
-4. **Phase 4** - Add integration tests requirements for module interactions
-
-**Current Implementation Readiness**: 25% (Major gaps prevent implementation)  
-**Target for Implementation**: 95% (All blockers fixed, most improvements addressed)
 
 ## 🔧 Literals Module
 
@@ -598,3 +527,38 @@ This module contains the benchmark runner to benchmark adapters against each oth
 | **REQ-STR-005** | **Performance Measurement** | All strategies must measure and record fit_time, detect_time, and memory_usage for each detector execution                                                  |
 
 > **Note**: For the moment we are going to implement only the sequential strategy, but the architecture is designed to allow easy addition of parallel strategies in the future.
+
+## 🖥️ CLI Module
+
+This module provides a basic command-line interface for the drift-benchmark library, focusing on essential operations for running benchmarks and basic information commands.
+
+### 🚀 CLI Core Interface
+
+| ID              | Requirement               | Description                                                                                                       |
+| --------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **REQ-CLI-001** | **Main CLI Entry Point**  | Must provide `drift-benchmark` command as main entry point (via `console_scripts` in pyproject.toml)              |
+| **REQ-CLI-002** | **Argument Parser Setup** | Must use `argparse` to handle command-line arguments with proper help text and error handling                     |
+| **REQ-CLI-003** | **Run Command**           | Must provide `drift-benchmark run <config_file>` to execute benchmarks from TOML configuration files              |
+| **REQ-CLI-004** | **Help Command**          | Must provide `drift-benchmark --help` and help for all subcommands with usage examples                            |
+| **REQ-CLI-005** | **Version Command**       | Must provide `drift-benchmark --version` to display library version                                               |
+| **REQ-CLI-006** | **Error Handling**        | Must catch and display user-friendly error messages for validation errors, file not found, and execution failures |
+| **REQ-CLI-007** | **Exit Codes**            | Must return proper exit codes: 0 (success), 1 (general error), 2 (configuration error)                            |
+
+### 📊 Basic Commands
+
+| ID              | Requirement                 | Description                                                                                                      |
+| --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **REQ-CLI-101** | **Validate Config Command** | Must provide `drift-benchmark validate <config_file>` to validate configuration files without running benchmarks |
+| **REQ-CLI-102** | **List Detectors Command**  | Must provide `drift-benchmark list-detectors` to show available detection methods from registry                  |
+| **REQ-CLI-103** | **List Data Command**       | Must provide `drift-benchmark list-data` to show available scenarios and synthetic generators                    |
+
+### ⚙️ Basic Options
+
+| ID              | Requirement                 | Description                                                                                 |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
+| **REQ-CLI-201** | **Config File Argument**    | Run and validate commands must accept `--config` or `-c` to specify configuration file path |
+| **REQ-CLI-202** | **Output Directory Option** | Run command must accept `--output` or `-o` to override results output directory             |
+| **REQ-CLI-203** | **Verbosity Control**       | Must support `--verbose/-v` for detailed output and `--quiet/-q` for minimal output         |
+| **REQ-CLI-204** | **Log Level Override**      | Must support `--log-level` to override configured logging level for CLI execution           |
+
+> **CLI Design Philosophy**: The CLI provides essential functionality to run benchmarks and access basic information. Advanced configuration and customization should be done through TOML configuration files and the programmatic BenchmarkRunner interface.
