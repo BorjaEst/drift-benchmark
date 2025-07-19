@@ -136,14 +136,16 @@ class TestDriftBenchmarkError:
         """REQ-ERR-007: Should support exception chaining for better debugging"""
         # Arrange
         original_error = ValueError("Original error")
+        error = None
 
         # Act
         try:
             raise DriftBenchmarkError("Wrapped error") from original_error
-        except DriftBenchmarkError as error:
-            pass
+        except DriftBenchmarkError as e:
+            error = e
 
         # Assert
+        assert error is not None
         assert error.__cause__ is original_error
         assert isinstance(error.__cause__, ValueError)
 
@@ -448,14 +450,16 @@ class TestExceptionErrorContext:
         # Arrange
         original_error = FileNotFoundError("Dataset file not found")
         context_message = "Failed to load dataset for benchmark execution"
+        wrapped_error = None
 
         # Act
         try:
             raise DataLoadingError(context_message) from original_error
-        except DataLoadingError as wrapped_error:
-            pass
+        except DataLoadingError as e:
+            wrapped_error = e
 
         # Assert
+        assert wrapped_error is not None
         assert isinstance(wrapped_error, DriftBenchmarkError)
         assert wrapped_error.__cause__ is original_error
         assert "Failed to load dataset" in str(wrapped_error)
