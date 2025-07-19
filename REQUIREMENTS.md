@@ -4,10 +4,28 @@
 
 **NEEDED REQUIREMENTS**:
 
-- **Error Propagation**: How errors flow between modules
 - **Resource Management**: Memory limits, cleanup, graceful shutdown
 - **Logging Integration**: How all modules use centralized logging
 - **Benchmark Orchestration**: Complete end-to-end execution workflow
+
+## � Error Propagation Module
+
+This module defines how errors flow between modules to provide clear error handling and debugging information throughout the drift-benchmark library.
+
+| ID              | Requirement                        | Description                                                                                                                        |
+| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-ERR-001** | **Exception Chain Preservation**   | All modules must preserve exception chains using `raise new_exception from original_exception` for complete error traceback        |
+| **REQ-ERR-002** | **Module Error Boundaries**        | Each module must catch and re-raise errors with module-specific exceptions providing context about which component failed          |
+| **REQ-ERR-003** | **BenchmarkRunner Error Handling** | BenchmarkRunner must catch all detector/data/evaluation errors and continue execution, logging failures and excluding from results |
+| **REQ-ERR-004** | **Settings Error Propagation**     | Settings validation errors must be propagated immediately during initialization with clear field-level error messages              |
+| **REQ-ERR-005** | **Configuration Error Context**    | Configuration loading errors must include file path, line number (if TOML), and specific validation failure details                |
+| **REQ-ERR-006** | **Data Loading Error Recovery**    | Data loading failures must include file path, expected format, and actual content type information for debugging                   |
+| **REQ-ERR-007** | **Detector Error Isolation**       | Detector failures must be isolated to prevent cascade failures, with clear detector ID and dataset name in error messages          |
+| **REQ-ERR-008** | **Registry Error Context**         | Registry lookup failures must provide available options and suggestions for similar method/implementation names                    |
+| **REQ-ERR-009** | **Error Logging Consistency**      | All error handling must use settings.get_logger() for consistent error logging with appropriate log levels                         |
+| **REQ-ERR-010** | **Critical Error Termination**     | Critical errors (settings failure, registry corruption) must terminate execution immediately with clear error messages             |
+
+> Error propagation follows a simple pattern: catch specific exceptions, add context, re-raise with module-specific exception types. BenchmarkRunner acts as the main error boundary, handling all component failures gracefully.
 
 ## 🔄 Data Flow Pipeline
 
@@ -166,21 +184,40 @@ This module provides comprehensive configuration management for the drift-benchm
 
 > All settings must be validated automatically upon instantiation, and any invalid configuration must result in a standard Pydantic v2 validation error. No custom error formatting or additional validation logic is required beyond Pydantic's native mechanisms.
 
-## 🚫 Exceptions Module
+## 🚫 Exceptions and Error Propagation Module
 
-This module defines custom exceptions for the drift-benchmark library to provide clear error messages and proper error handling.
+This module defines custom exceptions for the drift-benchmark library and how errors flow between modules to provide clear error messages, proper error handling, and debugging information throughout the system.
+
+### 🚫 Exception Definitions
 
 | ID              | Requirement                  | Description                                                                                                        |
 | --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **REQ-ERR-001** | **Base Exception**           | Must define `DriftBenchmarkError` as base exception class for all library-specific errors                          |
-| **REQ-ERR-002** | **Detector Registry Errors** | Must define `DetectorNotFoundError`, `DuplicateDetectorError`, `InvalidDetectorError` for detector registry issues |
-| **REQ-ERR-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `ImplementationNotFoundError` for methods.toml registry issues                  |
-| **REQ-ERR-004** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError`, `DataPreprocessingError` for data-related issues            |
-| **REQ-ERR-005** | **Configuration Errors**     | Must define `ConfigurationError`, `InvalidConfigError` for configuration validation failures                       |
-| **REQ-ERR-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError`, `DetectorTimeoutError` for benchmark execution issues                       |
-| **REQ-ERR-007** | **Error Context**            | All custom exceptions must include helpful context information and suggestions for resolution.                     |
+| **REQ-EXC-001** | **Base Exception**           | Must define `DriftBenchmarkError` as base exception class for all library-specific errors                          |
+| **REQ-EXC-002** | **Detector Registry Errors** | Must define `DetectorNotFoundError`, `DuplicateDetectorError`, `InvalidDetectorError` for detector registry issues |
+| **REQ-EXC-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `ImplementationNotFoundError` for methods.toml registry issues                  |
+| **REQ-EXC-004** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError`, `DataPreprocessingError` for data-related issues            |
+| **REQ-EXC-005** | **Configuration Errors**     | Must define `ConfigurationError`, `InvalidConfigError` for configuration validation failures                       |
+| **REQ-EXC-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError`, `DetectorTimeoutError` for benchmark execution issues                       |
+| **REQ-EXC-007** | **Error Context**            | All custom exceptions must include helpful context information and suggestions for resolution                      |
 
 > Helpful context must include the following required fields: `error_type` (a string identifying the type of error), `invalid_value` (the value that caused the error, if applicable), `expected_format` (a description of the valid format or value), and `suggested_action` (a clear recommendation for how to resolve the error). These fields must be included as attributes on the exception and in the error message, following Python best practices for exception context and clarity.
+
+### ⚠️ Error Propagation
+
+| ID              | Requirement                        | Description                                                                                                                        |
+| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-ERR-001** | **Exception Chain Preservation**   | All modules must preserve exception chains using `raise new_exception from original_exception` for complete error traceback        |
+| **REQ-ERR-002** | **Module Error Boundaries**        | Each module must catch and re-raise errors with module-specific exceptions providing context about which component failed          |
+| **REQ-ERR-003** | **BenchmarkRunner Error Handling** | BenchmarkRunner must catch all detector/data/evaluation errors and continue execution, logging failures and excluding from results |
+| **REQ-ERR-004** | **Settings Error Propagation**     | Settings validation errors must be propagated immediately during initialization with clear field-level error messages              |
+| **REQ-ERR-005** | **Configuration Error Context**    | Configuration loading errors must include file path, line number (if TOML), and specific validation failure details                |
+| **REQ-ERR-006** | **Data Loading Error Recovery**    | Data loading failures must include file path, expected format, and actual content type information for debugging                   |
+| **REQ-ERR-007** | **Detector Error Isolation**       | Detector failures must be isolated to prevent cascade failures, with clear detector ID and dataset name in error messages          |
+| **REQ-ERR-008** | **Registry Error Context**         | Registry lookup failures must provide available options and suggestions for similar method/implementation names                    |
+| **REQ-ERR-009** | **Error Logging Consistency**      | All error handling must use settings.get_logger() for consistent error logging with appropriate log levels                         |
+| **REQ-ERR-010** | **Critical Error Termination**     | Critical errors (settings failure, registry corruption) must terminate execution immediately with clear error messages             |
+
+> Error propagation follows a simple pattern: catch specific exceptions, add context, re-raise with module-specific exception types. BenchmarkRunner acts as the main error boundary, handling all component failures gracefully.
 
 ## 🏗️ Models Module
 
