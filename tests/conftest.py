@@ -15,7 +15,8 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pandas as pd
 import pytest
-from drift_benchmark.constants.models import (
+
+from drift_benchmark.models.core import (
     BenchmarkConfig,
     DataConfig,
     DatasetMetadata,
@@ -214,3 +215,54 @@ def mock_detector():
     detector.preprocess.return_value = "preprocessed_data"
     detector.reset.return_value = None
     return detector
+
+
+@pytest.fixture
+def sample_adapter_directory(test_workspace):
+    """Provide a sample adapter directory with test adapter modules."""
+    adapter_dir = test_workspace / "components"
+
+    # Create a sample adapter file
+    adapter_file = adapter_dir / "sample_adapter.py"
+    adapter_content = '''
+"""Sample adapter for testing discovery."""
+
+from drift_benchmark.adapters.base import BaseDetector
+from drift_benchmark.adapters.registry import register_detector
+from drift_benchmark.constants.models import DetectorMetadata, ScoreResult
+
+
+@register_detector("sample_method", "sample_impl")
+class SampleDetector(BaseDetector):
+    """Sample detector for testing."""
+
+    @property
+    def method_id(self) -> str:
+        return "sample_method"
+
+    @property  
+    def implementation_id(self) -> str:
+        return "sample_impl"
+
+    @classmethod
+    def metadata(cls):
+        return DetectorMetadata(
+            method_id="sample_method",
+            implementation_id="sample_impl", 
+            name="Sample Detector",
+            description="Test detector",
+            category="test",
+            data_type="tabular",
+            streaming=False
+        )
+
+    def fit(self, preprocessed_data, **kwargs):
+        self._fitted = True
+        return self
+
+    def detect(self, preprocessed_data, **kwargs):
+        return True
+'''
+    adapter_file.write_text(adapter_content)
+
+    return adapter_dir
