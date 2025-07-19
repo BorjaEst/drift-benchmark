@@ -4,15 +4,31 @@
 
 **NEEDED REQUIREMENTS**:
 
-- **Main Application Entry Point**: BenchmarkRunner class interface, configuration loading from TOML files, programmatic benchmark execution
-- **CLI Interface**: Command-line interface, argument parsing, subcommands for benchmark operations, configuration validation
-- **Module Initialization Order**: Which modules load first, dependency resolution
 - **Data Flow Pipeline**: How data moves between Data → Adapters → Evaluation → Results
 - **Configuration Loading**: How BenchmarkConfig is loaded and validated
 - **Error Propagation**: How errors flow between modules
 - **Resource Management**: Memory limits, cleanup, graceful shutdown
 - **Logging Integration**: How all modules use centralized logging
 - **Benchmark Orchestration**: Complete end-to-end execution workflow
+
+## 🚀 Module Initialization Order
+
+This module defines the initialization order and dependency resolution for the drift-benchmark library to ensure proper startup and configuration loading.
+
+| ID              | Requirement                   | Description                                                                                                             |
+| --------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **REQ-INI-001** | **Package Initialization**    | Package `__init__.py` must load in order: settings → exceptions → literals → models → detectors → adapters              |
+| **REQ-INI-002** | **Settings First**            | Settings module must be imported first to ensure configuration is available before other modules initialize             |
+| **REQ-INI-003** | **Exceptions Early**          | Exceptions module must be imported early so all modules can use custom exceptions for error handling                    |
+| **REQ-INI-004** | **Literals Before Models**    | Literals module must be imported before models module since models use literal types for validation                     |
+| **REQ-INI-005** | **Models Before Components**  | Models module must be imported before adapters and detectors since they depend on model definitions                     |
+| **REQ-INI-006** | **Registry Last**             | Adapters and detectors modules must be imported last to allow proper registration after all dependencies are available  |
+| **REQ-INI-007** | **Dependency Validation**     | Each module must validate that its dependencies are loaded before initializing its own components                       |
+| **REQ-INI-008** | **Import Error Handling**     | Import failures in any module must provide clear error messages indicating missing dependencies or configuration issues |
+| **REQ-INI-009** | **Circular Dependency Check** | Package initialization must detect and prevent circular dependencies between modules                                    |
+| **REQ-INI-010** | **Lazy Loading Support**      | Non-critical modules may use lazy loading to improve startup time while maintaining dependency order                    |
+
+> The initialization order ensures that configuration is available first, followed by core types and exceptions, then data models, and finally the registry systems that depend on all other components. This prevents import errors and ensures consistent behavior across different Python environments.
 
 ## 🔧 Literals Module
 
