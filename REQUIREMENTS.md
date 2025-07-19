@@ -82,6 +82,20 @@ This module provides comprehensive configuration management for the drift-benchm
 | **REQ-SET-029** | **Configuration Context** | Must provide context manager for temporary settings overrides during testing                            |
 | **REQ-SET-030** | **Settings Validation**   | Must validate all settings on instantiation and provide clear error messages for invalid configurations |
 
+## 🚫 Exceptions Module
+
+This module defines custom exceptions for the drift-benchmark library to provide clear error messages and proper error handling.
+
+| ID              | Requirement                  | Description                                                                                                        |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **REQ-ERR-001** | **Base Exception**           | Must define `DriftBenchmarkError` as base exception class for all library-specific errors                          |
+| **REQ-ERR-002** | **Detector Registry Errors** | Must define `DetectorNotFoundError`, `DuplicateDetectorError`, `InvalidDetectorError` for detector registry issues |
+| **REQ-ERR-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `ImplementationNotFoundError` for methods.toml registry issues                  |
+| **REQ-ERR-004** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError`, `DataPreprocessingError` for data-related issues            |
+| **REQ-ERR-005** | **Configuration Errors**     | Must define `ConfigurationError`, `InvalidConfigError` for configuration validation failures                       |
+| **REQ-ERR-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError`, `DetectorTimeoutError` for benchmark execution issues                       |
+| **REQ-ERR-007** | **Error Context**            | All custom exceptions must include helpful context information and suggestions for resolution                      |
+
 ## 🏗️ Models Module
 
 This module contains the data models used throughout the drift-benchmark library. It provides a consistent structure for configurations, datasets, detector metadata, and score results organized into three specialized submodules.
@@ -413,20 +427,6 @@ This module provides a comprehensive results management system for the drift-ben
 | **REQ-RES-007** | **File Naming Convention**    | Must use consistent file naming with timestamps to prevent conflicts: `benchmark_results_20250718_143022.json`          |
 | **REQ-RES-008** | **Error Handling**            | Must handle file I/O errors gracefully and provide meaningful error messages for permission issues, disk space, etc.    |
 | **REQ-RES-009** | **Results Loading**           | Must provide `load_results(results_dir: Path) -> BenchmarkResult` for loading previously saved results                  |
-
-## 🚫 Exceptions Module
-
-This module defines custom exceptions for the drift-benchmark library to provide clear error messages and proper error handling.
-
-| ID              | Requirement                  | Description                                                                                                        |
-| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **REQ-ERR-001** | **Base Exception**           | Must define `DriftBenchmarkError` as base exception class for all library-specific errors                          |
-| **REQ-ERR-002** | **Detector Registry Errors** | Must define `DetectorNotFoundError`, `DuplicateDetectorError`, `InvalidDetectorError` for detector registry issues |
-| **REQ-ERR-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `ImplementationNotFoundError` for methods.toml registry issues                  |
-| **REQ-ERR-004** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError`, `DataPreprocessingError` for data-related issues            |
-| **REQ-ERR-005** | **Configuration Errors**     | Must define `ConfigurationError`, `InvalidConfigError` for configuration validation failures                       |
-| **REQ-ERR-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError`, `DetectorTimeoutError` for benchmark execution issues                       |
-| **REQ-ERR-007** | **Error Context**            | All custom exceptions must include helpful context information and suggestions for resolution                      |
 
 ## 🔧 Utilities Module
 
