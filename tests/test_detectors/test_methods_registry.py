@@ -39,7 +39,7 @@ def test_should_provide_load_methods_function_when_imported(mock_methods_toml_fi
 
 
 def test_should_validate_method_schema_compliance_when_loaded(mock_methods_toml_file):
-    """Test REQ-DET-002: Each method in methods.toml must have required fields: name, description, family, data_dimension, data_types"""
+    """Test REQ-DET-002: Each method in methods.toml must have required fields: name, description, drift_types, family, data_dimension, data_types, requires_labels, references"""
     # Arrange & Act
     try:
         from drift_benchmark.detectors import load_methods
@@ -55,20 +55,26 @@ def test_should_validate_method_schema_compliance_when_loaded(mock_methods_toml_
     for method_id, method_data in methods.items():
         assert "name" in method_data, f"Method {method_id} must have name field"
         assert "description" in method_data, f"Method {method_id} must have description field"
+        assert "drift_types" in method_data, f"Method {method_id} must have drift_types field"
         assert "family" in method_data, f"Method {method_id} must have family field"
         assert "data_dimension" in method_data, f"Method {method_id} must have data_dimension field"
         assert "data_types" in method_data, f"Method {method_id} must have data_types field"
+        assert "requires_labels" in method_data, f"Method {method_id} must have requires_labels field"
+        assert "references" in method_data, f"Method {method_id} must have references field"
 
         # Assert field types
         assert isinstance(method_data["name"], str), f"Method {method_id} name must be string"
         assert isinstance(method_data["description"], str), f"Method {method_id} description must be string"
+        assert isinstance(method_data["drift_types"], list), f"Method {method_id} drift_types must be list"
         assert isinstance(method_data["family"], str), f"Method {method_id} family must be string"
-        assert isinstance(method_data["data_dimension"], list), f"Method {method_id} data_dimension must be list"
+        assert isinstance(method_data["data_dimension"], str), f"Method {method_id} data_dimension must be string"
         assert isinstance(method_data["data_types"], list), f"Method {method_id} data_types must be list"
+        assert isinstance(method_data["requires_labels"], bool), f"Method {method_id} requires_labels must be boolean"
+        assert isinstance(method_data["references"], list), f"Method {method_id} references must be list"
 
 
 def test_should_validate_implementation_schema_when_loaded(mock_methods_toml_file):
-    """Test REQ-DET-003: Each implementation must have required fields: name, execution_mode"""
+    """Test REQ-DET-003: Each implementation must have required fields: name, execution_mode, hyperparameters, references"""
     # Arrange & Act
     try:
         from drift_benchmark.detectors import load_methods
@@ -89,10 +95,14 @@ def test_should_validate_implementation_schema_when_loaded(mock_methods_toml_fil
         for impl_id, impl_data in implementations.items():
             assert "name" in impl_data, f"Implementation {method_id}.{impl_id} must have name field"
             assert "execution_mode" in impl_data, f"Implementation {method_id}.{impl_id} must have execution_mode field"
+            assert "hyperparameters" in impl_data, f"Implementation {method_id}.{impl_id} must have hyperparameters field"
+            assert "references" in impl_data, f"Implementation {method_id}.{impl_id} must have references field"
 
             # Assert field types
             assert isinstance(impl_data["name"], str), f"Implementation {method_id}.{impl_id} name must be string"
             assert isinstance(impl_data["execution_mode"], str), f"Implementation {method_id}.{impl_id} execution_mode must be string"
+            assert isinstance(impl_data["hyperparameters"], list), f"Implementation {method_id}.{impl_id} hyperparameters must be list"
+            assert isinstance(impl_data["references"], list), f"Implementation {method_id}.{impl_id} references must be list"
 
 
 def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
@@ -118,9 +128,8 @@ def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
 
     # Assert - raises error for non-existent method
     try:
-        from drift_benchmark.exceptions import MethodNotFoundError
-
         from drift_benchmark.detectors import get_method
+        from drift_benchmark.exceptions import MethodNotFoundError
 
         with patch("drift_benchmark.detectors.settings") as mock_settings:
             mock_settings.methods_registry_path = mock_methods_toml_file
@@ -154,9 +163,8 @@ def test_should_provide_get_implementation_function_when_called(mock_methods_tom
 
     # Assert - raises error for non-existent implementation
     try:
-        from drift_benchmark.exceptions import ImplementationNotFoundError
-
         from drift_benchmark.detectors import get_implementation
+        from drift_benchmark.exceptions import ImplementationNotFoundError
 
         with patch("drift_benchmark.detectors.settings") as mock_settings:
             mock_settings.methods_registry_path = mock_methods_toml_file
@@ -199,9 +207,8 @@ def test_should_validate_registry_file_when_loaded():
     """Test REQ-DET-007: Must validate methods.toml file exists and is readable, providing clear error message if missing or malformed"""
     # Arrange & Act - test missing file
     try:
-        from drift_benchmark.exceptions import DataLoadingError
-
         from drift_benchmark.detectors import load_methods
+        from drift_benchmark.exceptions import DataLoadingError
 
         with patch("drift_benchmark.detectors.settings") as mock_settings:
             mock_settings.methods_registry_path = Path("non_existent_file.toml")
@@ -252,7 +259,7 @@ def test_should_follow_methods_toml_schema_when_loaded(mock_methods_toml_file):
 
     # Assert REQ-DET-009: Method required fields
     for method_id, method_data in methods.items():
-        required_fields = ["name", "description", "family", "data_dimension", "data_types"]
+        required_fields = ["name", "description", "drift_types", "family", "data_dimension", "data_types", "requires_labels", "references"]
         for field in required_fields:
             assert field in method_data, f"Method {method_id} must have {field} field"
 
@@ -268,16 +275,21 @@ def test_should_follow_methods_toml_schema_when_loaded(mock_methods_toml_file):
         for impl_id, impl_data in implementations.items():
             assert "name" in impl_data, f"Implementation {method_id}.{impl_id} must have name"
             assert "execution_mode" in impl_data, f"Implementation {method_id}.{impl_id} must have execution_mode"
+            assert "hyperparameters" in impl_data, f"Implementation {method_id}.{impl_id} must have hyperparameters"
+            assert "references" in impl_data, f"Implementation {method_id}.{impl_id} must have references"
 
     # Assert REQ-DET-012: Schema example validation
     # Check that ks_test method follows expected schema
     ks_test = methods["ks_test"]
     assert ks_test["name"] == "Kolmogorov-Smirnov Test"
+    assert ks_test["drift_types"] == ["COVARIATE"]
     assert ks_test["family"] == "STATISTICAL_TEST"
+    assert ks_test["data_dimension"] == "UNIVARIATE"
     assert "scipy" in ks_test["implementations"]
     scipy_impl = ks_test["implementations"]["scipy"]
     assert scipy_impl["name"] == "SciPy Implementation"
     assert scipy_impl["execution_mode"] == "BATCH"
+    assert scipy_impl["hyperparameters"] == ["threshold"]
 
 
 def test_should_handle_empty_methods_file_when_loaded(empty_methods_toml_file):

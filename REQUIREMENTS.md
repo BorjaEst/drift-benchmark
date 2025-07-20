@@ -41,17 +41,17 @@ This module defines the initialization order and dependency resolution for the d
 
 ## 🔧 Literals Module
 
-| ID              | Requirement                 | Description                                                                                                              |
-| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **REQ-LIT-001** | **Drift Type Literals**     | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                             |
-| **REQ-LIT-002** | **Data Type Literals**      | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                         |
-| **REQ-LIT-003** | **Dimension Literals**      | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                            |
-| **REQ-LIT-004** | **Labeling Literals**       | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                          |
-| **REQ-LIT-005** | **Execution Mode Literals** | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                    |
-| **REQ-LIT-006** | **Method Family Literals**  | Must define `MethodFamily` literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED" |
-| **REQ-LIT-007** | **Dataset Source Literals** | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC"                                                     |
-| **REQ-LIT-008** | **File Format Literals**    | Must define `FileFormat` literal with values: "CSV"                                                                      |
-| **REQ-LIT-009** | **Log Level Literals**      | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                              |
+| ID              | Requirement                 | Description                                                                                                                                             |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-LIT-001** | **Drift Type Literals**     | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                                                            |
+| **REQ-LIT-002** | **Data Type Literals**      | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                                                        |
+| **REQ-LIT-003** | **Dimension Literals**      | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                                           |
+| **REQ-LIT-004** | **Labeling Literals**       | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                                         |
+| **REQ-LIT-005** | **Execution Mode Literals** | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                                                   |
+| **REQ-LIT-006** | **Method Family Literals**  | Must define `MethodFamily` literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED", "STATISTICAL_PROCESS_CONTROL" |
+| **REQ-LIT-007** | **Dataset Source Literals** | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC"                                                                                    |
+| **REQ-LIT-008** | **File Format Literals**    | Must define `FileFormat` literal with values: "CSV"                                                                                                     |
+| **REQ-LIT-009** | **Log Level Literals**      | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                                                             |
 
 ---
 
@@ -159,25 +159,25 @@ This module provides a basic registry for drift detection methods through the `m
 
 ### 📋 Basic Detectors Registry
 
-| ID              | Requirement                  | Description                                                                                                                |
-| --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-DET-001** | **Methods Registry Loading** | Must provide `load_methods() -> Dict[str, Dict[str, Any]]` that loads methods from methods.toml file specified in settings |
-| **REQ-DET-002** | **Method Schema Compliance** | Each method in methods.toml must have required fields: name, description, family, data_dimension, data_types               |
-| **REQ-DET-003** | **Implementation Schema**    | Each implementation must have required fields: name, execution_mode                                                        |
-| **REQ-DET-004** | **Method Lookup**            | Must provide `get_method(method_id: str) -> Dict[str, Any]` that returns method info or raises MethodNotFoundError         |
-| **REQ-DET-005** | **Implementation Lookup**    | Must provide `get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]` or raises ImplementationNotFoundError    |
-| **REQ-DET-006** | **List Methods**             | Must provide `list_methods() -> List[str]` that returns all available method IDs                                           |
-| **REQ-DET-007** | **Registry File Validation** | Must validate methods.toml file exists and is readable, providing clear error message if missing or malformed              |
+| ID              | Requirement                  | Description                                                                                                                                            |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-DET-001** | **Methods Registry Loading** | Must provide `load_methods() -> Dict[str, Dict[str, Any]]` that loads methods from methods.toml file specified in settings                             |
+| **REQ-DET-002** | **Method Schema Compliance** | Each method in methods.toml must have required fields: name, description, drift_types, family, data_dimension, data_types, requires_labels, references |
+| **REQ-DET-003** | **Implementation Schema**    | Each implementation must have required fields: name, execution_mode, hyperparameters, references                                                       |
+| **REQ-DET-004** | **Method Lookup**            | Must provide `get_method(method_id: str) -> Dict[str, Any]` that returns method info or raises MethodNotFoundError                                     |
+| **REQ-DET-005** | **Implementation Lookup**    | Must provide `get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]` or raises ImplementationNotFoundError                                |
+| **REQ-DET-006** | **List Methods**             | Must provide `list_methods() -> List[str]` that returns all available method IDs                                                                       |
+| **REQ-DET-007** | **Registry File Validation** | Must validate methods.toml file exists and is readable, providing clear error message if missing or malformed                                          |
 
 ### 📋 Methods.toml Schema Definition
 
-| ID              | Requirement                        | Description                                                                                                                                                                           |
-| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-DET-008** | **Root Level Structure**           | methods.toml must have `[methods]` table containing method definitions as `[methods.{method_id}]` sub-tables                                                                          |
-| **REQ-DET-009** | **Method Required Fields**         | Each `[methods.{method_id}]` must have: name (string), description (string), family (MethodFamily enum), data_dimension (list of DataDimension), data_types (list of DataType)        |
-| **REQ-DET-010** | **Implementation Structure**       | Each method must have `[methods.{method_id}.implementations.{impl_id}]` sub-tables for implementation variants                                                                        |
-| **REQ-DET-011** | **Implementation Required Fields** | Each implementation must have: name (string), execution_mode (ExecutionMode enum value)                                                                                               |
-| **REQ-DET-012** | **Schema Example**                 | Example: `[methods.ks_test]` name="Kolmogorov-Smirnov Test", family="STATISTICAL_TEST", `[methods.ks_test.implementations.scipy]` name="SciPy Implementation", execution_mode="BATCH" |
+| ID              | Requirement                        | Description                                                                                                                                                                                                                                                                  |
+| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-DET-008** | **Root Level Structure**           | methods.toml must have `[methods]` table containing method definitions as `[methods.{method_id}]` sub-tables                                                                                                                                                                 |
+| **REQ-DET-009** | **Method Required Fields**         | Each `[methods.{method_id}]` must have: name (string), description (string), drift_types (list of DriftType), family (MethodFamily enum), data_dimension (DataDimension enum), data_types (list of DataType), requires_labels (bool), references (list of string)            |
+| **REQ-DET-010** | **Implementation Structure**       | Each method must have `[methods.{method_id}.implementations.{impl_id}]` sub-tables for implementation variants                                                                                                                                                               |
+| **REQ-DET-011** | **Implementation Required Fields** | Each implementation must have: name (string), execution_mode (ExecutionMode enum value), hyperparameters (list of string), references (list of string)                                                                                                                       |
+| **REQ-DET-012** | **Schema Example**                 | Example: `[methods.ks_test]` name="Kolmogorov-Smirnov Test", drift_types=["COVARIATE"], family="STATISTICAL_TEST", data_dimension="UNIVARIATE", `[methods.ks_test.implementations.scipy]` name="SciPy Implementation", execution_mode="BATCH", hyperparameters=["threshold"] |
 
 ---
 

@@ -218,8 +218,9 @@ class MyCustomDetector(BaseDetector):
 [methods.my_method]
 name = "My Custom Method"
 description = "Description of the custom drift detection method"
-family = "STATISTICAL_TEST"  # or DISTANCE_BASED, CHANGE_DETECTION, WINDOW_BASED
-data_dimension = ["UNIVARIATE", "MULTIVARIATE"]
+drift_types = ["COVARIATE"]  # or CONCEPT, PRIOR
+family = "STATISTICAL_TEST"  # or DISTANCE_BASED, CHANGE_DETECTION, WINDOW_BASED, STATISTICAL_PROCESS_CONTROL
+data_dimension = "UNIVARIATE"  # or MULTIVARIATE
 data_types = ["CONTINUOUS", "CATEGORICAL"]
 requires_labels = false  # Set to true if method requires labels for training
 references = ["https://doi.org/<doi-reference>", "Example (XXXX)"]
@@ -227,7 +228,7 @@ references = ["https://doi.org/<doi-reference>", "Example (XXXX)"]
 [methods.my_method.implementations.custom]
 name = "Custom Implementation"
 execution_mode = "BATCH"  # or STREAMING
-hyperparameters = { "threshold": 0.05 }  # Example hyperparameter
+hyperparameters = ["threshold"]  # List of hyperparameter names
 references = ["https://doi.org/<doi-reference>", "Example (XXXX)"]
 ```
 
