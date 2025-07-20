@@ -151,10 +151,22 @@ class DriftMetadata(BaseModel):
     drift_type: Optional[DriftType] = Field(None, description="Type of drift present", examples=["COVARIATE"])
     drift_position: Optional[float] = Field(None, ge=0, le=1, description="Position of drift as fraction of dataset (0-1)", examples=[0.6])
     drift_magnitude: float = Field(0.0, ge=0, description="Magnitude of the drift", examples=[2.5])
-    pattern: Optional[DriftPattern] = Field(None, description="Pattern of the drift occurrence", examples=["GRADUAL"])
+    drift_pattern: Optional[str] = Field(None, description="Pattern of the drift occurrence", examples=["GRADUAL"])
+    pattern: Optional[DriftPattern] = Field(None, description="Pattern of the drift occurrence (legacy)", examples=["GRADUAL"])
     characteristics: Optional[List[str]] = Field(
         default_factory=list, description="Additional drift characteristics", examples=[["MEAN_SHIFT", "VARIANCE_SHIFT"]]
     )
+
+    @field_validator("drift_pattern")
+    @classmethod
+    def validate_drift_pattern(cls, v: Optional[str]) -> Optional[str]:
+        """Validate drift pattern field."""
+        if v is None:
+            return v
+        valid_patterns = {"GRADUAL", "SUDDEN", "SEASONAL", "RECURRING", "INCREMENTAL"}
+        if v.upper() not in valid_patterns:
+            raise ValueError(f'Drift pattern must be one of: {", ".join(valid_patterns)}')
+        return v.upper()
 
     @model_validator(mode="after")
     def validate_drift_consistency(self) -> "DriftMetadata":
@@ -163,6 +175,10 @@ class DriftMetadata(BaseModel):
 
         REQ-MET-010: Must ensure consistency between related fields.
         """
+        # Auto-populate has_drift based on other fields
+        if self.drift_type or self.drift_position is not None or self.drift_magnitude > 0:
+            self.has_drift = True
+
         if self.has_drift:
             # If has_drift is True, drift_type should be specified
             if not self.drift_type:
@@ -202,8 +218,13 @@ class DetectorMetadata(BaseModel):
         description="Detailed description of the detector",
         examples=["Two-sample Kolmogorov-Smirnov test for batch processing"],
     )
-    family: DetectorFamily = Field(..., description="Family of the detection method", examples=["STATISTICAL_TEST"])
-    execution_mode: ExecutionMode = Field(..., description="Execution mode of the detector", examples=["BATCH"])
+    category: str = Field(..., description="Category of the detection method", examples=["STATISTICAL_TEST"])
+    data_type: str = Field(..., description="Primary data type supported by the detector", examples=["CONTINUOUS"])
+    streaming: bool = Field(False, description="Whether the detector supports streaming data")
+
+    # Legacy fields for backward compatibility
+    family: Optional[DetectorFamily] = Field(None, description="Family of the detection method", examples=["STATISTICAL_TEST"])
+    execution_mode: Optional[ExecutionMode] = Field(None, description="Execution mode of the detector", examples=["BATCH"])
     data_types: List[DataType] = Field(
         default_factory=list, description="Data types supported by the detector", examples=[["CONTINUOUS", "MIXED"]]
     )
@@ -217,6 +238,24 @@ class DetectorMetadata(BaseModel):
         if not v.replace("_", "").replace("-", "").isalnum():
             raise ValueError("Identifier must contain only alphanumeric characters, underscores, and hyphens")
         return v.lower()
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        """Validate category field."""
+        valid_categories = {"STATISTICAL_TEST", "DISTANCE_BASED", "NEURAL_NETWORK", "ENSEMBLE", "CHANGE_DETECTION", "MACHINE_LEARNING"}
+        if v.upper() not in valid_categories:
+            raise ValueError(f'Category must be one of: {", ".join(sorted(valid_categories))}')
+        return v.upper()
+
+    @field_validator("data_type")
+    @classmethod
+    def validate_data_type(cls, v: str) -> str:
+        """Validate data type field."""
+        valid_types = {"CONTINUOUS", "CATEGORICAL", "MIXED", "BINARY", "TEXT", "IMAGE"}
+        if v.upper() not in valid_types:
+            raise ValueError(f'Data type must be one of: {", ".join(valid_types)}')
+        return v.upper()
 
     @field_validator("data_types")
     @classmethod

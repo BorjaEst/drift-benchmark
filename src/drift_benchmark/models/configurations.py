@@ -64,12 +64,13 @@ class BenchmarkMetadata(BaseModel):
 
 class DatasetConfig(BaseModel):
     """
-    Configuration for datasets used in benchmarking.
+    Configuration for a single dataset used in benchmarking.
 
-    REQ-CFG-003: Must define DatasetConfig with fields for dataset configuration.
+    This represents the configuration for one individual dataset.
     """
 
-    source: str = Field(..., description="Data source type (FILE, SYNTHETIC, SCENARIO)", examples=["scenario"])
+    name: str = Field(..., min_length=1, description="Name of the dataset", examples=["iris_covariate_drift"])
+    type: str = Field(..., description="Data source type (FILE, SYNTHETIC, SCENARIO)", examples=["scenario"])
     path: Optional[Union[str, Path]] = Field(
         None, description="Path to dataset file (required for FILE source)", examples=["/data/iris_drift.csv"]
     )
@@ -83,7 +84,7 @@ class DatasetConfig(BaseModel):
         examples=[{"scenario_name": "iris_species_drift", "drift_magnitude": 2.0}],
     )
 
-    @field_validator("source")
+    @field_validator("type")
     @classmethod
     def validate_source_type(cls, v: str) -> str:
         """Validate dataset source type."""
@@ -107,7 +108,7 @@ class DatasetConfig(BaseModel):
     @model_validator(mode="after")
     def validate_source_requirements(self) -> "DatasetConfig":
         """Validate source-specific requirements."""
-        if self.source == "FILE":
+        if self.type == "FILE":
             if not self.path:
                 raise ValueError("Path is required for FILE source")
             if not self.format:
@@ -115,11 +116,32 @@ class DatasetConfig(BaseModel):
         return self
 
 
+class DatasetsConfig(BaseModel):
+    """
+    Complete data configuration for benchmark datasets.
+
+    REQ-CFG-003: Must define DatasetsConfig with fields for dataset configuration.
+    """
+
+    datasets: List[DatasetConfig] = Field(
+        default_factory=list,
+        description="List of dataset configurations for the benchmark",
+        examples=[[{"name": "iris_covariate_drift", "type": "scenario", "config": {"scenario_name": "iris_species_drift"}}]],
+    )
+
+    @field_validator("datasets")
+    @classmethod
+    def validate_datasets_not_empty_when_required(cls, v: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Ensure at least one dataset is configured when required."""
+        # Allow empty for default configuration, but validate individual configs
+        return v
+
+
 class DetectorConfig(BaseModel):
     """
-    Configuration for drift detectors in benchmarking.
+    Configuration for a single drift detector in benchmarking.
 
-    REQ-CFG-004: Must define DetectorConfig with fields for detector setup.
+    This represents the configuration for one individual detector.
     """
 
     method_id: str = Field(..., description="Identifier of the drift detection method", examples=["kolmogorov_smirnov"])
@@ -142,6 +164,43 @@ class DetectorConfig(BaseModel):
         if not v.replace("_", "").replace("-", "").isalnum():
             raise ValueError("Identifier must contain only alphanumeric characters, underscores, and hyphens")
         return v.lower()
+
+
+class DetectorsConfig(BaseModel):
+    """
+    Complete detector configuration for benchmark algorithms.
+
+    REQ-CFG-004: Must define DetectorsConfig with fields for detector setup.
+    """
+
+    algorithms: List[DetectorConfig] = Field(
+        default_factory=list,
+        description="List of detector configurations for the benchmark",
+        examples=[
+            [
+                {
+                    "method_id": "kolmogorov_smirnov",
+                    "implementation_id": "ks_batch",
+                    "adapter": "evidently_adapter",
+                    "parameters": {"threshold": 0.05},
+                }
+            ]
+        ],
+    )
+
+    @field_validator("algorithms")
+    @classmethod
+    def validate_algorithms_list(cls, v: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Validate algorithm configurations."""
+        # Check for duplicate method+implementation combinations
+        seen_combinations = set()
+        for algo in v:
+            if "method_id" in algo and "implementation_id" in algo:
+                combination = (algo["method_id"], algo["implementation_id"])
+                if combination in seen_combinations:
+                    raise ValueError(f"Duplicate detector configuration: {combination}")
+                seen_combinations.add(combination)
+        return v
 
 
 class EvaluationConfig(BaseModel):
@@ -172,6 +231,16 @@ class EvaluationConfig(BaseModel):
         description="Statistical tests to perform for method comparison",
         examples=[["ttest", "mannwhitneyu", "wilcoxon"]],
     )
+    performance_analysis: List[str] = Field(
+        default_factory=list,
+        description="Performance analysis methods to apply",
+        examples=[["rankings", "statistical_significance", "confidence_intervals"]],
+    )
+    runtime_analysis: List[str] = Field(
+        default_factory=list,
+        description="Runtime analysis methods to apply",
+        examples=[["memory_usage", "cpu_time", "throughput"]],
+    )
     thresholds: Dict[str, float] = Field(
         default_factory=dict,
         description="Custom thresholds for evaluation metrics",
@@ -187,6 +256,12 @@ class EvaluationConfig(BaseModel):
         """Validate metric names and convert to lowercase."""
         return [metric.lower() for metric in v if metric]
 
+    @field_validator("statistical_tests", "performance_analysis", "runtime_analysis")
+    @classmethod
+    def validate_analysis_lists(cls, v: List[str]) -> List[str]:
+        """Validate analysis method names and convert to lowercase."""
+        return [method.lower() for method in v if method]
+
     @field_validator("output_format")
     @classmethod
     def validate_output_formats(cls, v: List[str]) -> List[str]:
@@ -199,63 +274,7 @@ class EvaluationConfig(BaseModel):
                 raise ValueError(f'Output format "{fmt}" not supported. Valid formats: {", ".join(valid_formats)}')
             validated.append(fmt_upper)
         return validated
-
-
-class DataConfiguration(BaseModel):
-    """
-    Complete data configuration for benchmark datasets.
-
-    REQ-CFG-003: Must support multiple dataset configurations.
-    """
-
-    datasets: List[DatasetConfig] = Field(
-        default_factory=list,
-        description="List of dataset configurations for the benchmark",
-        examples=[[{"source": "scenario", "config": {"scenario_name": "iris_species_drift"}}]],
-    )
-
-    @field_validator("datasets")
-    @classmethod
-    def validate_datasets_not_empty_when_required(cls, v: List[DatasetConfig]) -> List[DatasetConfig]:
-        """Ensure at least one dataset is configured when required."""
-        # Allow empty for default configuration, but validate individual configs
-        return v
-
-
-class DetectorConfiguration(BaseModel):
-    """
-    Complete detector configuration for benchmark algorithms.
-
-    REQ-CFG-004: Must support multiple detector configurations.
-    """
-
-    algorithms: List[DetectorConfig] = Field(
-        default_factory=list,
-        description="List of detector configurations for the benchmark",
-        examples=[
-            [
-                {
-                    "method_id": "kolmogorov_smirnov",
-                    "implementation_id": "ks_batch",
-                    "adapter": "evidently_adapter",
-                    "parameters": {"threshold": 0.05},
-                }
-            ]
-        ],
-    )
-
-    @field_validator("algorithms")
-    @classmethod
-    def validate_algorithms_list(cls, v: List[DetectorConfig]) -> List[DetectorConfig]:
-        """Validate algorithm configurations."""
-        # Check for duplicate method+implementation combinations
-        seen_combinations = set()
-        for algo in v:
-            combination = (algo.method_id, algo.implementation_id)
-            if combination in seen_combinations:
-                raise ValueError(f"Duplicate detector configuration: {combination}")
-            seen_combinations.add(combination)
-        return v
+        return validated
 
 
 class BenchmarkConfig(BaseModel):
@@ -266,8 +285,27 @@ class BenchmarkConfig(BaseModel):
     """
 
     metadata: BenchmarkMetadata = Field(..., description="Benchmark metadata and identification information")
-    data: DataConfiguration = Field(..., description="Dataset configuration for the benchmark")
-    detectors: DetectorConfiguration = Field(..., description="Detector configuration for the benchmark")
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def validate_metadata_with_context(cls, v):
+        """
+        Validate metadata with proper error context.
+
+        REQ-XMD-005: Error messages must include helpful context information.
+        """
+        from pydantic import ValidationError
+
+        if isinstance(v, dict):
+            # If it's a dict, validate it - Pydantic will automatically add field context
+            return BenchmarkMetadata.model_validate(v)
+        else:
+            # If it's already a BenchmarkMetadata object, just return it
+            # Note: if the object construction failed, we won't get here
+            return v
+
+    data: DatasetsConfig = Field(..., description="Dataset configuration for the benchmark")
+    detectors: DetectorsConfig = Field(..., description="Detector configuration for the benchmark")
     evaluation: EvaluationConfig = Field(..., description="Evaluation configuration and metrics")
     output: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Output configuration and formatting options")
 
@@ -278,14 +316,6 @@ class BenchmarkConfig(BaseModel):
 
         REQ-CFG-006: Configuration models must include cross-field validation.
         """
-        # Ensure at least one dataset is configured
-        if not self.data.datasets:
-            raise ValueError("At least one dataset must be configured")
-
-        # Ensure at least one detector is configured
-        if not self.detectors.algorithms:
-            raise ValueError("At least one detector algorithm must be configured")
-
         # Validate output formats match evaluation configuration
         if self.evaluation.output_format:
             for fmt in self.evaluation.output_format:

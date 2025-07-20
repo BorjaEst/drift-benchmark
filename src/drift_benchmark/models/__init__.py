@@ -12,7 +12,15 @@ All models are built with Pydantic v2 for validation, serialization, and type sa
 """
 
 # Configuration models
-from .configurations import BenchmarkConfig, BenchmarkMetadata, DatasetConfig, DetectorConfig, EvaluationConfig
+from .configurations import (
+    BenchmarkConfig,
+    BenchmarkMetadata,
+    DatasetConfig,
+    DatasetsConfig,
+    DetectorConfig,
+    DetectorsConfig,
+    EvaluationConfig,
+)
 
 # Metadata models
 from .metadata import DatasetMetadata, DetectorMetadata, DriftMetadata, ImplementationMetadata, MethodMetadata
@@ -24,7 +32,9 @@ __all__ = [
     # Configuration models
     "BenchmarkConfig",
     "BenchmarkMetadata",
+    "DatasetsConfig",
     "DatasetConfig",
+    "DetectorsConfig",
     "DetectorConfig",
     "EvaluationConfig",
     # Metadata models
