@@ -167,7 +167,7 @@ def test_should_return_dataframes_when_loaded(sample_csv_file, sample_dataset_co
     assert len(result.X_test) > 0, "X_test should not be empty"
 
 
-def test_should_handle_missing_data_when_loaded():
+def test_should_handle_missing_data_when_loaded(sample_dataset_config):
     """Test REQ-DAT-007: CSV loading must handle missing values using pandas defaults (empty strings become NaN)"""
     # Arrange - create CSV with missing values
     csv_content_with_missing = """feature_1,feature_2,categorical_feature
@@ -184,9 +184,7 @@ def test_should_handle_missing_data_when_loaded():
         temp_path = Path(f.name)
 
     try:
-        from tests.test_data.conftest import sample_dataset_config
-
-        config = sample_dataset_config()(path=str(temp_path), format="CSV", reference_split=0.6)
+        config = sample_dataset_config(path=str(temp_path), format="CSV", reference_split=0.6)
 
         # Act
         from drift_benchmark.data import load_dataset

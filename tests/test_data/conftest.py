@@ -74,12 +74,24 @@ B,Y,blue"""
 
 @pytest.fixture
 def sample_dataset_config():
-    """Provide sample DatasetConfig for testing"""
+    """Provide sample DatasetConfig factory for testing"""
+    from drift_benchmark.models import DatasetConfig
 
-    class MockDatasetConfig:
-        def __init__(self, path, format, reference_split):
-            self.path = path
-            self.format = format
-            self.reference_split = reference_split
+    def _factory(*args, **kwargs):
+        # Handle positional arguments: (path, format, reference_split)
+        if args:
+            if len(args) >= 1:
+                kwargs.setdefault("path", args[0])
+            if len(args) >= 2:
+                kwargs.setdefault("format", args[1])
+            if len(args) >= 3:
+                kwargs.setdefault("reference_split", args[2])
 
-    return MockDatasetConfig
+        # Set defaults for any missing values
+        kwargs.setdefault("path", "test.csv")
+        kwargs.setdefault("format", "CSV")
+        kwargs.setdefault("reference_split", 0.5)
+
+        return DatasetConfig(**kwargs)
+
+    return _factory
