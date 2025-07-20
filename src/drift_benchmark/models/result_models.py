@@ -4,7 +4,7 @@ Result models for drift-benchmark - REQ-MDL-XXX
 Pydantic models for storing benchmark results and dataset information.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional, Union
 
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -49,7 +49,7 @@ class BenchmarkResult(BaseModel):
     REQ-MDL-003: BenchmarkResult with fields: config, detector_results, summary
     """
 
-    config: BenchmarkConfig = Field(..., description="Configuration used for benchmark")
+    config: Union[BenchmarkConfig, Any] = Field(..., description="Configuration used for benchmark")
     detector_results: List[DetectorResult] = Field(..., description="Results from all detectors")
     summary: BenchmarkSummary = Field(..., description="Aggregate statistics and metrics")
     output_directory: Optional[str] = Field(None, description="Directory where results were saved")

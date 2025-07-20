@@ -5,9 +5,9 @@ Pydantic models for configuration management and validation.
 """
 
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from ..literals import FileFormat
 
@@ -23,17 +23,13 @@ class DatasetConfig(BaseModel):
     format: FileFormat = Field(default="CSV", description="Dataset file format")
     reference_split: float = Field(..., description="Ratio for reference/test split (0.0 to 1.0)")
 
-    @validator("reference_split")
+    @field_validator("reference_split")
+    @classmethod
     def validate_split_ratio(cls, v):
         """REQ-CFG-005: Validate reference_split is between 0.0 and 1.0 (exclusive)"""
         if not (0.0 < v < 1.0):
             raise ValueError("reference_split must be between 0.0 and 1.0 (exclusive)")
         return v
-
-    @validator("path", pre=True)
-    def convert_path_to_string(cls, v):
-        """Convert Path objects to string for consistent storage"""
-        return str(v) if isinstance(v, Path) else v
 
 
 class DetectorConfig(BaseModel):
