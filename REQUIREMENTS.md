@@ -6,22 +6,22 @@
 
 This module defines how the drift-benchmark library manages system resources including memory limits, cleanup, and graceful shutdown to ensure reliable operation and prevent resource exhaustion.
 
-| ID              | Requirement                     | Description                                                                                                                                                                         |
-| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-RSC-001** | **Memory Limit Enforcement**    | BenchmarkRunner must monitor memory usage during execution and terminate with BenchmarkExecutionError if limit is exceeded                                                          |
-| **REQ-RSC-002** | **Memory Usage Tracking**       | All detector operations must track peak memory usage using psutil.Process().memory_info() at 100ms intervals during fit/detect phases and include memory metadata in DetectorResult |
-| **REQ-RSC-003** | **Resource Cleanup on Exit**    | BenchmarkRunner must ensure proper cleanup of all resources (file handles, memory, processes) during normal and error exit                                                          |
-| **REQ-RSC-004** | **Graceful Shutdown Handling**  | Application must handle SIGINT and SIGTERM signals to perform cleanup before termination                                                                                            |
-| **REQ-RSC-005** | **Detector Resource Isolation** | Each detector execution must be isolated to prevent resource leaks from affecting subsequent detector runs                                                                          |
-| **REQ-RSC-006** | **Memory Cleanup Between Runs** | BenchmarkRunner must explicitly release detector instances and preprocessed data after each detector-dataset evaluation                                                             |
-| **REQ-RSC-007** | **File Handle Management**      | All file operations must use context managers or explicit close() calls to prevent file handle leaks                                                                                |
-| **REQ-RSC-008** | **Temporary Resource Cleanup**  | Any temporary files or directories created during benchmark execution must be cleaned up before process termination                                                                 |
-| **REQ-RSC-009** | **Memory Limit Configuration**  | Memory limits must be configurable through settings.memory_limit_mb with validation between 512-32768 MB                                                                            |
-| **REQ-RSC-010** | **Resource Monitoring Logging** | Resource usage violations and cleanup actions must be logged using the centralized logging system                                                                                   |
-| **REQ-RSC-011** | **Memory Monitoring Schedule**  | Memory usage must be checked before detector fit(), every 100ms during execution, after detect(), and during cleanup phases                                                         |
-| **REQ-RSC-012** | **Memory Threshold Warnings**   | Memory usage warnings must be logged at 70% of limit, errors at 90%, and termination triggered at 100% of configured limit                                                          |
-| **REQ-RSC-013** | **Memory Cleanup Verification** | After each detector execution, memory usage must be verified to return within 10MB of baseline or trigger explicit cleanup                                                          |
-| **REQ-RSC-014** | **Memory Leak Detection**       | If memory usage grows by more than 50MB between detector runs without data size increase, log memory leak warning with detector ID                                                  |
+| ID              | Requirement                     | Description                                                                                                                                                                                   |
+| --------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-RSC-001** | **Memory Limit Enforcement**    | BenchmarkRunner must monitor memory usage during execution and terminate with BenchmarkExecutionError if limit is exceeded                                                                    |
+| **REQ-RSC-002** | **Memory Usage Tracking**       | All detector operations must track peak memory usage using psutil.Process().memory_info() at 100ms intervals during fit/detect phases and include memory metadata in DetectorResult           |
+| **REQ-RSC-003** | **Resource Cleanup on Exit**    | BenchmarkRunner must ensure proper cleanup of all resources (file handles, memory, processes) during normal and error exit                                                                    |
+| **REQ-RSC-004** | **Graceful Shutdown Handling**  | Application must handle SIGINT and SIGTERM signals to perform cleanup before termination                                                                                                      |
+| **REQ-RSC-005** | **Detector Resource Isolation** | Each detector execution must be isolated to prevent resource leaks from affecting subsequent detector runs                                                                                    |
+| **REQ-RSC-006** | **Memory Cleanup Between Runs** | BenchmarkRunner must explicitly release detector instances and preprocessed data after each detector-dataset evaluation                                                                       |
+| **REQ-RSC-007** | **File Handle Management**      | All file operations must use context managers or explicit close() calls to prevent file handle leaks                                                                                          |
+| **REQ-RSC-008** | **Temporary Resource Cleanup**  | Any temporary files or directories created during benchmark execution must be cleaned up before process termination                                                                           |
+| **REQ-RSC-009** | **Memory Limit Configuration**  | Memory limits must be configurable through settings.memory_limit_mb with validation between 512-32768 MB                                                                                      |
+| **REQ-RSC-010** | **Resource Monitoring Logging** | Resource usage violations and cleanup actions must be logged using the centralized logging system                                                                                             |
+| **REQ-RSC-011** | **Memory Monitoring Schedule**  | Memory usage must be checked before detector fit(), every 100ms during execution, after detect(), and during cleanup phases                                                                   |
+| **REQ-RSC-012** | **Memory Threshold Warnings**   | Memory usage warnings must be logged at 70% of limit, errors at 90%, and termination triggered at 100% of configured limit                                                                    |
+| **REQ-RSC-013** | **Memory Cleanup Verification** | After each detector execution, memory usage must be verified to return within 10MB of application startup baseline (measured when BenchmarkRunner is initialized) or trigger explicit cleanup |
+| **REQ-RSC-014** | **Memory Leak Detection**       | If memory usage grows by more than 50MB between detector runs without data size increase, log memory leak warning with detector ID                                                            |
 
 ### 🔄 Resource Lifecycle Management
 
@@ -107,7 +107,7 @@ This module defines how BenchmarkConfig is loaded, validated, and processed. It 
 | **REQ-CFG-003** | **Path Resolution**               | Configuration loading must resolve relative file paths to absolute paths and validate file existence for dataset configurations                                             |
 | **REQ-CFG-004** | **Configuration Validation**      | BenchmarkConfig must validate detector method_id/implementation_id existence in the methods registry during model validation                                                |
 | **REQ-CFG-005** | **Error Context Reporting**       | Configuration validation errors must include clear context about which field failed validation and provide correction suggestions                                           |
-| **REQ-CFG-006** | **Default Value Handling**        | BenchmarkConfig must provide sensible defaults for optional fields (output formats, evaluation metrics, detector parameters)                                                |
+| **REQ-CFG-006** | **Default Value Handling**        | BenchmarkConfig must provide sensible defaults for optional fields following drift detection best practices and ensuring reproducibility                                    |
 | **REQ-CFG-007** | **Cross-Model Consistency**       | BenchmarkConfig must validate consistency between related fields (e.g., drift_type in datasets matches detector capabilities)                                               |
 | **REQ-CFG-008** | **Nested Configuration Support**  | BenchmarkConfig must support nested models (MetadataConfig, DatasetsConfig, DetectorsConfig, EvaluationConfig) with independent validation                                  |
 | **REQ-CFG-009** | **Configuration Serialization**   | BenchmarkConfig must support round-trip serialization (to_toml/from_toml) preserving all configuration data                                                                 |
@@ -162,7 +162,7 @@ This module defines the initialization order and dependency resolution for the d
 | **REQ-LIT-003** | **Dimension Literals**             | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                          |
 | **REQ-LIT-004** | **Labeling Literals**              | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                        |
 | **REQ-LIT-005** | **Execution Mode Literals**        | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                                  |
-| **REQ-LIT-006** | **Method Family Literals**         | Must define `MethodFamily` literal with values: "CHANGE_DETECTION", " "WINDOW_BASED", "DISTANCE_BASED", "STATISTICAL_TEST", etc.       |
+| **REQ-LIT-006** | **Method Family Literals**         | Must define `MethodFamily` literal with values: "CHANGE_DETECTION", "WINDOW_BASED", "DISTANCE_BASED", "STATISTICAL_TEST", etc.         |
 | **REQ-LIT-007** | **Drift Pattern Literals**         | Must define `DriftPattern` literal with values: "SUDDEN", "GRADUAL", "INCREMENTAL", "RECURRING"                                        |
 | **REQ-LIT-008** | **Dataset Source Literals**        | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC", "SCENARIO"                                                       |
 | **REQ-LIT-009** | **Drift Characteristic Literals**  | Must define `DriftCharacteristic` literal with values: "MEAN_SHIFT", "VARIANCE_SHIFT", "CORRELATION_SHIFT", "DISTRIBUTION_SHIFT"       |
@@ -259,17 +259,17 @@ This module defines custom exceptions for the drift-benchmark library and how er
 
 ### 🚫 Exception Definitions
 
-| ID              | Requirement                  | Description                                                                                                        |
-| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **REQ-EXC-001** | **Base Exception**           | Must define `DriftBenchmarkError` as base exception class for all library-specific errors                          |
-| **REQ-EXC-002** | **Detector Registry Errors** | Must define `DetectorNotFoundError`, `DuplicateDetectorError`, `InvalidDetectorError` for detector registry issues |
-| **REQ-EXC-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `ImplementationNotFoundError` for methods.toml registry issues                  |
-| **REQ-EXC-004** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError`, `DataPreprocessingError` for data-related issues            |
-| **REQ-EXC-005** | **Configuration Errors**     | Must define `ConfigurationError`, `InvalidConfigError` for configuration validation failures                       |
-| **REQ-EXC-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError`, `DetectorTimeoutError` for benchmark execution issues                       |
-| **REQ-EXC-007** | **Error Context**            | All custom exceptions must include helpful context information and suggestions for resolution                      |
+| ID              | Requirement                  | Description                                                                                                                      |
+| --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-EXC-001** | **Base Exception**           | Must define `DriftBenchmarkError` as base exception class for all library-specific errors                                        |
+| **REQ-EXC-002** | **Detector Registry Errors** | Must define `DetectorNotFoundError`, `DuplicateDetectorError`, `InvalidDetectorError` for detector registry issues               |
+| **REQ-EXC-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `ImplementationNotFoundError` for methods.toml registry issues                                |
+| **REQ-EXC-004** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError`, `DataPreprocessingError` for data-related issues                          |
+| **REQ-EXC-005** | **Configuration Errors**     | Must define `ConfigurationError`, `InvalidConfigError` for configuration validation failures                                     |
+| **REQ-EXC-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError`, `DetectorTimeoutError` for benchmark execution issues                                     |
+| **REQ-EXC-007** | **Error Context**            | All custom exceptions must include helpful context: error_type, invalid_value (if applicable), expected_format, suggested_action |
 
-> Helpful context must include the following required fields: `error_type` (a string identifying the type of error), `invalid_value` (the value that caused the error, if applicable), `expected_format` (a description of the valid format or value), and `suggested_action` (a clear recommendation for how to resolve the error). These fields must be included as attributes on the exception and in the error message, following Python best practices for exception context and clarity.
+> **Error Context Guidelines**: Each exception should provide sufficient information for users to understand what went wrong and how to fix it. Implementation teams should include relevant context based on the specific error scenario.
 
 ### ⚠️ Error Propagation
 
@@ -324,7 +324,7 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-MOD-011** | **Model Error Handling**     | Models must provide clear, actionable error messages for validation failures with suggestions for correction        |
 | **REQ-MOD-012** | **Model Serialization**      | Models must support consistent serialization/deserialization across JSON, TOML, and Python dict formats             |
 | **REQ-MOD-013** | **Model Path Validation**    | File path fields in configs must auto-resolve relative paths to absolute and validate existence where required      |
-| **REQ-MOD-014** | **Model Default Values**     | Models must provide sensible defaults for optional fields to simplify user configuration.                           |
+| **REQ-MOD-014** | **Model Default Values**     | Models must provide sensible defaults following drift detection best practices to simplify user configuration       |
 | **REQ-MOD-015** | **Model Reusability**        | Models must support inheritance and composition patterns for reusable configuration components                      |
 | **REQ-MOD-016** | **Model Consistency**        | Models must ensure consistency between related fields (e.g., drift_type matches has_drift boolean)                  |
 
@@ -336,47 +336,50 @@ This module contains the data models used throughout the drift-benchmark library
 
 | ID              | Requirement               | Description                                                                                                                       |
 | --------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-MOD-001** | **BenchmarkConfig Model** | Must define `BenchmarkConfig` with nested fields: metadata, data, detectors, evaluation, output for complete benchmark definition |
-| **REQ-MOD-002** | **MetadataConfig Model**  | Must define `MetadataConfig` with fields: name, description, version, author, tags for benchmark identification                   |
-| **REQ-MOD-003** | **OutputConfig Model**    | Must define `OutputConfig` with fields: directory, formats, filename_template, export_options for result output configuration     |
+| **REQ-CFM-001** | **BenchmarkConfig Model** | Must define `BenchmarkConfig` with nested fields: metadata, data, detectors, evaluation, output for complete benchmark definition |
+| **REQ-CFM-002** | **MetadataConfig Model**  | Must define `MetadataConfig` with fields: name, description, version, author, tags for benchmark identification                   |
+| **REQ-CFM-003** | **OutputConfig Model**    | Must define `OutputConfig` with fields: directory, formats, filename_template, export_options for result output configuration     |
 
 #### 📊 Data Configuration Models
 
 | ID              | Requirement                   | Description                                                                                                                                  |
 | --------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-MOD-101** | **DataConfig Model**          | Must define `DataConfig` with fields: datasets, preprocessing, validation for data source configuration                                      |
-| **REQ-MOD-102** | **DatasetConfig Model**       | Must define `DatasetConfig` with fields: source, path, format, preprocessing, split_config for individual dataset configuration              |
-| **REQ-MOD-103** | **PreprocessingConfig Model** | Must define `PreprocessingConfig` with fields: missing_values, scaling, encoding, feature_selection for data preprocessing                   |
-| **REQ-MOD-104** | **SplitConfig Model**         | Must define `SplitConfig` with fields: reference_ratio, validation_ratio, stratify, random_state for data splitting                          |
-| **REQ-MOD-105** | **SyntheticConfig Model**     | Must define `SyntheticConfig` with fields: n_samples, n_features, drift_pattern, etc.                                                        |
-| **REQ-MOD-106** | **DatafileConfig Model**      | Must define `DatafileConfig` with fields: path, format, feature_columns, target_column, reference_split for file-based dataset configuration |
+| **REQ-DCM-101** | **DataConfig Model**          | Must define `DataConfig` with fields: datasets, preprocessing, validation for data source configuration                                      |
+| **REQ-DCM-102** | **DatasetConfig Model**       | Must define `DatasetConfig` with fields: source, path, format, preprocessing, split_config for individual dataset configuration              |
+| **REQ-DCM-103** | **PreprocessingConfig Model** | Must define `PreprocessingConfig` with fields: missing_values, scaling, encoding, feature_selection for data preprocessing                   |
+| **REQ-DCM-104** | **SplitConfig Model**         | Must define `SplitConfig` with fields: reference_ratio, validation_ratio, stratify, random_state for data splitting                          |
+| **REQ-DCM-105** | **SyntheticConfig Model**     | Must define `SyntheticConfig` with fields: n_samples, n_features, drift_pattern, etc.                                                        |
+| **REQ-DCM-106** | **DatafileConfig Model**      | Must define `DatafileConfig` with fields: path, format, feature_columns, target_column, reference_split for file-based dataset configuration |
 
 #### 🔍 Detector Configuration Models
 
 | ID              | Requirement               | Description                                                                                                               |
 | --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-MOD-201** | **DetectorsConfig Model** | Must define `DetectorsConfig` with fields: detectors, execution, timeout for detector execution configuration             |
-| **REQ-MOD-202** | **DetectorConfig Model**  | Must define `DetectorConfig` with fields: method_id, implementation_id, parameters, enabled for individual detector setup |
+| **REQ-DTM-201** | **DetectorsConfig Model** | Must define `DetectorsConfig` with fields: detectors, execution, timeout for detector execution configuration             |
+| **REQ-DTM-202** | **DetectorConfig Model**  | Must define `DetectorConfig` with fields: method_id, implementation_id, parameters, enabled for individual detector setup |
 
 > Execution configuration (max_workers, timeout, etc.) is provided at Settings level.
 
 #### 📈 Evaluation Configuration Models
 
-| ID              | Requirement                | Description                                                                                                                     |
-| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-MOD-301** | **EvaluationConfig Model** | Must define `EvaluationConfig` with fields: metrics, thresholds, statistical_tests, reporting for evaluation configuration      |
-| **REQ-MOD-302** | **MetricsConfig Model**    | Must define `MetricsConfig` with fields: classification, detection, performance, custom for metric selection configuration      |
-| **REQ-MOD-303** | **ThresholdsConfig Model** | Must define `ThresholdsConfig` with fields: significance_level, confidence_level, detection_threshold for evaluation thresholds |
+| ID              | Requirement                | Description                                                                                                                                                                      |
+| --------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-ECM-301** | **EvaluationConfig Model** | Must define `EvaluationConfig` with fields: metrics, thresholds, statistical_tests, reporting for evaluation configuration                                                       |
+| **REQ-ECM-302** | **MetricsConfig Model**    | Must define `MetricsConfig` with fields: classification, detection, performance, custom for metric selection configuration                                                       |
+| **REQ-ECM-303** | **ThresholdsConfig Model** | Must define `ThresholdsConfig` with fields: significance_level, confidence_level, detection_threshold for evaluation thresholds                                                  |
+| **REQ-ECM-304** | **StatisticalTestConfig**  | Must define `StatisticalTestConfig` with configurable parameters: significance_level (default: 0.05), multiple_testing_correction (default: "bonferroni"), effect_size_threshold |
+
+> **Statistical Test Defaults**: Standard significance level of 0.05, Bonferroni correction for multiple testing, and standard effect size thresholds. These can be overridden through configuration for advanced use cases.
 
 #### 🛠️ Configuration Models Features
 
-| ID              | Requirement                | Description                                                                                                    |
-| --------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **REQ-MOD-403** | **Config Path Validation** | File path fields in configs must auto-resolve relative paths to absolute and validate existence where required |
-| **REQ-MOD-405** | **Config Default Values**  | Configuration models must provide sensible defaults for optional fields to simplify user configuration.        |
-| **REQ-MOD-407** | **Config Templates**       | Configuration system must support template-based configuration generation for common benchmark scenarios       |
+| ID              | Requirement                | Description                                                                                                                 |
+| --------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-CMF-403** | **Config Path Validation** | File path fields in configs must auto-resolve relative paths to absolute and validate existence where required              |
+| **REQ-CMF-405** | **Config Default Values**  | Configuration models must provide sensible defaults following drift detection best practices to simplify user configuration |
+| **REQ-CMF-407** | **Config Templates**       | Configuration system must support template-based configuration generation for common benchmark scenarios                    |
 
-> "Sensible defaults" are values that reflect best practices in drift benchmarking, align with typical benchmarking frameworks, and follow recommendations from the drift detection literature. Defaults should ensure reproducibility, minimize user friction, and provide robust starting points for new users.
+> **Default Value Guidelines**: Defaults should reflect best practices in drift benchmarking, ensure reproducibility, minimize user friction, and provide robust starting points for new users. Implementation teams should choose specific values that align with academic literature and common benchmarking practices.
 
 ### 📊 Metadata Models
 
@@ -408,34 +411,40 @@ This module contains the data models used throughout the drift-benchmark library
 
 #### 🏆 Core Result Models
 
-| ID              | Requirement               | Description                                                                                                                  |
-| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-RES-001** | **BenchmarkResult Model** | Must define `BenchmarkResult` with fields: config, detector_results, evaluation_results, execution_metadata                  |
-| **REQ-RES-002** | **DatasetResult Model**   | Must define `DatasetResult` with fields: X_ref, X_test, y_ref, y_test, drift_info, metadata for dataset processing results   |
-| **REQ-RES-003** | **DetectorResult Model**  | Must define `DetectorResult` with fields: detector_metadata, dataset_name, drift_detected, scores, timing_info, memory_usage |
+| ID              | Requirement               | Description                                                                                                                          |
+| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-RES-001** | **BenchmarkResult Model** | Must define `BenchmarkResult` with minimal fields: config, detector_results, evaluation_results, execution_metadata                  |
+| **REQ-RES-002** | **DatasetResult Model**   | Must define `DatasetResult` with minimal fields: X_ref, X_test, y_ref, y_test, drift_info, metadata                                  |
+| **REQ-RES-003** | **DetectorResult Model**  | Must define `DetectorResult` with minimal fields: detector_metadata, dataset_name, drift_detected, scores, timing_info, memory_usage |
+
+> **Note**: Additional fields may be added by developers as needed for specific implementations. These represent the minimum required fields for basic functionality.
 
 #### 📊 Evaluation Result Models
 
-| ID              | Requirement                | Description                                                                                                                  |
-| --------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-RES-101** | **EvaluationResult Model** | Must define `EvaluationResult` with fields: metrics, scores, performance, summary for comprehensive evaluation results       |
-| **REQ-RES-102** | **ScoreResult Model**      | Must define `ScoreResult` with fields: drift_score, p_value, threshold, confidence, additional_info for detection scoring    |
-| **REQ-RES-103** | **MetricResult Model**     | Must define `MetricResult` with fields: metric_name, value, confidence_interval, statistical_significance for metric results |
+| ID              | Requirement                | Description                                                                                                       |
+| --------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **REQ-RES-101** | **EvaluationResult Model** | Must define `EvaluationResult` with minimal fields: metrics, scores, performance, summary                         |
+| **REQ-RES-102** | **ScoreResult Model**      | Must define `ScoreResult` with minimal fields: drift_score, p_value, threshold, confidence                        |
+| **REQ-RES-103** | **MetricResult Model**     | Must define `MetricResult` with minimal fields: metric_name, value, confidence_interval, statistical_significance |
+
+> **Note**: Additional fields may be added by developers as needed for specific implementations. These represent the minimum required fields for basic functionality.
 
 #### 📋 Aggregation Result Models
 
-| ID              | Requirement                | Description                                                                                                                  |
-| --------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-RES-201** | **AggregatedResult Model** | Must define `AggregatedResult` with fields: summary_stats, rankings, comparisons for cross-dataset result aggregation        |
-| **REQ-RES-202** | **ComparisonResult Model** | Must define `ComparisonResult` with fields: method_a, method_b, statistical_test, p_value, effect_size for method comparison |
-| **REQ-RES-203** | **RankingResult Model**    | Must define `RankingResult` with fields: method_rankings, confidence_intervals, critical_differences for method rankings     |
+| ID              | Requirement                | Description                                                                                                    |
+| --------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **REQ-RES-201** | **AggregatedResult Model** | Must define `AggregatedResult` with minimal fields: summary_stats, rankings, comparisons                       |
+| **REQ-RES-202** | **ComparisonResult Model** | Must define `ComparisonResult` with minimal fields: method_a, method_b, statistical_test, p_value, effect_size |
+| **REQ-RES-203** | **RankingResult Model**    | Must define `RankingResult` with minimal fields: method_rankings, confidence_intervals, critical_differences   |
+
+> **Note**: Additional fields may be added by developers as needed for specific implementations. These represent the minimum required fields for basic functionality.
 
 #### 🛠️ Result Models Features
 
 | ID              | Requirement               | Description                                                                                          |
 | --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **REQ-RES-301** | **Result Aggregation**    | Result models must support aggregation methods for combining multiple detector/evaluation results    |
-| **REQ-RES-302** | **Result Export Support** | Result models must support export to various formats (JSON, CSV, Parquet) for analysis and reporting |
+| **REQ-RMF-301** | **Result Aggregation**    | Result models must support aggregation methods for combining multiple detector/evaluation results    |
+| **REQ-RMF-302** | **Result Export Support** | Result models must support export to various formats (JSON, CSV, Parquet) for analysis and reporting |
 
 ## 🔍 Detectors Module
 
@@ -536,7 +545,8 @@ This module provides adapters for integrating various drift detection libraries 
 | **REQ-PLG-007** | **Plugin Dependencies**  | Plugins must declare library dependencies; system checks availability and versions before registration                             |
 | **REQ-PLG-008** | **Plugin Configuration** | Plugins can accept custom configuration through detector parameters in benchmark configuration files                               |
 | **REQ-PLG-009** | **Plugin Documentation** | System must generate plugin documentation automatically from metadata and method registry information                              |
-| **REQ-PLG-010** | **Plugin Security**      | Plugin loading must be restricted to authorized directories; no arbitrary code execution from external sources                     |
+
+> **Note**: Plugin security considerations are deferred to future versions. Initial implementation focuses on basic plugin discovery and loading from trusted sources.
 
 ## 📊 Data Module
 
@@ -580,13 +590,15 @@ This module provides comprehensive, configuration-driven utilities for data load
 
 ### 🔄 Data Preprocessing
 
-| ID              | Requirement                | Description                                                                                             |
-| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **REQ-DAT-301** | **Adapter Preprocessing**  | Data module must provide `preprocess_for_adapter(data: DatasetResult, adapter_name: str) -> Any` method |
-| **REQ-DAT-302** | **Format Conversion**      | Preprocessing must handle pandas DataFrame to numpy array conversion based on adapter requirements      |
-| **REQ-DAT-303** | **Type Compatibility**     | Preprocessing must ensure data types match detector requirements (numerical, categorical, mixed)        |
-| **REQ-DAT-304** | **Categorical Encoding**   | Preprocessing must handle categorical feature encoding when required by specific adapters               |
-| **REQ-DAT-305** | **Missing Value Handling** | Preprocessing must apply configured missing value strategies (drop, impute, etc.)                       |
+| ID              | Requirement                | Description                                                                                       |
+| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------- |
+| **REQ-DAT-301** | **Standard Preprocessing** | Data module must provide common preprocessing functions for missing values, scaling, and encoding |
+| **REQ-DAT-302** | **Format Conversion**      | Data module must provide conversion utilities between pandas DataFrame and numpy array formats    |
+| **REQ-DAT-303** | **Type Compatibility**     | Data preprocessing must ensure data types are compatible with detector requirements               |
+| **REQ-DAT-304** | **Categorical Encoding**   | Data module must provide standard categorical feature encoding methods                            |
+| **REQ-DAT-305** | **Missing Value Handling** | Data module must provide configurable missing value strategies (drop, impute, forward-fill)       |
+
+> **Note**: Individual detectors handle their own specific preprocessing via `detector.preprocess()` method as defined in the Adapters module.
 
 ### ⚡ Performance & Caching
 
@@ -634,42 +646,42 @@ This module provides comprehensive evaluation capabilities for benchmarking drif
 | ID              | Requirement                  | Description                                                                                                                                               |
 | --------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-EVL-031** | **Detection Delay Tracking** | Evaluation engine must measure detection delay as the time difference between actual drift occurrence and first detection                                 |
-| **REQ-EVL-031** | **ROC Curve Generation**     | Evaluation engine must generate ROC curves plotting true positive rate vs false positive rate across different detection thresholds                       |
-| **REQ-EVL-031** | **AUC Score Calculation**    | Evaluation engine must calculate Area Under the Curve (AUC) score to summarize ROC curve performance in a single metric                                   |
-| **REQ-EVL-031** | **False Alarm Rate**         | Evaluation engine must calculate false alarm rate as the ratio of false positive detections to total no-drift periods for practical deployment assessment |
-| **REQ-EVL-031** | **Detection Power**          | Evaluation engine must measure detection power as the probability of correctly identifying drift when it actually occurs                                  |
-| **REQ-EVL-031** | **Precision-Recall Curve**   | Evaluation engine must generate precision-recall curves for evaluating performance on imbalanced drift detection scenarios                                |
+| **REQ-EVL-032** | **ROC Curve Generation**     | Evaluation engine must generate ROC curves plotting true positive rate vs false positive rate across different detection thresholds                       |
+| **REQ-EVL-033** | **AUC Score Calculation**    | Evaluation engine must calculate Area Under the Curve (AUC) score to summarize ROC curve performance in a single metric                                   |
+| **REQ-EVL-034** | **False Alarm Rate**         | Evaluation engine must calculate false alarm rate as the ratio of false positive detections to total no-drift periods for practical deployment assessment |
+| **REQ-EVL-035** | **Detection Power**          | Evaluation engine must measure detection power as the probability of correctly identifying drift when it actually occurs                                  |
+| **REQ-EVL-036** | **Precision-Recall Curve**   | Evaluation engine must generate precision-recall curves for evaluating performance on imbalanced drift detection scenarios                                |
 
 ### 📈 Statistical Tests
 
 | ID              | Requirement                 | Description                                                                                                                         |
 | --------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-EVL-041** | **T-Test Implementation**   | Evaluation engine must implement t-test for comparing means between detector performance groups with normal distributions           |
-| **REQ-EVL-041** | **Mann-Whitney U Test**     | Evaluation engine must implement Mann-Whitney U test for non-parametric comparison of detector performance distributions            |
-| **REQ-EVL-041** | **Kolmogorov-Smirnov Test** | Evaluation engine must implement KS test for comparing distributions between reference and test data in drift detection scenarios   |
-| **REQ-EVL-041** | **Chi-Square Test**         | Evaluation engine must implement chi-square test for categorical data drift detection and independence testing                      |
-| **REQ-EVL-041** | **Wilcoxon Test**           | Evaluation engine must implement Wilcoxon signed-rank test for paired sample comparisons in detector performance evaluation         |
-| **REQ-EVL-041** | **Friedman Test**           | Evaluation engine must implement Friedman test for non-parametric comparison of multiple detector methods across different datasets |
+| **REQ-EVL-042** | **Mann-Whitney U Test**     | Evaluation engine must implement Mann-Whitney U test for non-parametric comparison of detector performance distributions            |
+| **REQ-EVL-043** | **Kolmogorov-Smirnov Test** | Evaluation engine must implement KS test for comparing distributions between reference and test data in drift detection scenarios   |
+| **REQ-EVL-044** | **Chi-Square Test**         | Evaluation engine must implement chi-square test for categorical data drift detection and independence testing                      |
+| **REQ-EVL-045** | **Wilcoxon Test**           | Evaluation engine must implement Wilcoxon signed-rank test for paired sample comparisons in detector performance evaluation         |
+| **REQ-EVL-046** | **Friedman Test**           | Evaluation engine must implement Friedman test for non-parametric comparison of multiple detector methods across different datasets |
 
 ### 📊 Performance Analysis
 
 | ID              | Requirement                  | Description                                                                                                                                              |
 | --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-EVL-051** | **Method Rankings**          | Evaluation engine must generate detector method rankings based on specified performance metrics with confidence intervals                                |
-| **REQ-EVL-051** | **Robustness Analysis**      | Evaluation engine must assess detector robustness by evaluating performance stability across different noise levels and data conditions                  |
-| **REQ-EVL-051** | **Performance Heatmaps**     | Evaluation engine must generate heatmaps visualizing detector performance across different datasets and parameter combinations                           |
-| **REQ-EVL-051** | **Critical Difference**      | Evaluation engine must calculate critical difference plots for statistical comparison of multiple detector methods using Nemenyi post-hoc test           |
-| **REQ-EVL-051** | **Statistical Significance** | Evaluation engine must determine statistical significance of performance differences between detector methods with p-value calculations and effect sizes |
+| **REQ-EVL-052** | **Robustness Analysis**      | Evaluation engine must assess detector robustness by evaluating performance stability across different noise levels and data conditions                  |
+| **REQ-EVL-053** | **Performance Heatmaps**     | Evaluation engine must generate heatmaps visualizing detector performance across different datasets and parameter combinations                           |
+| **REQ-EVL-054** | **Critical Difference**      | Evaluation engine must calculate critical difference plots for statistical comparison of multiple detector methods using Nemenyi post-hoc test           |
+| **REQ-EVL-055** | **Statistical Significance** | Evaluation engine must determine statistical significance of performance differences between detector methods with p-value calculations and effect sizes |
 
 ### ⚡ Runtime Analysis
 
 | ID              | Requirement                 | Description                                                                                                                        |
 | --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-EVL-061** | **Memory Usage Tracking**   | Evaluation engine must monitor and record peak memory consumption during detector training and inference phases                    |
-| **REQ-EVL-061** | **CPU Time Measurement**    | Evaluation engine must measure CPU time consumed by detector methods during both training and inference operations                 |
-| **REQ-EVL-061** | **Peak Memory Monitoring**  | Evaluation engine must track peak memory usage to identify memory-intensive detector methods for resource-constrained environments |
-| **REQ-EVL-061** | **Training Time Analysis**  | Evaluation engine must separately measure and record training time for detector methods that require model fitting or calibration  |
-| **REQ-EVL-061** | **Inference Time Tracking** | Evaluation engine must measure inference time for drift detection operations to assess real-time deployment feasibility            |
+| **REQ-EVL-062** | **CPU Time Measurement**    | Evaluation engine must measure CPU time consumed by detector methods during both training and inference operations                 |
+| **REQ-EVL-063** | **Peak Memory Monitoring**  | Evaluation engine must track peak memory usage to identify memory-intensive detector methods for resource-constrained environments |
+| **REQ-EVL-064** | **Training Time Analysis**  | Evaluation engine must separately measure and record training time for detector methods that require model fitting or calibration  |
+| **REQ-EVL-065** | **Inference Time Tracking** | Evaluation engine must measure inference time for drift detection operations to assess real-time deployment feasibility            |
 
 ## 💾 Results Module
 
