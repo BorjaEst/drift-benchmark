@@ -1,5 +1,5 @@
 ---
-mode: ask
+mode: agent
 ---
 
 # Generate Comprehensive Test Suite for User Requirements
