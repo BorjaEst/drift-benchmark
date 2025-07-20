@@ -11,14 +11,14 @@ This module defines how the drift-benchmark library manages system resources inc
 | **REQ-RSC-001** | **Memory Limit Enforcement**    | BenchmarkRunner must monitor memory usage during execution and terminate with BenchmarkExecutionError if limit is exceeded          |
 | **REQ-RSC-002** | **Memory Usage Tracking**       | All detector operations must track peak memory usage before and after execution and include basic memory metadata in DetectorResult |
 | **REQ-RSC-003** | **Resource Cleanup on Exit**    | BenchmarkRunner must ensure proper cleanup of all resources (file handles, memory, processes) during normal and error exit          |
-| **REQ-RSC-005** | **Detector Resource Isolation** | Each detector execution must be isolated to prevent resource leaks from affecting subsequent detector runs                          |
-| **REQ-RSC-006** | **Memory Cleanup Between Runs** | BenchmarkRunner must explicitly release detector instances and preprocessed data after each detector-dataset evaluation             |
-| **REQ-RSC-007** | **File Handle Management**      | All file operations must use context managers or explicit close() calls to prevent file handle leaks                                |
-| **REQ-RSC-008** | **Temporary Resource Cleanup**  | Any temporary files or directories created during benchmark execution must be cleaned up before process termination                 |
-| **REQ-RSC-009** | **Memory Limit Configuration**  | Memory limits must be configurable through settings.memory_limit_mb with validation between 512-32768 MB                            |
-| **REQ-RSC-010** | **Resource Monitoring Logging** | Resource usage violations and cleanup actions must be logged using the centralized logging system                                   |
-| **REQ-RSC-011** | **Basic Memory Monitoring**     | Memory usage must be checked before and after detector execution phases                                                             |
-| **REQ-RSC-012** | **Memory Threshold Warnings**   | Memory usage warnings must be logged at 90% of configured limit and termination triggered at 100% of configured limit               |
+| **REQ-RSC-004** | **Detector Resource Isolation** | Each detector execution must be isolated to prevent resource leaks from affecting subsequent detector runs                          |
+| **REQ-RSC-005** | **Memory Cleanup Between Runs** | BenchmarkRunner must explicitly release detector instances and preprocessed data after each detector-dataset evaluation             |
+| **REQ-RSC-006** | **File Handle Management**      | All file operations must use context managers or explicit close() calls to prevent file handle leaks                                |
+| **REQ-RSC-007** | **Temporary Resource Cleanup**  | Any temporary files or directories created during benchmark execution must be cleaned up before process termination                 |
+| **REQ-RSC-008** | **Memory Limit Configuration**  | Memory limits must be configurable through settings.memory_limit_mb with validation between 512-32768 MB                            |
+| **REQ-RSC-009** | **Resource Monitoring Logging** | Resource usage violations and cleanup actions must be logged using the centralized logging system                                   |
+| **REQ-RSC-010** | **Basic Memory Monitoring**     | Memory usage must be checked before and after detector execution phases                                                             |
+| **REQ-RSC-011** | **Memory Threshold Warnings**   | Memory usage warnings must be logged at 90% of configured limit and termination triggered at 100% of configured limit               |
 
 ### 🔄 Resource Lifecycle Management
 
