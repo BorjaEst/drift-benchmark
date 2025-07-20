@@ -1,74 +1,53 @@
 # Feature-specific fixtures for config module testing
 
-import pytest
 import tempfile
-import toml
 from pathlib import Path
+
+import pytest
+import toml
+
 
 @pytest.fixture
 def valid_benchmark_config_toml():
     """Create a valid benchmark configuration TOML file"""
     config_data = {
         "datasets": [
-            {
-                "path": "datasets/test_data.csv",
-                "format": "CSV",
-                "reference_split": 0.6
-            },
-            {
-                "path": "datasets/validation_data.csv", 
-                "format": "CSV",
-                "reference_split": 0.7
-            }
+            {"path": "datasets/test_data.csv", "format": "CSV", "reference_split": 0.6},
+            {"path": "datasets/validation_data.csv", "format": "CSV", "reference_split": 0.7},
         ],
         "detectors": [
-            {
-                "method_id": "ks_test",
-                "implementation_id": "scipy"
-            },
-            {
-                "method_id": "drift_detector",
-                "implementation_id": "custom"
-            }
-        ]
+            {"method_id": "ks_test", "implementation_id": "scipy"},
+            {"method_id": "drift_detector", "implementation_id": "custom"},
+        ],
     }
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
         toml.dump(config_data, f)
         temp_path = Path(f.name)
-    
+
     yield temp_path
-    
+
     # Cleanup
     temp_path.unlink()
+
 
 @pytest.fixture
 def invalid_benchmark_config_toml():
     """Create an invalid benchmark configuration TOML file"""
     config_data = {
-        "datasets": [
-            {
-                "path": "datasets/test_data.csv",
-                "format": "CSV",
-                "reference_split": 1.5  # Invalid: > 1.0
-            }
-        ],
-        "detectors": [
-            {
-                "method_id": "non_existent_method",
-                "implementation_id": "non_existent_impl"
-            }
-        ]
+        "datasets": [{"path": "datasets/test_data.csv", "format": "CSV", "reference_split": 1.5}],  # Invalid: > 1.0
+        "detectors": [{"method_id": "non_existent_method", "implementation_id": "non_existent_impl"}],
     }
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
         toml.dump(config_data, f)
         temp_path = Path(f.name)
-    
+
     yield temp_path
-    
+
     # Cleanup
     temp_path.unlink()
+
 
 @pytest.fixture
 def sample_test_csv_files(tmp_path):
@@ -78,18 +57,14 @@ def sample_test_csv_files(tmp_path):
 1.0,2.0,A
 3.0,4.0,B
 5.0,6.0,C"""
-    
+
     datasets_dir = tmp_path / "datasets"
     datasets_dir.mkdir()
-    
+
     test_data_path = datasets_dir / "test_data.csv"
     validation_data_path = datasets_dir / "validation_data.csv"
-    
+
     test_data_path.write_text(csv_content)
     validation_data_path.write_text(csv_content)
-    
-    return {
-        "test_data.csv": test_data_path,
-        "validation_data.csv": validation_data_path,
-        "datasets_dir": datasets_dir
-    }
+
+    return {"test_data.csv": test_data_path, "validation_data.csv": validation_data_path, "datasets_dir": datasets_dir}

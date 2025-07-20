@@ -1,4 +1,5 @@
 # Feature-specific fixtures for literals module testing
 
+from typing import Any, List, Tuple
+
 import pytest
-from typing import List, Tuple, Any

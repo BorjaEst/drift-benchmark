@@ -1,9 +1,11 @@
 # Feature-specific fixtures for detectors module testing
 
-import pytest
 import tempfile
-import toml
 from pathlib import Path
+
+import pytest
+import toml
+
 
 @pytest.fixture
 def mock_methods_toml_file():
@@ -16,12 +18,7 @@ def mock_methods_toml_file():
                 "family": "STATISTICAL_TEST",
                 "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
                 "data_types": ["CONTINUOUS"],
-                "implementations": {
-                    "scipy": {
-                        "name": "SciPy Implementation",
-                        "execution_mode": "BATCH"
-                    }
-                }
+                "implementations": {"scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH"}},
             },
             "drift_detector": {
                 "name": "Basic Drift Detector",
@@ -30,28 +27,23 @@ def mock_methods_toml_file():
                 "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
                 "data_types": ["CONTINUOUS", "CATEGORICAL"],
                 "implementations": {
-                    "custom": {
-                        "name": "Custom Implementation",
-                        "execution_mode": "BATCH"
-                    },
-                    "river": {
-                        "name": "River Implementation",
-                        "execution_mode": "STREAMING"
-                    }
-                }
-            }
+                    "custom": {"name": "Custom Implementation", "execution_mode": "BATCH"},
+                    "river": {"name": "River Implementation", "execution_mode": "STREAMING"},
+                },
+            },
         }
     }
-    
+
     # Create temporary file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
         toml.dump(methods_config, f)
         temp_path = Path(f.name)
-    
+
     yield temp_path
-    
+
     # Cleanup
     temp_path.unlink()
+
 
 @pytest.fixture
 def invalid_methods_toml_file():
@@ -66,32 +58,33 @@ def invalid_methods_toml_file():
                         "name": "Incomplete Implementation"
                         # Missing required field: execution_mode
                     }
-                }
+                },
             }
         }
     }
-    
+
     # Create temporary file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
         toml.dump(invalid_config, f)
         temp_path = Path(f.name)
-    
+
     yield temp_path
-    
+
     # Cleanup
     temp_path.unlink()
+
 
 @pytest.fixture
 def empty_methods_toml_file():
     """Create an empty methods.toml file for testing"""
     empty_config = {"methods": {}}
-    
+
     # Create temporary file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.toml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
         toml.dump(empty_config, f)
         temp_path = Path(f.name)
-    
+
     yield temp_path
-    
+
     # Cleanup
     temp_path.unlink()

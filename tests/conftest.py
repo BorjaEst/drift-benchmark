@@ -1,13 +1,15 @@
 # Session and module-scoped fixtures for shared testing infrastructure
 
-import pytest
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
-from typing import Dict, Any
-import pandas as pd
-import toml
+from typing import Any, Dict
 from unittest.mock import Mock, patch
+
+import pandas as pd
+import pytest
+import toml
+
 
 # Session-scoped fixtures for expensive setup
 @pytest.fixture(scope="session")
@@ -15,49 +17,55 @@ def temp_workspace():
     """Create a temporary workspace directory for testing"""
     temp_dir = tempfile.mkdtemp(prefix="drift_benchmark_test_")
     workspace_path = Path(temp_dir)
-    
+
     # Create standard directory structure
     (workspace_path / "datasets").mkdir()
     (workspace_path / "results").mkdir()
     (workspace_path / "logs").mkdir()
-    
+
     yield workspace_path
-    
+
     # Cleanup after all tests
     shutil.rmtree(temp_dir)
+
 
 @pytest.fixture(scope="session")
 def sample_dataset():
     """Provide sample dataset for testing"""
     import numpy as np
-    
+
     # Generate synthetic dataset with drift
     np.random.seed(42)
-    
+
     # Reference data (normal distribution)
     ref_size = 1000
-    ref_data = pd.DataFrame({
-        'feature_1': np.random.normal(0, 1, ref_size),
-        'feature_2': np.random.normal(0, 1, ref_size),
-        'categorical_feature': np.random.choice(['A', 'B', 'C'], ref_size)
-    })
-    
+    ref_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0, 1, ref_size),
+            "feature_2": np.random.normal(0, 1, ref_size),
+            "categorical_feature": np.random.choice(["A", "B", "C"], ref_size),
+        }
+    )
+
     # Test data (shifted distribution - concept drift)
     test_size = 500
-    test_data = pd.DataFrame({
-        'feature_1': np.random.normal(0.5, 1, test_size),  # Shifted mean
-        'feature_2': np.random.normal(0, 1.2, test_size),  # Increased variance
-        'categorical_feature': np.random.choice(['A', 'B', 'C'], test_size, p=[0.6, 0.3, 0.1])  # Changed distribution
-    })
-    
+    test_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0.5, 1, test_size),  # Shifted mean
+            "feature_2": np.random.normal(0, 1.2, test_size),  # Increased variance
+            "categorical_feature": np.random.choice(["A", "B", "C"], test_size, p=[0.6, 0.3, 0.1]),  # Changed distribution
+        }
+    )
+
     full_dataset = pd.concat([ref_data, test_data], ignore_index=True)
-    
+
     return {
-        'full_dataset': full_dataset,
-        'reference_data': ref_data,
-        'test_data': test_data,
-        'reference_split': 0.67  # ref_size / (ref_size + test_size)
+        "full_dataset": full_dataset,
+        "reference_data": ref_data,
+        "test_data": test_data,
+        "reference_split": 0.67,  # ref_size / (ref_size + test_size)
     }
+
 
 @pytest.fixture(scope="session")
 def mock_methods_registry():
@@ -70,12 +78,7 @@ def mock_methods_registry():
                 "family": "STATISTICAL_TEST",
                 "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
                 "data_types": ["CONTINUOUS"],
-                "implementations": {
-                    "scipy": {
-                        "name": "SciPy Implementation",
-                        "execution_mode": "BATCH"
-                    }
-                }
+                "implementations": {"scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH"}},
             },
             "drift_detector": {
                 "name": "Basic Drift Detector",
@@ -83,27 +86,24 @@ def mock_methods_registry():
                 "family": "CHANGE_DETECTION",
                 "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
                 "data_types": ["CONTINUOUS", "CATEGORICAL"],
-                "implementations": {
-                    "custom": {
-                        "name": "Custom Implementation",
-                        "execution_mode": "BATCH"
-                    }
-                }
-            }
+                "implementations": {"custom": {"name": "Custom Implementation", "execution_mode": "BATCH"}},
+            },
         }
     }
+
 
 # Module-scoped fixtures for shared test utilities
 @pytest.fixture(scope="module")
 def settings_env_vars():
     """Provide environment variable settings for testing"""
     return {
-        'DRIFT_BENCHMARK_DATASETS_DIR': 'test_datasets',
-        'DRIFT_BENCHMARK_RESULTS_DIR': 'test_results',
-        'DRIFT_BENCHMARK_LOGS_DIR': 'test_logs',
-        'DRIFT_BENCHMARK_LOG_LEVEL': 'DEBUG',
-        'DRIFT_BENCHMARK_RANDOM_SEED': '123'
+        "DRIFT_BENCHMARK_DATASETS_DIR": "test_datasets",
+        "DRIFT_BENCHMARK_RESULTS_DIR": "test_results",
+        "DRIFT_BENCHMARK_LOGS_DIR": "test_logs",
+        "DRIFT_BENCHMARK_LOG_LEVEL": "DEBUG",
+        "DRIFT_BENCHMARK_RANDOM_SEED": "123",
     }
+
 
 @pytest.fixture(scope="module")
 def sample_csv_content():
@@ -120,44 +120,39 @@ def sample_csv_content():
 1.5,-0.1,C
 0.1,0.6,A"""
 
+
 @pytest.fixture(scope="module")
 def mock_detector_implementations():
     """Provide mock detector implementations for testing"""
+
     class MockDetector:
         def __init__(self, method_id: str, implementation_id: str, **kwargs):
             self.method_id = method_id
             self.implementation_id = implementation_id
             self._fitted = False
             self._last_score = None
-            
+
         def preprocess(self, data, **kwargs):
             # Mock preprocessing - return numpy arrays
-            if hasattr(data, 'X_ref'):
+            if hasattr(data, "X_ref"):
                 return data.X_ref.values
-            elif hasattr(data, 'X_test'):
+            elif hasattr(data, "X_test"):
                 return data.X_test.values
-            return data.values if hasattr(data, 'values') else data
-            
+            return data.values if hasattr(data, "values") else data
+
         def fit(self, preprocessed_data, **kwargs):
             self._fitted = True
             self._reference_data = preprocessed_data
             return self
-            
+
         def detect(self, preprocessed_data, **kwargs):
             if not self._fitted:
                 raise RuntimeError("Detector must be fitted before detection")
             # Mock drift detection - always detect drift for testing
             self._last_score = 0.75
             return True
-            
+
         def score(self):
             return self._last_score
-    
-    return {
-        "ks_test": {
-            "scipy": MockDetector
-        },
-        "drift_detector": {
-            "custom": MockDetector
-        }
-    }
+
+    return {"ks_test": {"scipy": MockDetector}, "drift_detector": {"custom": MockDetector}}
