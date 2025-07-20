@@ -187,16 +187,18 @@ This module provides the basic adapter framework for integrating drift detection
 
 ### 🏗️ Base Module
 
-| ID              | Requirement                     | Description                                                                                                                                           |
-| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-ADP-001** | **BaseDetector Abstract Class** | `BaseDetector` must be an abstract class with abstract methods `fit()`, `detect()`, and concrete methods `preprocess()`, `score()`                    |
-| **REQ-ADP-002** | **Method ID Property**          | `BaseDetector` must have read-only property `method_id: str` that returns the drift detection method identifier                                       |
-| **REQ-ADP-003** | **Implementation ID Property**  | `BaseDetector` must have read-only property `implementation_id: str` that returns the implementation variant                                          |
-| **REQ-ADP-004** | **Preprocess Method**           | `BaseDetector.preprocess(data: DatasetResult, **kwargs) -> pandas.DataFrame` must handle data format conversion and return reference data for fitting |
-| **REQ-ADP-005** | **Abstract Fit Method**         | `BaseDetector.fit(preprocessed_data: pandas.DataFrame, **kwargs) -> "BaseDetector"` must be abstract and train the detector on reference data         |
-| **REQ-ADP-006** | **Abstract Detect Method**      | `BaseDetector.detect(preprocessed_data: pandas.DataFrame, **kwargs) -> bool` must be abstract and return drift detection result                       |
-| **REQ-ADP-007** | **Score Method**                | `BaseDetector.score() -> Optional[float]` must return basic drift score after detection, None if no score available                                   |
-| **REQ-ADP-008** | **Initialization Parameters**   | `BaseDetector.__init__(method_id: str, implementation_id: str, **kwargs)` must accept method and implementation identifiers                           |
+| ID              | Requirement                     | Description                                                                                                                                                                                      |
+| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-ADP-001** | **BaseDetector Abstract Class** | `BaseDetector` must be an abstract class with abstract methods `fit()`, `detect()`, and concrete methods `preprocess()`, `score()`                                                               |
+| **REQ-ADP-002** | **Method ID Property**          | `BaseDetector` must have read-only property `method_id: str` that returns the drift detection method identifier                                                                                  |
+| **REQ-ADP-003** | **Implementation ID Property**  | `BaseDetector` must have read-only property `implementation_id: str` that returns the implementation variant                                                                                     |
+| **REQ-ADP-004** | **Preprocess Method**           | `BaseDetector.preprocess(data: DatasetResult, **kwargs) -> Any` must handle data format conversion from pandas DataFrames to detector-specific format (numpy arrays, pandas DataFrames, etc.)    |
+| **REQ-ADP-005** | **Abstract Fit Method**         | `BaseDetector.fit(preprocessed_data: Any, **kwargs) -> "BaseDetector"` must be abstract and train the detector on reference data in detector-specific format                                     |
+| **REQ-ADP-006** | **Abstract Detect Method**      | `BaseDetector.detect(preprocessed_data: Any, **kwargs) -> bool` must be abstract and return drift detection result using detector-specific format                                                |
+| **REQ-ADP-007** | **Score Method**                | `BaseDetector.score() -> Optional[float]` must return basic drift score after detection, None if no score available                                                                              |
+| **REQ-ADP-008** | **Initialization Parameters**   | `BaseDetector.__init__(method_id: str, implementation_id: str, **kwargs)` must accept method and implementation identifiers                                                                      |
+| **REQ-ADP-009** | **Preprocessing Data Flow**     | `preprocess()` must extract appropriate data from DatasetResult: X_ref for training phase, X_test for detection phase, converting pandas DataFrames to detector-specific formats                 |
+| **REQ-ADP-010** | **Format Flexibility**          | `preprocess()` return type flexibility allows conversion to numpy arrays, scipy sparse matrices, or other formats required by specific detector libraries while maintaining consistent interface |
 
 ### 🗂️ Registry Module
 
@@ -290,15 +292,16 @@ This module contains the basic benchmark runner to benchmark adapters against ea
 
 This module defines the basic data flow through the benchmark system orchestrated by BenchmarkRunner.
 
-| ID              | Requirement                        | Description                                                                                                  |
-| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **REQ-FLW-001** | **BenchmarkRunner Data Loading**   | BenchmarkRunner must load all datasets specified in BenchmarkConfig during initialization                    |
-| **REQ-FLW-002** | **BenchmarkRunner Detector Setup** | BenchmarkRunner must instantiate all configured detectors from registry during initialization                |
-| **REQ-FLW-003** | **Detector Preprocessing Phase**   | For each detector-dataset pair, BenchmarkRunner must call detector.preprocess() to transform data            |
-| **REQ-FLW-004** | **Detector Training Phase**        | BenchmarkRunner must call detector.fit(preprocessed_reference_data) to train each detector on reference data |
-| **REQ-FLW-005** | **Detector Detection Phase**       | BenchmarkRunner must call detector.detect(preprocessed_test_data) to get drift detection boolean result      |
-| **REQ-FLW-006** | **Detector Scoring Phase**         | BenchmarkRunner must call detector.score() to collect drift scores and package into DetectorResult           |
-| **REQ-FLW-007** | **Results Storage Coordination**   | BenchmarkRunner must coordinate with Results module to save BenchmarkResult to timestamped directory         |
+| ID              | Requirement                        | Description                                                                                                                                                                                               |
+| --------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-FLW-001** | **BenchmarkRunner Data Loading**   | BenchmarkRunner must load all datasets specified in BenchmarkConfig during initialization                                                                                                                 |
+| **REQ-FLW-002** | **BenchmarkRunner Detector Setup** | BenchmarkRunner must instantiate all configured detectors from registry during initialization                                                                                                             |
+| **REQ-FLW-003** | **Detector Preprocessing Phase**   | For each detector-dataset pair, BenchmarkRunner must call detector.preprocess(dataset_result) twice: once to extract/convert reference data for training, once to extract/convert test data for detection |
+| **REQ-FLW-004** | **Detector Training Phase**        | BenchmarkRunner must call detector.fit(preprocessed_reference_data) to train each detector on reference data in detector-specific format                                                                  |
+| **REQ-FLW-005** | **Detector Detection Phase**       | BenchmarkRunner must call detector.detect(preprocessed_test_data) to get drift detection boolean result using detector-specific format                                                                    |
+| **REQ-FLW-006** | **Detector Scoring Phase**         | BenchmarkRunner must call detector.score() to collect drift scores and package into DetectorResult                                                                                                        |
+| **REQ-FLW-007** | **Results Storage Coordination**   | BenchmarkRunner must coordinate with Results module to save BenchmarkResult to timestamped directory                                                                                                      |
+| **REQ-FLW-008** | **Preprocessing Workflow Pattern** | Exact workflow: (1) ref_data = preprocess(dataset_result) for reference, (2) detector.fit(ref_data), (3) test_data = preprocess(dataset_result) for test, (4) result = detector.detect(test_data)         |
 
 ---
 
