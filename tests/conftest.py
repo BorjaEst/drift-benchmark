@@ -1,268 +1,163 @@
-"""
-Shared test fixtures and configuration for drift-benchmark tests.
+# Session and module-scoped fixtures for shared testing infrastructure
 
-This module provides session and module-scoped fixtures that are used across
-all test modules. It includes database connections, shared services, and
-common test data that supports functional testing of user workflows.
-"""
-
-import shutil
+import pytest
 import tempfile
+import shutil
 from pathlib import Path
-from typing import Any, Dict, Generator
+from typing import Dict, Any
+import pandas as pd
+import toml
 from unittest.mock import Mock, patch
 
-import numpy as np
-import pandas as pd
-import pytest
-
-from drift_benchmark.models import (
-    BenchmarkConfig,
-    BenchmarkMetadata,
-    DatasetConfig,
-    DatasetMetadata,
-    DatasetResult,
-    DetectorConfig,
-    DriftMetadata,
-    EvaluationConfig,
-    ScoreResult,
-)
-from drift_benchmark.settings import Settings
-
+# Session-scoped fixtures for expensive setup
+@pytest.fixture(scope="session")
+def temp_workspace():
+    """Create a temporary workspace directory for testing"""
+    temp_dir = tempfile.mkdtemp(prefix="drift_benchmark_test_")
+    workspace_path = Path(temp_dir)
+    
+    # Create standard directory structure
+    (workspace_path / "datasets").mkdir()
+    (workspace_path / "results").mkdir()
+    (workspace_path / "logs").mkdir()
+    
+    yield workspace_path
+    
+    # Cleanup after all tests
+    shutil.rmtree(temp_dir)
 
 @pytest.fixture(scope="session")
-def test_workspace() -> Generator[Path, None, None]:
-    """Provide a temporary workspace directory for testing.
-
-    Creates a temporary directory structure that mimics the production
-    workspace layout for comprehensive functional testing.
-    """
-    temp_dir = Path(tempfile.mkdtemp(prefix="drift_benchmark_test_"))
-
-    # Create workspace structure
-    (temp_dir / "components").mkdir()
-    (temp_dir / "configurations").mkdir()
-    (temp_dir / "datasets").mkdir()
-    (temp_dir / "results").mkdir()
-    (temp_dir / "logs").mkdir()
-
-    yield temp_dir
-
-    # Cleanup
-    shutil.rmtree(temp_dir, ignore_errors=True)
-
-
-@pytest.fixture(scope="session")
-def test_settings(test_workspace: Path) -> Settings:
-    """Provide test settings configuration.
-
-    Creates a settings instance configured for testing with isolated
-    directories and appropriate logging levels for test execution.
-    """
-    return Settings(
-        components_dir=str(test_workspace / "components"),
-        configurations_dir=str(test_workspace / "configurations"),
-        datasets_dir=str(test_workspace / "datasets"),
-        results_dir=str(test_workspace / "results"),
-        logs_dir=str(test_workspace / "logs"),
-        log_level="DEBUG",
-        enable_caching=False,
-        max_workers=2,
-        random_seed=42,
-        memory_limit_mb=1024,
-    )
-
-
-@pytest.fixture(scope="session")
-def sample_drift_dataset() -> DatasetResult:
-    """Provide a realistic drift dataset for testing.
-
-    Creates a representative dataset with known drift characteristics
-    that can be used to validate drift detection workflows.
-    """
+def sample_dataset():
+    """Provide sample dataset for testing"""
+    import numpy as np
+    
+    # Generate synthetic dataset with drift
     np.random.seed(42)
-
-    # Reference data - normal distribution
-    n_ref = 500
-    X_ref = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0, 1, n_ref),
-            "feature_2": np.random.normal(0, 1, n_ref),
-            "feature_3": np.random.choice(["A", "B", "C"], n_ref),
-        }
-    )
-    y_ref = pd.Series(np.random.choice([0, 1], n_ref))
-
-    # Test data - shifted distribution (drift)
-    n_test = 500
-    X_test = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(1.5, 1, n_test),  # Mean shift
-            "feature_2": np.random.normal(0, 1.5, n_test),  # Variance change
-            "feature_3": np.random.choice(["A", "B", "C"], n_test, p=[0.1, 0.7, 0.2]),  # Distribution change
-        }
-    )
-    y_test = pd.Series(np.random.choice([0, 1], n_test, p=[0.3, 0.7]))  # Label shift
-
-    drift_info = DriftMetadata(drift_type="COVARIATE", drift_position=0.5, drift_magnitude=1.5, drift_pattern="SUDDEN")
-
-    metadata = DatasetMetadata(
-        name="test_drift_dataset",
-        description="Test dataset with known drift for validation",
-        n_samples=n_ref + n_test,
-        n_features=3,
-        has_drift=True,
-        data_types=["CONTINUOUS", "CATEGORICAL"],
-        dimension="MULTIVARIATE",
-        labeling="SUPERVISED",
-    )
-
-    return DatasetResult(X_ref=X_ref, X_test=X_test, y_ref=y_ref, y_test=y_test, drift_info=drift_info, metadata=metadata)
-
+    
+    # Reference data (normal distribution)
+    ref_size = 1000
+    ref_data = pd.DataFrame({
+        'feature_1': np.random.normal(0, 1, ref_size),
+        'feature_2': np.random.normal(0, 1, ref_size),
+        'categorical_feature': np.random.choice(['A', 'B', 'C'], ref_size)
+    })
+    
+    # Test data (shifted distribution - concept drift)
+    test_size = 500
+    test_data = pd.DataFrame({
+        'feature_1': np.random.normal(0.5, 1, test_size),  # Shifted mean
+        'feature_2': np.random.normal(0, 1.2, test_size),  # Increased variance
+        'categorical_feature': np.random.choice(['A', 'B', 'C'], test_size, p=[0.6, 0.3, 0.1])  # Changed distribution
+    })
+    
+    full_dataset = pd.concat([ref_data, test_data], ignore_index=True)
+    
+    return {
+        'full_dataset': full_dataset,
+        'reference_data': ref_data,
+        'test_data': test_data,
+        'reference_split': 0.67  # ref_size / (ref_size + test_size)
+    }
 
 @pytest.fixture(scope="session")
-def sample_no_drift_dataset() -> DatasetResult:
-    """Provide a dataset without drift for testing.
-
-    Creates a dataset where reference and test data come from the same
-    distribution to validate no-drift scenarios.
-    """
-    np.random.seed(42)
-
-    # Both reference and test data from same distribution
-    n_samples = 500
-    X_ref = pd.DataFrame({"feature_1": np.random.normal(0, 1, n_samples), "feature_2": np.random.normal(0, 1, n_samples)})
-    X_test = pd.DataFrame({"feature_1": np.random.normal(0, 1, n_samples), "feature_2": np.random.normal(0, 1, n_samples)})
-
-    y_ref = pd.Series(np.random.choice([0, 1], n_samples))
-    y_test = pd.Series(np.random.choice([0, 1], n_samples))
-
-    drift_info = DriftMetadata(drift_type=None, drift_position=None, drift_magnitude=0.0, drift_pattern=None)
-
-    metadata = DatasetMetadata(
-        name="test_no_drift_dataset",
-        description="Test dataset without drift for validation",
-        n_samples=n_samples * 2,
-        n_features=2,
-        has_drift=False,
-        data_types=["CONTINUOUS"],
-        dimension="MULTIVARIATE",
-        labeling="SUPERVISED",
-    )
-
-    return DatasetResult(X_ref=X_ref, X_test=X_test, y_ref=y_ref, y_test=y_test, drift_info=drift_info, metadata=metadata)
-
-
-@pytest.fixture
-def mock_score_result() -> ScoreResult:
-    """Provide a realistic score result for testing."""
-    return ScoreResult(
-        drift_detected=True,
-        drift_score=0.75,
-        threshold=0.5,
-        p_value=0.02,
-        confidence_interval=(0.65, 0.85),
-        metadata={"method": "test_method", "timestamp": "2024-01-01T00:00:00"},
-    )
-
-
-@pytest.fixture
-def sample_benchmark_config(test_workspace: Path) -> BenchmarkConfig:
-    """Provide a realistic benchmark configuration for testing."""
-    return BenchmarkConfig(
-        metadata=BenchmarkMetadata(
-            name="Test Benchmark", description="Comprehensive benchmark for testing", author="Test Author", version="1.0.0"
-        ),
-        data=DatasetConfig(datasets=[{"name": "test_dataset", "type": "scenario", "config": {"scenario_name": "iris_species_drift"}}]),
-        detectors=DetectorConfig(
-            algorithms=[
-                {
-                    "adapter": "test_adapter",
-                    "method_id": "kolmogorov_smirnov",
-                    "implementation_id": "ks_batch",
-                    "parameters": {"threshold": 0.05},
+def mock_methods_registry():
+    """Provide mock methods registry configuration"""
+    return {
+        "methods": {
+            "ks_test": {
+                "name": "Kolmogorov-Smirnov Test",
+                "description": "Statistical test for distribution differences",
+                "family": "STATISTICAL_TEST",
+                "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
+                "data_types": ["CONTINUOUS"],
+                "implementations": {
+                    "scipy": {
+                        "name": "SciPy Implementation",
+                        "execution_mode": "BATCH"
+                    }
                 }
-            ]
-        ),
-        evaluation=EvaluationConfig(
-            classification_metrics=["accuracy", "precision", "recall"],
-            detection_metrics=["detection_delay", "auc_score"],
-            statistical_tests=["ttest", "mannwhitneyu"],
-            performance_analysis=["rankings", "statistical_significance"],
-            runtime_analysis=["memory_usage", "cpu_time"],
-        ),
-    )
+            },
+            "drift_detector": {
+                "name": "Basic Drift Detector",
+                "description": "Simple change detection algorithm",
+                "family": "CHANGE_DETECTION",
+                "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
+                "data_types": ["CONTINUOUS", "CATEGORICAL"],
+                "implementations": {
+                    "custom": {
+                        "name": "Custom Implementation",
+                        "execution_mode": "BATCH"
+                    }
+                }
+            }
+        }
+    }
 
+# Module-scoped fixtures for shared test utilities
+@pytest.fixture(scope="module")
+def settings_env_vars():
+    """Provide environment variable settings for testing"""
+    return {
+        'DRIFT_BENCHMARK_DATASETS_DIR': 'test_datasets',
+        'DRIFT_BENCHMARK_RESULTS_DIR': 'test_results',
+        'DRIFT_BENCHMARK_LOGS_DIR': 'test_logs',
+        'DRIFT_BENCHMARK_LOG_LEVEL': 'DEBUG',
+        'DRIFT_BENCHMARK_RANDOM_SEED': '123'
+    }
 
-@pytest.fixture
-def mock_adapter_registry():
-    """Provide a mocked adapter registry for testing."""
-    mock_registry = Mock()
-    mock_adapter_class = Mock()
-    mock_registry.get_adapter.return_value = mock_adapter_class
-    return mock_registry
+@pytest.fixture(scope="module")
+def sample_csv_content():
+    """Provide sample CSV content for file-based testing"""
+    return """feature_1,feature_2,categorical_feature
+1.2,0.8,A
+-0.5,1.1,B
+2.1,-0.3,C
+0.7,1.5,A
+-1.2,0.2,B
+1.8,-0.7,C
+0.3,0.9,A
+-0.8,1.3,B
+1.5,-0.1,C
+0.1,0.6,A"""
 
-
-@pytest.fixture
-def mock_detector():
-    """Provide a mocked detector instance for testing."""
-    detector = Mock()
-    detector.method_id = "test_method"
-    detector.implementation_id = "test_implementation"
-    detector.fit.return_value = detector
-    detector.detect.return_value = True
-    detector.score.return_value = ScoreResult(drift_detected=True, drift_score=0.8, threshold=0.5, p_value=0.01)
-    detector.preprocess.return_value = "preprocessed_data"
-    detector.reset.return_value = None
-    return detector
-
-
-@pytest.fixture
-def sample_adapter_directory(test_workspace):
-    """Provide a sample adapter directory with test adapter modules."""
-    adapter_dir = test_workspace / "components"
-
-    # Create a sample adapter file
-    adapter_file = adapter_dir / "sample_adapter.py"
-    adapter_content = '''
-"""Sample adapter for testing discovery."""
-
-from drift_benchmark.adapters.base import BaseDetector
-from drift_benchmark.adapters.registry import register_detector
-from drift_benchmark.constants.models import DetectorMetadata, ScoreResult
-
-
-@register_detector("sample_method", "sample_impl")
-class SampleDetector(BaseDetector):
-    """Sample detector for testing."""
-
-    @property
-    def method_id(self) -> str:
-        return "sample_method"
-
-    @property  
-    def implementation_id(self) -> str:
-        return "sample_impl"
-
-    @classmethod
-    def metadata(cls):
-        return DetectorMetadata(
-            method_id="sample_method",
-            implementation_id="sample_impl", 
-            name="Sample Detector",
-            description="Test detector",
-            category="test",
-            data_type="tabular",
-            streaming=False
-        )
-
-    def fit(self, preprocessed_data, **kwargs):
-        self._fitted = True
-        return self
-
-    def detect(self, preprocessed_data, **kwargs):
-        return True
-'''
-    adapter_file.write_text(adapter_content)
-
-    return adapter_dir
+@pytest.fixture(scope="module")
+def mock_detector_implementations():
+    """Provide mock detector implementations for testing"""
+    class MockDetector:
+        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+            self.method_id = method_id
+            self.implementation_id = implementation_id
+            self._fitted = False
+            self._last_score = None
+            
+        def preprocess(self, data, **kwargs):
+            # Mock preprocessing - return numpy arrays
+            if hasattr(data, 'X_ref'):
+                return data.X_ref.values
+            elif hasattr(data, 'X_test'):
+                return data.X_test.values
+            return data.values if hasattr(data, 'values') else data
+            
+        def fit(self, preprocessed_data, **kwargs):
+            self._fitted = True
+            self._reference_data = preprocessed_data
+            return self
+            
+        def detect(self, preprocessed_data, **kwargs):
+            if not self._fitted:
+                raise RuntimeError("Detector must be fitted before detection")
+            # Mock drift detection - always detect drift for testing
+            self._last_score = 0.75
+            return True
+            
+        def score(self):
+            return self._last_score
+    
+    return {
+        "ks_test": {
+            "scipy": MockDetector
+        },
+        "drift_detector": {
+            "custom": MockDetector
+        }
+    }

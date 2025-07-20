@@ -2,7 +2,7 @@
 
 > A comprehensive benchmarking framework for drift detection methods
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -11,6 +11,7 @@
 ## 🎯 Features
 
 ### Core Capabilities
+
 - **Unified Interface**: Consistent API for different drift detection libraries (scikit-learn, River, Evidently, etc.)
 - **Flexible Data Handling**: Support for both pandas DataFrames and numpy arrays
 - **Comprehensive Evaluation**: Performance metrics including accuracy, precision, recall, and execution time
@@ -18,11 +19,13 @@
 - **Configurable Benchmarks**: TOML-based configuration for reproducible experiments
 
 ### Supported Drift Types
+
 - **Covariate Drift**: Changes in input feature distributions
 - **Concept Drift**: Changes in the relationship between features and target
 - **Prior Drift**: Changes in target variable distribution
 
 ### Data Format Support
+
 - **CSV Files**: Standard comma-separated values with automatic type inference
 - **Univariate & Multivariate**: Support for single and multiple feature scenarios
 - **Flexible Splits**: Configurable reference/test data splitting
@@ -101,7 +104,7 @@ print(f"Average Execution Time: {summary.avg_execution_time:.4f}s")
 
 ### Module Structure
 
-```
+```text
 src/drift_benchmark/
 ├── __init__.py              # Package initialization
 ├── settings.py              # Configuration management
@@ -162,14 +165,14 @@ export DRIFT_BENCHMARK_RANDOM_SEED=42
 
 ### Settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `datasets_dir` | `"datasets"` | Directory for dataset files |
-| `results_dir` | `"results"` | Directory for benchmark results |
-| `logs_dir` | `"logs"` | Directory for log files |
-| `log_level` | `"INFO"` | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
-| `random_seed` | `42` | Random seed for reproducibility |
-| `methods_registry_path` | `"src/drift_benchmark/detectors/methods.toml"` | Path to methods configuration |
+| Setting                 | Default                                        | Description                                           |
+| ----------------------- | ---------------------------------------------- | ----------------------------------------------------- |
+| `datasets_dir`          | `"datasets"`                                   | Directory for dataset files                           |
+| `results_dir`           | `"results"`                                    | Directory for benchmark results                       |
+| `logs_dir`              | `"logs"`                                       | Directory for log files                               |
+| `log_level`             | `"INFO"`                                       | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+| `random_seed`           | `42`                                           | Random seed for reproducibility                       |
+| `methods_registry_path` | `"src/drift_benchmark/detectors/methods.toml"` | Path to methods configuration                         |
 
 ## 🧪 Adding New Detectors
 
@@ -181,29 +184,29 @@ import numpy as np
 
 @register_detector(method_id="my_method", implementation_id="custom")
 class MyCustomDetector(BaseDetector):
-    
+
     def __init__(self, method_id: str, implementation_id: str, **kwargs):
         super().__init__(method_id, implementation_id)
         # Initialize detector-specific parameters
         self.threshold = kwargs.get('threshold', 0.05)
-    
+
     def preprocess(self, data, **kwargs):
         """Convert pandas DataFrame to detector-specific format"""
         # For numpy-based detectors
         return data.X_ref.values  # or data.X_test.values
-    
+
     def fit(self, preprocessed_data, **kwargs):
         """Train the detector on reference data"""
         # Implement training logic
         self.reference_data = preprocessed_data
         return self
-    
+
     def detect(self, preprocessed_data, **kwargs):
         """Detect drift in test data"""
         # Implement drift detection logic
         # Return True if drift is detected, False otherwise
         return self._calculate_drift_score(preprocessed_data) > self.threshold
-    
+
     def score(self):
         """Return drift score if available"""
         return self._last_score if hasattr(self, '_last_score') else None
@@ -247,6 +250,7 @@ results/20250720_143022/
 ### Summary Statistics
 
 When ground truth is available:
+
 - **Accuracy**: Correct drift detection rate
 - **Precision**: True positive rate among positive predictions
 - **Recall**: True positive rate among actual positives

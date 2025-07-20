@@ -1,316 +1,339 @@
 """
-Tests for data module configuration-driven functionality (REQ-DAT-001).
+Test suite for data module - REQ-DAT-XXX
 
-These functional tests validate that users can load, generate, and preprocess
-data through comprehensive configuration-driven utilities, ensuring flexible
-and robust data handling for drift detection scenarios.
+This module tests the basic data loading utilities for the drift-benchmark
+library, providing CSV file loading and preprocessing capabilities.
 """
 
-from unittest.mock import Mock, patch
-
-import numpy as np
-import pandas as pd
 import pytest
-
-
-class TestConfigurationDrivenData:
-    """Test configuration-driven data utilities."""
-
-    def test_should_provide_configuration_utilities_when_accessing_data_module(self):
-        """Data module provides configuration-driven utilities (REQ-DAT-001)."""
-        # This test will fail until data module is implemented
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import gen_synthetic, get_scenarios, get_synthetic_methods, load_dataset, load_scenario
-
-            # When implemented, should provide main data functions
-            assert callable(load_scenario)
-            assert callable(load_dataset)
-            assert callable(gen_synthetic)
-            assert callable(get_scenarios)
-            assert callable(get_synthetic_methods)
-
-
-class TestScenarioLoading:
-    """Test built-in scenario loading functionality."""
-
-    def test_should_load_scenarios_when_using_scenario_configs(self, scenario_configs):
-        """Users can load built-in drift scenarios by configuration."""
-        # This test validates scenario loading workflow
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import get_scenarios, load_scenario
-
-            # When implemented, should list available scenarios
-            available_scenarios = get_scenarios()
-            assert isinstance(available_scenarios, (list, dict))
-
-            # Should include expected scenarios
-            expected_scenarios = ["iris_species_drift", "wine_quality_drift", "breast_cancer_severity_drift", "diabetes_progression_drift"]
-
-            for scenario_name in expected_scenarios:
-                if scenario_name in available_scenarios:
-                    # Should load scenario successfully
-                    dataset = load_scenario(scenario_name)
-                    assert dataset is not None
-                    assert hasattr(dataset, "X_ref")
-                    assert hasattr(dataset, "X_test")
-
-    def test_should_provide_metadata_when_loading_scenarios(self, scenario_configs):
-        """Loaded scenarios include comprehensive metadata."""
-        # This test validates scenario metadata
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import load_scenario
-
-            # When implemented, should provide rich metadata
-            for config in scenario_configs:
-                scenario_name = config["config"]["scenario_name"]
-                dataset = load_scenario(scenario_name)
-
-                # Should include drift information
-                assert hasattr(dataset, "drift_info")
-                assert hasattr(dataset.drift_info, "drift_type")
-                assert hasattr(dataset.drift_info, "has_drift")
-
-                # Should include dataset metadata
-                assert hasattr(dataset, "metadata")
-                assert hasattr(dataset.metadata, "name")
-                assert hasattr(dataset.metadata, "data_types")
-                assert hasattr(dataset.metadata, "dimension")
-                assert hasattr(dataset.metadata, "labeling")
-
-    def test_should_validate_drift_characteristics_when_loading_scenarios(self):
-        """Scenarios should have expected drift characteristics."""
-        # This test validates drift properties
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import load_scenario
-
-            # When implemented, should validate drift characteristics
-            iris_dataset = load_scenario("iris_species_drift")
-
-            # Should detect drift in drift scenarios
-            assert iris_dataset.metadata.has_drift is True
-            assert iris_dataset.drift_info.drift_type in ["COVARIATE", "CONCEPT"]
-
-            # Should have reasonable sample sizes
-            assert len(iris_dataset.X_ref) > 0
-            assert len(iris_dataset.X_test) > 0
-
-            # Should maintain data consistency
-            assert iris_dataset.X_ref.shape[1] == iris_dataset.X_test.shape[1]  # Same features
-
-
-class TestSyntheticDataGeneration:
-    """Test synthetic data generation functionality."""
-
-    def test_should_generate_synthetic_data_when_using_configurations(self, synthetic_data_configs):
-        """Users can generate synthetic drift data with various configurations."""
-        # This test validates synthetic data generation
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import gen_synthetic, get_synthetic_methods
-
-            # When implemented, should list available generators
-            available_methods = get_synthetic_methods()
-            assert isinstance(available_methods, (list, dict))
-
-            # Should include expected generators
-            expected_generators = ["gaussian", "multimodal", "time_series"]
-            for generator in expected_generators:
-                if generator in available_methods:
-                    assert True  # Generator available
-
-            # Should generate data for each configuration
-            for config in synthetic_data_configs:
-                dataset = gen_synthetic(config)
-
-                # Should return valid dataset
-                assert dataset is not None
-                assert hasattr(dataset, "X_ref")
-                assert hasattr(dataset, "X_test")
-                assert hasattr(dataset, "drift_info")
-
-    def test_should_apply_drift_patterns_when_generating_data(self, synthetic_data_configs):
-        """Synthetic generators apply specified drift patterns correctly."""
-        # This test validates drift pattern implementation
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import gen_synthetic
-
-            # When implemented, should apply drift patterns
-            for config in synthetic_data_configs:
-                dataset = gen_synthetic(config)
-
-                # Should reflect configured drift pattern
-                assert dataset.drift_info.drift_pattern == config["drift_pattern"]
-                assert dataset.drift_info.drift_type == config["drift_type"]
-                assert dataset.drift_info.drift_magnitude == config["drift_magnitude"]
-
-                # Should have expected sample count
-                total_samples = len(dataset.X_ref) + len(dataset.X_test)
-                assert abs(total_samples - config["n_samples"]) <= 10  # Allow small variance
-
-                # Should have expected feature count
-                assert dataset.X_ref.shape[1] == config["n_features"]
-                assert dataset.X_test.shape[1] == config["n_features"]
-
-    def test_should_handle_categorical_features_when_specified(self):
-        """Synthetic generators handle categorical features appropriately."""
-        # This test validates categorical feature handling
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import gen_synthetic
-
-            # When implemented, should handle categorical features
-            config = {
-                "name": "categorical_test",
-                "type": "synthetic",
-                "generator_name": "gaussian",
-                "n_samples": 1000,
-                "n_features": 5,
-                "categorical_features": [1, 3],  # Features 1 and 3 are categorical
-                "drift_pattern": "sudden",
-                "drift_type": "covariate",
-                "drift_position": 0.5,
-                "drift_magnitude": 1.0,
-            }
-
-            dataset = gen_synthetic(config)
-
-            # Should include categorical features
-            assert "CATEGORICAL" in dataset.metadata.data_types
-
-            # Categorical features should have discrete values
-            for cat_feat in config["categorical_features"]:
-                ref_values = dataset.X_ref.iloc[:, cat_feat].unique()
-                test_values = dataset.X_test.iloc[:, cat_feat].unique()
-                assert len(ref_values) < 20  # Reasonable number of categories
-                assert len(test_values) < 20
-
-
-class TestFileDatasetLoading:
-    """Test file-based dataset loading functionality."""
-
-    def test_should_load_file_datasets_when_using_file_config(self, file_dataset_config):
-        """Users can load datasets from files with configuration."""
-        # This test validates file loading workflow
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import load_dataset
-
-            # When implemented, should load from file
-            dataset = load_dataset(file_dataset_config)
-
-            # Should create valid dataset
-            assert dataset is not None
-            assert hasattr(dataset, "X_ref")
-            assert hasattr(dataset, "X_test")
-            assert hasattr(dataset, "y_ref")
-            assert hasattr(dataset, "y_test")
-
-            # Should split according to configuration
-            total_samples = len(dataset.X_ref) + len(dataset.X_test)
-            expected_ref_size = int(total_samples * file_dataset_config["config"]["reference_split"])
-            assert abs(len(dataset.X_ref) - expected_ref_size) <= 10
-
-    def test_should_handle_feature_selection_when_loading_files(self, file_dataset_config):
-        """File loading respects feature and target column specifications."""
-        # This test validates column selection
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import load_dataset
-
-            # When implemented, should select specified columns
-            dataset = load_dataset(file_dataset_config)
-
-            # Should include only specified feature columns
-            expected_features = file_dataset_config["config"]["feature_columns"]
-            assert dataset.X_ref.shape[1] == len(expected_features)
-            assert dataset.X_test.shape[1] == len(expected_features)
-
-            # Should extract target column correctly
-            target_col = file_dataset_config["config"]["target_column"]
-            assert dataset.y_ref is not None
-            assert dataset.y_test is not None
-
-
-class TestDataValidation:
-    """Test data validation and quality checks."""
-
-    def test_should_validate_data_quality_when_loading_datasets(self, data_quality_checks):
-        """Data loading includes quality validation."""
-        # This test validates data quality checking
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import load_scenario
-            from drift_benchmark.data.validation import validate_dataset_quality
-
-            # When implemented, should validate data quality
-            dataset = load_scenario("iris_species_drift")
-            quality_report = validate_dataset_quality(dataset, data_quality_checks)
-
-            # Should pass quality checks
-            assert quality_report["valid"] is True
-            assert quality_report["missing_ratio"] <= data_quality_checks["max_missing_ratio"]
-            assert quality_report["n_samples"] >= data_quality_checks["min_samples"]
-            assert quality_report["n_features"] >= data_quality_checks["min_features"]
-
-    def test_should_detect_data_issues_when_validating_problematic_datasets(self):
-        """Data validation detects common data issues."""
-        # This test validates issue detection
-        with pytest.raises(ImportError):
-            from drift_benchmark.constants.models import DatasetResult
-            from drift_benchmark.data.validation import validate_dataset_quality
-
-            # When implemented, should detect issues
-            # Create problematic dataset
-            problematic_data = pd.DataFrame(
-                {"feature_1": [1, 2, None, 4, None, 6], "feature_2": [1, 1, 1, 1, 1, 1]}  # High missing ratio  # No variance
-            )
-
-            problematic_dataset = DatasetResult(
-                X_ref=problematic_data.iloc[:3],
-                X_test=problematic_data.iloc[3:],
-                y_ref=None,
-                y_test=None,
-                drift_info=Mock(),
-                metadata=Mock(),
-            )
-
-            quality_checks = {"max_missing_ratio": 0.1, "min_variance": 0.01}
-            quality_report = validate_dataset_quality(problematic_dataset, quality_checks)
-
-            # Should detect issues
-            assert quality_report["valid"] is False
-            assert "high_missing_ratio" in quality_report["issues"]
-            assert "low_variance_features" in quality_report["issues"]
-
-
-class TestDataIntegration:
-    """Test data module integration with other components."""
-
-    def test_should_integrate_with_adapters_when_preprocessing_data(self, sample_drift_dataset):
-        """Data module integrates with adapter preprocessing."""
-        # This test validates adapter integration
-        with pytest.raises(ImportError):
-            from drift_benchmark.adapters.registry import get_adapter
-            from drift_benchmark.data import preprocess_for_adapter
-
-            # When implemented, should preprocess for specific adapters
-            adapter_class = get_adapter("evidently_adapter")
-            preprocessed_data = preprocess_for_adapter(sample_drift_dataset, adapter_class, method_id="kolmogorov_smirnov")
-
-            # Should format data appropriately for adapter
-            assert preprocessed_data is not None
-            # Format depends on adapter requirements
-
-    def test_should_support_caching_when_loading_expensive_datasets(self):
-        """Data loading supports caching for expensive operations."""
-        # This test validates caching capability
-        with pytest.raises(ImportError):
-            from drift_benchmark.data import load_scenario
-            from drift_benchmark.settings import settings
-
-            # When implemented and caching enabled
-            if settings.enable_caching:
-                # First load should be slow
-                dataset1 = load_scenario("iris_species_drift")
-
-                # Second load should be fast (cached)
-                dataset2 = load_scenario("iris_species_drift")
-
-                # Should return equivalent datasets
-                assert dataset1.metadata.name == dataset2.metadata.name
-                assert dataset1.X_ref.shape == dataset2.X_ref.shape
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+
+def test_should_provide_load_dataset_function_when_imported(sample_csv_file, sample_dataset_config):
+    """Test REQ-DAT-001: Data module must provide load_dataset(config: DatasetConfig) -> DatasetResult for loading datasets from files"""
+    # Arrange
+    config = sample_dataset_config(
+        path=str(sample_csv_file),
+        format="CSV",
+        reference_split=0.6
+    )
+    
+    # Act
+    try:
+        from drift_benchmark.data import load_dataset
+        result = load_dataset(config)
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset from data module: {e}")
+    
+    # Assert
+    assert result is not None, "load_dataset() must return a result"
+    assert hasattr(result, 'X_ref'), "result must have X_ref field"
+    assert hasattr(result, 'X_test'), "result must have X_test field"
+    assert hasattr(result, 'metadata'), "result must have metadata field"
+
+
+def test_should_support_csv_format_when_loaded(sample_csv_file, sample_dataset_config):
+    """Test REQ-DAT-002: File loading must support CSV format using pandas.read_csv() with default parameters"""
+    # Arrange
+    config = sample_dataset_config(
+        path=str(sample_csv_file),
+        format="CSV",
+        reference_split=0.7
+    )
+    
+    # Act
+    try:
+        from drift_benchmark.data import load_dataset
+        result = load_dataset(config)
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset for CSV test: {e}")
+    
+    # Assert - data loaded successfully
+    assert isinstance(result.X_ref, pd.DataFrame), "X_ref must be pandas DataFrame"
+    assert isinstance(result.X_test, pd.DataFrame), "X_test must be pandas DataFrame"
+    
+    # Assert - CSV format parsed correctly
+    expected_columns = ['feature_1', 'feature_2', 'categorical_feature']
+    assert list(result.X_ref.columns) == expected_columns, "CSV columns should be preserved"
+    assert list(result.X_test.columns) == expected_columns, "CSV columns should be preserved"
+    
+    # Assert - data types inferred correctly
+    assert result.X_ref['feature_1'].dtype in [np.float64, np.int64], "numeric columns should be numeric type"
+    assert result.X_ref['categorical_feature'].dtype == object, "categorical columns should be object type"
+
+
+def test_should_support_split_configuration_when_loaded(sample_csv_file, sample_dataset_config):
+    """Test REQ-DAT-003: File datasets must support reference_split ratio (0.0 to 1.0) for creating X_ref/X_test divisions"""
+    # Arrange - test different split ratios
+    configs = [
+        sample_dataset_config(str(sample_csv_file), "CSV", 0.3),
+        sample_dataset_config(str(sample_csv_file), "CSV", 0.5),
+        sample_dataset_config(str(sample_csv_file), "CSV", 0.8)
+    ]
+    
+    # Act & Assert
+    try:
+        from drift_benchmark.data import load_dataset
+        
+        for config in configs:
+            result = load_dataset(config)
+            
+            total_samples = len(result.X_ref) + len(result.X_test)
+            expected_ref_size = int(total_samples * config.reference_split)
+            
+            # Allow for ±1 sample difference due to rounding
+            assert abs(len(result.X_ref) - expected_ref_size) <= 1, \
+                f"reference split {config.reference_split} not applied correctly"
+            
+            # Assert no overlap between ref and test
+            ref_indices = set(result.X_ref.index)
+            test_indices = set(result.X_test.index)
+            assert len(ref_indices.intersection(test_indices)) == 0, \
+                "X_ref and X_test should not have overlapping indices"
+                
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset for split test: {e}")
+
+
+def test_should_validate_file_path_when_loading(sample_dataset_config):
+    """Test REQ-DAT-004: File loading must validate file exists and is readable, raising DataLoadingError with descriptive message"""
+    # Arrange
+    non_existent_config = sample_dataset_config(
+        path="non_existent_file.csv",
+        format="CSV",
+        reference_split=0.5
+    )
+    
+    # Act & Assert
+    try:
+        from drift_benchmark.data import load_dataset
+        from drift_benchmark.exceptions import DataLoadingError
+        
+        with pytest.raises(DataLoadingError) as exc_info:
+            load_dataset(non_existent_config)
+        
+        error_message = str(exc_info.value).lower()
+        assert "non_existent_file.csv" in error_message, "Error should mention the missing file"
+        assert "file" in error_message or "not found" in error_message, "Error should be descriptive"
+        
+    except ImportError as e:
+        pytest.fail(f"Failed to import components for path validation test: {e}")
+
+
+def test_should_infer_data_types_when_loaded(numeric_only_csv_file, categorical_only_csv_file, sample_csv_file, sample_dataset_config):
+    """Test REQ-DAT-005: File loading must automatically infer data types and set appropriate DataType in metadata"""
+    # Act & Assert
+    try:
+        from drift_benchmark.data import load_dataset
+        
+        # Test CONTINUOUS data type inference
+        numeric_config = sample_dataset_config(str(numeric_only_csv_file), "CSV", 0.5)
+        numeric_result = load_dataset(numeric_config)
+        assert numeric_result.metadata.data_type == "CONTINUOUS", \
+            "numeric-only dataset should be inferred as CONTINUOUS"
+        
+        # Test CATEGORICAL data type inference
+        categorical_config = sample_dataset_config(str(categorical_only_csv_file), "CSV", 0.5)
+        categorical_result = load_dataset(categorical_config)
+        assert categorical_result.metadata.data_type == "CATEGORICAL", \
+            "categorical-only dataset should be inferred as CATEGORICAL"
+        
+        # Test MIXED data type inference
+        mixed_config = sample_dataset_config(str(sample_csv_file), "CSV", 0.5)
+        mixed_result = load_dataset(mixed_config)
+        assert mixed_result.metadata.data_type == "MIXED", \
+            "mixed dataset should be inferred as MIXED"
+            
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset for data type inference test: {e}")
+
+
+def test_should_return_dataframes_when_loaded(sample_csv_file, sample_dataset_config):
+    """Test REQ-DAT-006: All loaded datasets must return X_ref and X_test as pandas.DataFrame objects with preserved column names and index"""
+    # Arrange
+    config = sample_dataset_config(
+        path=str(sample_csv_file),
+        format="CSV",
+        reference_split=0.6
+    )
+    
+    # Act
+    try:
+        from drift_benchmark.data import load_dataset
+        result = load_dataset(config)
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset for DataFrame test: {e}")
+    
+    # Assert - DataFrame types
+    assert isinstance(result.X_ref, pd.DataFrame), "X_ref must be pandas DataFrame"
+    assert isinstance(result.X_test, pd.DataFrame), "X_test must be pandas DataFrame"
+    
+    # Assert - column names preserved
+    expected_columns = ['feature_1', 'feature_2', 'categorical_feature']
+    assert list(result.X_ref.columns) == expected_columns, "X_ref column names should be preserved"
+    assert list(result.X_test.columns) == expected_columns, "X_test column names should be preserved"
+    
+    # Assert - indices are valid
+    assert isinstance(result.X_ref.index, pd.Index), "X_ref must have valid pandas index"
+    assert isinstance(result.X_test.index, pd.Index), "X_test must have valid pandas index"
+    
+    # Assert - no empty DataFrames
+    assert len(result.X_ref) > 0, "X_ref should not be empty"
+    assert len(result.X_test) > 0, "X_test should not be empty"
+
+
+def test_should_handle_missing_data_when_loaded():
+    """Test REQ-DAT-007: CSV loading must handle missing values using pandas defaults (empty strings become NaN)"""
+    # Arrange - create CSV with missing values
+    csv_content_with_missing = """feature_1,feature_2,categorical_feature
+1.5,2.3,A
+2.1,,B
+,3.2,
+1.8,2.7,A
+2.5,1.5,B"""
+    
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write(csv_content_with_missing)
+        temp_path = Path(f.name)
+    
+    try:
+        from tests.test_data.conftest import sample_dataset_config
+        config = sample_dataset_config()(
+            path=str(temp_path),
+            format="CSV", 
+            reference_split=0.6
+        )
+        
+        # Act
+        from drift_benchmark.data import load_dataset
+        result = load_dataset(config)
+        
+        # Assert - missing values handled as NaN
+        combined_data = pd.concat([result.X_ref, result.X_test])
+        assert combined_data.isna().any().any(), "missing values should be preserved as NaN"
+        
+        # Assert - data still loads successfully
+        assert len(result.X_ref) > 0, "data with missing values should still load"
+        assert len(result.X_test) > 0, "data with missing values should still load"
+        
+    except ImportError as e:
+        pytest.fail(f"Failed to import components for missing data test: {e}")
+    finally:
+        temp_path.unlink()
+
+
+def test_should_implement_data_type_inference_algorithm_when_called(numeric_only_csv_file, categorical_only_csv_file, sample_csv_file, sample_dataset_config):
+    """Test REQ-DAT-008: CONTINUOUS: numeric dtypes (int, float), CATEGORICAL: object/string dtypes, MIXED: datasets with both"""
+    # Act & Assert
+    try:
+        from drift_benchmark.data import load_dataset
+        
+        # Test CONTINUOUS: numeric dtypes only
+        numeric_config = sample_dataset_config(str(numeric_only_csv_file), "CSV", 0.5)
+        numeric_result = load_dataset(numeric_config)
+        
+        # Verify all columns are numeric
+        combined_numeric = pd.concat([numeric_result.X_ref, numeric_result.X_test])
+        numeric_columns = combined_numeric.select_dtypes(include=[np.number]).columns
+        assert len(numeric_columns) == len(combined_numeric.columns), \
+            "CONTINUOUS dataset should have all numeric columns"
+        assert numeric_result.metadata.data_type == "CONTINUOUS"
+        
+        # Test CATEGORICAL: object/string dtypes only
+        categorical_config = sample_dataset_config(str(categorical_only_csv_file), "CSV", 0.5)
+        categorical_result = load_dataset(categorical_config)
+        
+        # Verify all columns are object/string
+        combined_categorical = pd.concat([categorical_result.X_ref, categorical_result.X_test])
+        object_columns = combined_categorical.select_dtypes(include=[object]).columns
+        assert len(object_columns) == len(combined_categorical.columns), \
+            "CATEGORICAL dataset should have all object columns"
+        assert categorical_result.metadata.data_type == "CATEGORICAL"
+        
+        # Test MIXED: both numeric and object dtypes
+        mixed_config = sample_dataset_config(str(sample_csv_file), "CSV", 0.5)
+        mixed_result = load_dataset(mixed_config)
+        
+        # Verify mix of column types
+        combined_mixed = pd.concat([mixed_result.X_ref, mixed_result.X_test])
+        numeric_mixed_columns = combined_mixed.select_dtypes(include=[np.number]).columns
+        object_mixed_columns = combined_mixed.select_dtypes(include=[object]).columns
+        assert len(numeric_mixed_columns) > 0, "MIXED dataset should have numeric columns"
+        assert len(object_mixed_columns) > 0, "MIXED dataset should have object columns"
+        assert mixed_result.metadata.data_type == "MIXED"
+        
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset for algorithm test: {e}")
+
+
+def test_should_set_dimension_metadata_when_loaded(sample_csv_file, sample_dataset_config):
+    """Test that data loading sets appropriate dimension metadata based on number of features"""
+    # Arrange & Act
+    config = sample_dataset_config(
+        path=str(sample_csv_file),
+        format="CSV",
+        reference_split=0.5
+    )
+    
+    try:
+        from drift_benchmark.data import load_dataset
+        result = load_dataset(config)
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset for dimension test: {e}")
+    
+    # Assert - multivariate for multiple columns
+    assert result.metadata.dimension == "MULTIVARIATE", \
+        "dataset with multiple columns should be MULTIVARIATE"
+    
+    # Test univariate with single column CSV
+    single_column_csv = """single_feature
+1.5
+2.1
+3.0
+1.8
+2.5"""
+    
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write(single_column_csv)
+        temp_path = Path(f.name)
+    
+    try:
+        single_config = sample_dataset_config(str(temp_path), "CSV", 0.5)
+        single_result = load_dataset(single_config)
+        assert single_result.metadata.dimension == "UNIVARIATE", \
+            "dataset with single column should be UNIVARIATE"
+    finally:
+        temp_path.unlink()
+
+
+def test_should_set_sample_counts_in_metadata_when_loaded(sample_csv_file, sample_dataset_config):
+    """Test that metadata includes correct sample counts for reference and test sets"""
+    # Arrange
+    config = sample_dataset_config(
+        path=str(sample_csv_file),
+        format="CSV",
+        reference_split=0.7
+    )
+    
+    # Act
+    try:
+        from drift_benchmark.data import load_dataset
+        result = load_dataset(config)
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_dataset for sample count test: {e}")
+    
+    # Assert
+    assert result.metadata.n_samples_ref == len(result.X_ref), \
+        "metadata n_samples_ref should match actual X_ref length"
+    assert result.metadata.n_samples_test == len(result.X_test), \
+        "metadata n_samples_test should match actual X_test length"
+    
+    # Assert sample counts are positive integers
+    assert isinstance(result.metadata.n_samples_ref, int), "n_samples_ref should be integer"
+    assert isinstance(result.metadata.n_samples_test, int), "n_samples_test should be integer"
+    assert result.metadata.n_samples_ref > 0, "n_samples_ref should be positive"
+    assert result.metadata.n_samples_test > 0, "n_samples_test should be positive"

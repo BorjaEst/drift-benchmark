@@ -1,146 +1,122 @@
-"""
-Fixtures and configuration for benchmark module tests.
-
-This module provides benchmark-specific test fixtures including mock runners,
-configurations, and test environments for validating benchmarking workflows
-and performance measurement capabilities.
-"""
-
-import tempfile
-from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import Mock, patch
+# Feature-specific fixtures for benchmark module testing
 
 import pytest
-
-
-@pytest.fixture
-def mock_benchmark_runner():
-    """Mock BenchmarkRunner for testing benchmark execution workflows."""
-    runner = Mock()
-    runner.run.return_value = {
-        "benchmark_id": "test_benchmark",
-        "total_detectors": 2,
-        "total_datasets": 1,
-        "execution_time": 45.2,
-        "results": [
-            {
-                "detector": "ks_test_evidently",
-                "dataset": "iris_drift",
-                "drift_detected": True,
-                "accuracy": 0.85,
-                "precision": 0.82,
-                "recall": 0.88,
-            }
-        ],
-    }
-    return runner
-
+import pandas as pd
+import numpy as np
+from typing import Any, Optional
+from unittest.mock import Mock, MagicMock
 
 @pytest.fixture
-def benchmark_environment(test_workspace):
-    """Provide isolated benchmark environment for testing."""
-    env = {
-        "workspace": test_workspace,
-        "components_dir": test_workspace / "components",
-        "configurations_dir": test_workspace / "configurations",
-        "results_dir": test_workspace / "results",
-        "logs_dir": test_workspace / "logs",
-    }
-
-    # Create required directories
-    for dir_path in env.values():
-        if hasattr(dir_path, "mkdir"):
-            dir_path.mkdir(exist_ok=True)
-
-    return env
-
-
-@pytest.fixture
-def multi_detector_config() -> Dict[str, Any]:
-    """Provide configuration for testing multiple detector benchmarking."""
-    return {
-        "metadata": {
-            "name": "Multi-Detector Benchmark",
-            "description": "Test multiple drift detection methods",
-            "author": "Test Suite",
-            "version": "1.0.0",
-        },
-        "data": {
-            "datasets": [
-                {"name": "iris_drift_test", "type": "scenario", "config": {"scenario_name": "iris_species_drift"}},
-                {"name": "wine_drift_test", "type": "scenario", "config": {"scenario_name": "wine_quality_drift"}},
+def mock_benchmark_config():
+    """Provide mock BenchmarkConfig for testing"""
+    class MockDatasetConfig:
+        def __init__(self, path, format, reference_split):
+            self.path = path
+            self.format = format
+            self.reference_split = reference_split
+    
+    class MockDetectorConfig:
+        def __init__(self, method_id, implementation_id):
+            self.method_id = method_id
+            self.implementation_id = implementation_id
+    
+    class MockBenchmarkConfig:
+        def __init__(self):
+            self.datasets = [
+                MockDatasetConfig("datasets/test1.csv", "CSV", 0.6),
+                MockDatasetConfig("datasets/test2.csv", "CSV", 0.7)
             ]
-        },
-        "detectors": {
-            "algorithms": [
-                {
-                    "adapter": "evidently_adapter",
-                    "method_id": "kolmogorov_smirnov",
-                    "implementation_id": "ks_batch",
-                    "parameters": {"threshold": 0.05},
-                },
-                {
-                    "adapter": "alibi_adapter",
-                    "method_id": "maximum_mean_discrepancy",
-                    "implementation_id": "mmd_batch",
-                    "parameters": {"kernel": "rbf"},
-                },
+            self.detectors = [
+                MockDetectorConfig("ks_test", "scipy"),
+                MockDetectorConfig("drift_detector", "custom")
             ]
-        },
-        "evaluation": {
-            "classification_metrics": ["accuracy", "precision", "recall", "f1"],
-            "detection_metrics": ["detection_delay", "auc_score"],
-            "statistical_tests": ["ttest", "mannwhitneyu"],
-            "performance_analysis": ["rankings"],
-            "runtime_analysis": ["memory_usage", "cpu_time"],
-        },
-    }
-
+    
+    return MockBenchmarkConfig()
 
 @pytest.fixture
-def mock_execution_strategy():
-    """Mock execution strategy for testing benchmark strategies."""
-    strategy = Mock()
-    strategy.execute.return_value = [
-        {
-            "detector_id": "ks_evidently",
-            "dataset": "test_dataset",
-            "execution_time": 2.5,
-            "memory_usage": 125.6,
-            "drift_detected": True,
-            "metrics": {"accuracy": 0.85, "precision": 0.82, "recall": 0.88},
-        }
-    ]
-    return strategy
-
+def mock_dataset_result():
+    """Provide mock DatasetResult for testing"""
+    ref_data = pd.DataFrame({
+        'feature_1': np.random.normal(0, 1, 100),
+        'feature_2': np.random.normal(0, 1, 100),
+        'categorical': np.random.choice(['A', 'B', 'C'], 100)
+    })
+    
+    test_data = pd.DataFrame({
+        'feature_1': np.random.normal(0.5, 1, 50),  # Shifted distribution
+        'feature_2': np.random.normal(0, 1.2, 50),  # Different variance
+        'categorical': np.random.choice(['A', 'B', 'C'], 50)
+    })
+    
+    metadata = Mock()
+    metadata.name = "mock_dataset"
+    metadata.data_type = "MIXED"
+    metadata.dimension = "MULTIVARIATE"
+    metadata.n_samples_ref = 100
+    metadata.n_samples_test = 50
+    
+    class MockDatasetResult:
+        def __init__(self, X_ref, X_test, metadata):
+            self.X_ref = X_ref
+            self.X_test = X_test
+            self.metadata = metadata
+    
+    return MockDatasetResult(ref_data, test_data, metadata)
 
 @pytest.fixture
-def benchmark_results_sample() -> Dict[str, Any]:
-    """Provide sample benchmark results for testing result processing."""
-    return {
-        "benchmark_metadata": {
-            "name": "Test Benchmark",
-            "start_time": "2024-01-01T10:00:00",
-            "end_time": "2024-01-01T10:05:00",
-            "total_duration": 300.0,
-        },
-        "detector_results": [
-            {
-                "detector_id": "ks_evidently_batch",
-                "adapter": "evidently_adapter",
-                "method_id": "kolmogorov_smirnov",
-                "dataset": "iris_species_drift",
-                "metrics": {"accuracy": 0.85, "precision": 0.82, "recall": 0.88, "f1": 0.85, "detection_delay": 5.2, "auc_score": 0.89},
-                "runtime": {"fit_time": 0.15, "detect_time": 0.08, "memory_usage": 45.2},
-            },
-            {
-                "detector_id": "mmd_alibi_batch",
-                "adapter": "alibi_adapter",
-                "method_id": "maximum_mean_discrepancy",
-                "dataset": "iris_species_drift",
-                "metrics": {"accuracy": 0.78, "precision": 0.75, "recall": 0.82, "f1": 0.78, "detection_delay": 8.1, "auc_score": 0.83},
-                "runtime": {"fit_time": 0.32, "detect_time": 0.18, "memory_usage": 68.5},
-            },
-        ],
-    }
+def mock_detector():
+    """Provide mock detector for testing"""
+    class MockDetector:
+        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+            self.method_id = method_id
+            self.implementation_id = implementation_id
+            self._fitted = False
+            self._last_score = None
+            self._execution_count = 0
+            
+        def preprocess(self, data, **kwargs) -> Any:
+            # Return numeric data only for simplicity
+            if hasattr(data, 'X_ref'):
+                return data.X_ref.select_dtypes(include=[np.number]).values
+            elif hasattr(data, 'X_test'):
+                return data.X_test.select_dtypes(include=[np.number]).values
+            return data
+            
+        def fit(self, preprocessed_data: Any, **kwargs):
+            self._fitted = True
+            self._reference_data = preprocessed_data
+            return self
+            
+        def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+            if not self._fitted:
+                raise RuntimeError("Detector must be fitted before detection")
+            self._execution_count += 1
+            self._last_score = 0.75 + (self._execution_count * 0.05)  # Varying scores
+            return True  # Always detect drift for testing
+            
+        def score(self) -> Optional[float]:
+            return self._last_score
+    
+    return MockDetector
+
+@pytest.fixture
+def mock_failing_detector():
+    """Provide mock detector that fails for error handling testing"""
+    class FailingDetector:
+        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+            self.method_id = method_id
+            self.implementation_id = implementation_id
+            
+        def preprocess(self, data, **kwargs) -> Any:
+            return data
+            
+        def fit(self, preprocessed_data: Any, **kwargs):
+            raise RuntimeError("Mock detector fit failure")
+            
+        def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+            raise RuntimeError("Mock detector detect failure")
+            
+        def score(self) -> Optional[float]:
+            return None
+    
+    return FailingDetector
