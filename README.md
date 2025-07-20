@@ -59,12 +59,12 @@ format = "CSV"
 reference_split = 0.5
 
 [[detectors]]
-method_id = "ks_test"
-implementation_id = "scipy"
+method_id = "kolmogorov_smirnov"
+implementation_id = "ks_batch"
 
 [[detectors]]
-method_id = "drift_detector"
-implementation_id = "river"
+method_id = "cramer_von_mises"
+implementation_id = "cvm_batch"
 ```
 
 #### 2. Run Benchmark
