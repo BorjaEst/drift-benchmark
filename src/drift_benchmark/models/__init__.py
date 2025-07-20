@@ -1,52 +1,25 @@
 """
-Models package for drift-benchmark.
+Data models for drift-benchmark using Pydantic v2 - REQ-MOD-XXX
 
-This package contains all data models used in the drift-benchmark library,
-organized by functionality:
-
-- configurations: Models for benchmark and component configuration
-- metadata: Models for metadata about benchmarks, datasets, detectors, and drift
-- results: Models for benchmark execution results and analysis
-
-All models are built with Pydantic v2 for validation, serialization, and type safety.
+This module contains data models used throughout the drift-benchmark library
+for type safety and validation.
 """
 
-# Configuration models
-from .configurations import (
-    BenchmarkConfig,
-    BenchmarkMetadata,
-    DatasetConfig,
-    DatasetsConfig,
-    DetectorConfig,
-    DetectorsConfig,
-    EvaluationConfig,
-)
-
-# Metadata models
-from .metadata import DatasetMetadata, DetectorMetadata, DriftMetadata, ImplementationMetadata, MethodMetadata
-
-# Result models
-from .results import BenchmarkResult, DatasetResult, DetectorResult, EvaluationResult, ScoreResult
+from .configuration_models import BenchmarkConfig, DatasetConfig, DetectorConfig
+from .metadata_models import BenchmarkSummary, DatasetMetadata, DetectorMetadata
+from .result_models import BenchmarkResult, DatasetResult, DetectorResult
 
 __all__ = [
     # Configuration models
     "BenchmarkConfig",
-    "BenchmarkMetadata",
-    "DatasetsConfig",
     "DatasetConfig",
-    "DetectorsConfig",
     "DetectorConfig",
-    "EvaluationConfig",
     # Metadata models
     "DatasetMetadata",
     "DetectorMetadata",
-    "DriftMetadata",
-    "ImplementationMetadata",
-    "MethodMetadata",
+    "BenchmarkSummary",
     # Result models
-    "BenchmarkResult",
     "DatasetResult",
     "DetectorResult",
-    "EvaluationResult",
-    "ScoreResult",
+    "BenchmarkResult",
 ]
