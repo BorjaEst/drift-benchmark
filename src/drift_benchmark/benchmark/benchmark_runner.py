@@ -41,6 +41,16 @@ class BenchmarkRunner:
 
         return cls(config)
 
+    @classmethod
+    def from_config(cls, path: str) -> "BenchmarkRunner":
+        """
+        Create BenchmarkRunner from configuration file.
+
+        REQ-RUN-001: BenchmarkRunner.from_config(path) class method
+        Alias for from_config_file for backward compatibility.
+        """
+        return cls.from_config_file(path)
+
     def run(self):
         """
         Execute benchmark and save results.
@@ -53,13 +63,18 @@ class BenchmarkRunner:
 
         logger.info("Starting benchmark execution")
 
-        # Execute benchmark
-        result = self._benchmark.run()
+        try:
+            # Execute benchmark
+            result = self._benchmark.run()
 
-        # REQ-RUN-003: Automatically save results
-        output_dir = save_results(result)
-        result.output_directory = output_dir
+            # REQ-RUN-003: Automatically save results
+            output_dir = save_results(result)
+            result.output_directory = output_dir
 
-        logger.info(f"Benchmark completed successfully. Results saved to: {output_dir}")
+            logger.info(f"Benchmark completed successfully. Results saved to: {output_dir}")
 
-        return result
+            return result
+
+        except Exception as e:
+            logger.error(f"Benchmark execution failed: {e}")
+            raise
