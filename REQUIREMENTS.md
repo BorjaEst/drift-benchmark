@@ -6,36 +6,30 @@
 
 This module defines how the drift-benchmark library manages system resources including memory limits, cleanup, and graceful shutdown to ensure reliable operation and prevent resource exhaustion.
 
-| ID              | Requirement                     | Description                                                                                                                                                                                   |
-| --------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-RSC-001** | **Memory Limit Enforcement**    | BenchmarkRunner must monitor memory usage during execution and terminate with BenchmarkExecutionError if limit is exceeded                                                                    |
-| **REQ-RSC-002** | **Memory Usage Tracking**       | All detector operations must track peak memory usage using psutil.Process().memory_info() at 100ms intervals during fit/detect phases and include memory metadata in DetectorResult           |
-| **REQ-RSC-003** | **Resource Cleanup on Exit**    | BenchmarkRunner must ensure proper cleanup of all resources (file handles, memory, processes) during normal and error exit                                                                    |
-| **REQ-RSC-004** | **Graceful Shutdown Handling**  | Application must handle SIGINT and SIGTERM signals to perform cleanup before termination                                                                                                      |
-| **REQ-RSC-005** | **Detector Resource Isolation** | Each detector execution must be isolated to prevent resource leaks from affecting subsequent detector runs                                                                                    |
-| **REQ-RSC-006** | **Memory Cleanup Between Runs** | BenchmarkRunner must explicitly release detector instances and preprocessed data after each detector-dataset evaluation                                                                       |
-| **REQ-RSC-007** | **File Handle Management**      | All file operations must use context managers or explicit close() calls to prevent file handle leaks                                                                                          |
-| **REQ-RSC-008** | **Temporary Resource Cleanup**  | Any temporary files or directories created during benchmark execution must be cleaned up before process termination                                                                           |
-| **REQ-RSC-009** | **Memory Limit Configuration**  | Memory limits must be configurable through settings.memory_limit_mb with validation between 512-32768 MB                                                                                      |
-| **REQ-RSC-010** | **Resource Monitoring Logging** | Resource usage violations and cleanup actions must be logged using the centralized logging system                                                                                             |
-| **REQ-RSC-011** | **Memory Monitoring Schedule**  | Memory usage must be checked before detector fit(), every 100ms during execution, after detect(), and during cleanup phases                                                                   |
-| **REQ-RSC-012** | **Memory Threshold Warnings**   | Memory usage warnings must be logged at 70% of limit, errors at 90%, and termination triggered at 100% of configured limit                                                                    |
-| **REQ-RSC-013** | **Memory Cleanup Verification** | After each detector execution, memory usage must be verified to return within 10MB of application startup baseline (measured when BenchmarkRunner is initialized) or trigger explicit cleanup |
-| **REQ-RSC-014** | **Memory Leak Detection**       | If memory usage grows by more than 50MB between detector runs without data size increase, log memory leak warning with detector ID                                                            |
+| ID              | Requirement                     | Description                                                                                                                         |
+| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-RSC-001** | **Memory Limit Enforcement**    | BenchmarkRunner must monitor memory usage during execution and terminate with BenchmarkExecutionError if limit is exceeded          |
+| **REQ-RSC-002** | **Memory Usage Tracking**       | All detector operations must track peak memory usage before and after execution and include basic memory metadata in DetectorResult |
+| **REQ-RSC-003** | **Resource Cleanup on Exit**    | BenchmarkRunner must ensure proper cleanup of all resources (file handles, memory, processes) during normal and error exit          |
+| **REQ-RSC-005** | **Detector Resource Isolation** | Each detector execution must be isolated to prevent resource leaks from affecting subsequent detector runs                          |
+| **REQ-RSC-006** | **Memory Cleanup Between Runs** | BenchmarkRunner must explicitly release detector instances and preprocessed data after each detector-dataset evaluation             |
+| **REQ-RSC-007** | **File Handle Management**      | All file operations must use context managers or explicit close() calls to prevent file handle leaks                                |
+| **REQ-RSC-008** | **Temporary Resource Cleanup**  | Any temporary files or directories created during benchmark execution must be cleaned up before process termination                 |
+| **REQ-RSC-009** | **Memory Limit Configuration**  | Memory limits must be configurable through settings.memory_limit_mb with validation between 512-32768 MB                            |
+| **REQ-RSC-010** | **Resource Monitoring Logging** | Resource usage violations and cleanup actions must be logged using the centralized logging system                                   |
+| **REQ-RSC-011** | **Basic Memory Monitoring**     | Memory usage must be checked before and after detector execution phases                                                             |
+| **REQ-RSC-012** | **Memory Threshold Warnings**   | Memory usage warnings must be logged at 90% of configured limit and termination triggered at 100% of configured limit               |
 
 ### 🔄 Resource Lifecycle Management
 
-| Resource Type          | Creation Phase           | Active Phase                   | Cleanup Phase               | Lifecycle Owner       |
-| ---------------------- | ------------------------ | ------------------------------ | --------------------------- | --------------------- |
-| **Dataset Objects**    | Data loading             | Detector preprocessing/fitting | After detector execution    | Benchmark             |
-| **Detector Instances** | Registry instantiation   | fit/detect/score operations    | After dataset evaluation    | Benchmark             |
-| **File Handles**       | Data/config loading      | Read/write operations          | Context manager exit        | Specific operations   |
-| **Memory Buffers**     | Data transformation      | Computation phases             | Explicit del + gc.collect() | Data/Adapters modules |
-| **Temporary Files**    | Preprocessing operations | Analysis/export phases         | Process termination         | Results module        |
-| **Log Resources**      | Application startup      | Throughout execution           | Application shutdown        | Settings module       |
-| **External Libraries** | Adapter initialization   | Detector execution             | Module cleanup              | Adapters module       |
+| Resource Type          | Creation Phase           | Cleanup Phase            | Lifecycle Owner     |
+| ---------------------- | ------------------------ | ------------------------ | ------------------- |
+| **Dataset Objects**    | Data loading             | After detector execution | Benchmark           |
+| **Detector Instances** | Registry instantiation   | After dataset evaluation | Benchmark           |
+| **File Handles**       | Data/config loading      | Context manager exit     | Specific operations |
+| **Temporary Files**    | Preprocessing operations | Process termination      | Results module      |
 
-> **Lifecycle Enforcement**: Each resource type has a designated owner module responsible for proper cleanup. Owners must implement cleanup methods that are called in dependency order during shutdown. Resource cleanup must be idempotent and robust to repeated calls.
+> **Lifecycle Enforcement**: Each resource type has a designated owner module responsible for proper cleanup using standard Python patterns (context managers, explicit cleanup methods).
 
 > Resource management ensures benchmarks run reliably without exhausting system resources. Memory limits prevent runaway processes, while cleanup ensures consistent benchmark environments.
 
@@ -100,24 +94,17 @@ This module defines how data moves through the benchmark system orchestrated by 
 
 This module defines how BenchmarkConfig is loaded, validated, and processed. It ensures type safety through Pydantic v2 validation and provides clear error handling for configuration issues.
 
-| ID              | Requirement                       | Description                                                                                                                                                                 |
-| --------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-CFG-001** | **TOML File Loading**             | BenchmarkRunner must load BenchmarkConfig from .toml files using `BenchmarkConfig.from_toml(path: str) -> BenchmarkConfig`                                                  |
-| **REQ-CFG-002** | **Pydantic V2 Validation**        | BenchmarkConfig must use Pydantic v2 BaseModel with automatic field validation for all nested configuration models                                                          |
-| **REQ-CFG-003** | **Path Resolution**               | Configuration loading must resolve relative file paths to absolute paths and validate file existence for dataset configurations                                             |
-| **REQ-CFG-004** | **Configuration Validation**      | BenchmarkConfig must validate detector method_id/implementation_id existence in the methods registry during model validation                                                |
-| **REQ-CFG-005** | **Error Context Reporting**       | Configuration validation errors must include clear context about which field failed validation and provide correction suggestions                                           |
-| **REQ-CFG-006** | **Default Value Handling**        | BenchmarkConfig must provide sensible defaults for optional fields following drift detection best practices and ensuring reproducibility                                    |
-| **REQ-CFG-007** | **Cross-Model Consistency**       | BenchmarkConfig must validate consistency between related fields (e.g., drift_type in datasets matches detector capabilities)                                               |
-| **REQ-CFG-008** | **Nested Configuration Support**  | BenchmarkConfig must support nested models (MetadataConfig, DatasetsConfig, DetectorsConfig, EvaluationConfig) with independent validation                                  |
-| **REQ-CFG-009** | **Configuration Serialization**   | BenchmarkConfig must support round-trip serialization (to_toml/from_toml) preserving all configuration data                                                                 |
-| **REQ-CFG-010** | **Environment Variable Override** | Configuration loading must allow environment variable overrides for critical settings like results_dir and log_level                                                        |
-| **REQ-CFG-011** | **Validation Rule Examples**      | Configuration validation must provide examples: detector parameters within valid ranges, dataset paths existing and readable, metric lists containing only supported values |
-| **REQ-CFG-012** | **Cross-Field Validation**        | Configuration must validate related fields: drift_type in datasets matches detector capabilities, required_labels matches dataset labeling, execution_mode is compatible    |
-| **REQ-CFG-013** | **Parameter Range Validation**    | Detector parameters must be validated against method-specific ranges: window_size > 0, significance_level in [0.001, 0.1], confidence_level in [0.8, 0.99]                  |
-| **REQ-CFG-014** | **Path Accessibility Check**      | Dataset and output paths must be validated for: existence (input), writability (output), sufficient disk space (>100MB), and appropriate permissions                        |
+| ID              | Requirement                        | Description                                                                                                                |
+| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-CFG-001** | **TOML File Loading**              | BenchmarkRunner must load BenchmarkConfig from .toml files using `BenchmarkConfig.from_toml(path: str) -> BenchmarkConfig` |
+| **REQ-CFG-002** | **Pydantic V2 Validation**         | BenchmarkConfig must use Pydantic v2 BaseModel with automatic field validation for all nested configuration models         |
+| **REQ-CFG-003** | **Basic Path Resolution**          | Configuration loading must resolve relative file paths to absolute paths for dataset configurations                        |
+| **REQ-CFG-004** | **Basic Configuration Validation** | BenchmarkConfig must validate that detector method_id/implementation_id exist in the methods registry                      |
+| **REQ-CFG-005** | **Default Value Handling**         | BenchmarkConfig must provide reasonable defaults for optional fields                                                       |
+| **REQ-CFG-006** | **Nested Configuration Support**   | BenchmarkConfig must support nested models (MetadataConfig, DatasetsConfig, DetectorsConfig, EvaluationConfig)             |
+| **REQ-CFG-007** | **Configuration Serialization**    | BenchmarkConfig must support basic serialization (to_toml/from_toml)                                                       |
 
-> BenchmarkConfig uses Pydantic v2 for automatic validation. Most validation is handled by Pydantic's built-in mechanisms (type checking, field constraints, custom validators). The configuration system is responsible for loading TOML files and resolving paths, while Pydantic handles the data validation automatically.
+> BenchmarkConfig uses Pydantic v2 for automatic validation. Most validation is handled by Pydantic's built-in mechanisms. The configuration system is responsible for loading TOML files and basic path resolution.
 
 ## 🚀 Module Initialization Order
 
@@ -155,29 +142,22 @@ This module defines the initialization order and dependency resolution for the d
 
 ## 🔧 Literals Module
 
-| ID              | Requirement                        | Description                                                                                                                            |
-| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-LIT-001** | **Drift Type Literals**            | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                                           |
-| **REQ-LIT-002** | **Data Type Literals**             | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                                       |
-| **REQ-LIT-003** | **Dimension Literals**             | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                          |
-| **REQ-LIT-004** | **Labeling Literals**              | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                        |
-| **REQ-LIT-005** | **Execution Mode Literals**        | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                                  |
-| **REQ-LIT-006** | **Method Family Literals**         | Must define `MethodFamily` literal with values: "CHANGE_DETECTION", "WINDOW_BASED", "DISTANCE_BASED", "STATISTICAL_TEST", etc.         |
-| **REQ-LIT-007** | **Drift Pattern Literals**         | Must define `DriftPattern` literal with values: "SUDDEN", "GRADUAL", "INCREMENTAL", "RECURRING"                                        |
-| **REQ-LIT-008** | **Dataset Source Literals**        | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC", "SCENARIO"                                                       |
-| **REQ-LIT-009** | **Drift Characteristic Literals**  | Must define `DriftCharacteristic` literal with values: "MEAN_SHIFT", "VARIANCE_SHIFT", "CORRELATION_SHIFT", "DISTRIBUTION_SHIFT"       |
-| **REQ-LIT-010** | **Data Generator Literals**        | Must define `DataGenerator` literal with values: "GAUSSIAN", "MIXED", "MULTIMODAL", "TIME_SERIES"                                      |
-| **REQ-LIT-011** | **File Format Literals**           | Must define `FileFormat` literal with values: "CSV", "PARQUET", "MARKDOWN", "JSON", "DIRECTORY"                                        |
-| **REQ-LIT-012** | **Log Level Literals**             | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                                            |
-| **REQ-LIT-013** | **Classification Metric Literals** | Must define `ClassificationMetric` literal with values: "ACCURACY", "PRECISION", "RECALL", "F1_SCORE", "SPECIFICITY", "SENSITIVITY"    |
-| **REQ-LIT-014** | **Rate Metric Literals**           | Must define `RateMetric` literal with values: "TRUE_POSITIVE_RATE", "TRUE_NEGATIVE_RATE", "FALSE_POSITIVE_RATE", "FALSE_NEGATIVE_RATE" |
-| **REQ-LIT-015** | **ROC Metric Literals**            | Must define `ROCMetric` literal with values: "AUC_ROC", "AUC_PR"                                                                       |
-| **REQ-LIT-016** | **Detection Metric Literals**      | Must define `DetectionMetric` literal with values: "DETECTION_DELAY", "DETECTION_RATE", "MISSED_DETECTION_RATE"                        |
-| **REQ-LIT-017** | **Performance Metric Literals**    | Must define `PerformanceMetric` literal with values: "COMPUTATION_TIME", "MEMORY_USAGE", "THROUGHPUT"                                  |
-| **REQ-LIT-018** | **Score Metric Literals**          | Must define `ScoreMetric` literal with values: "DRIFT_SCORE", "P_VALUE", "CONFIDENCE_SCORE"                                            |
-| **REQ-LIT-019** | **Comparative Metric Literals**    | Must define `ComparativeMetric` literal with values: "RELATIVE_ACCURACY", "IMPROVEMENT_RATIO", "RANKING_SCORE"                         |
-| **REQ-LIT-020** | **Metric Union Type**              | Must define `Metric` as union of all metric literal types for comprehensive evaluation support                                         |
-| **REQ-LIT-021** | **Detection Result Literals**      | Must define `DetectionResult` literal with values: "true_positive", "true_negative", "false_positive", "false_negative"                |
+| ID              | Requirement                        | Description                                                                                                                    |
+| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-LIT-001** | **Drift Type Literals**            | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                                   |
+| **REQ-LIT-002** | **Data Type Literals**             | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                               |
+| **REQ-LIT-003** | **Dimension Literals**             | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                  |
+| **REQ-LIT-004** | **Labeling Literals**              | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                |
+| **REQ-LIT-005** | **Execution Mode Literals**        | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                          |
+| **REQ-LIT-006** | **Method Family Literals**         | Must define `MethodFamily` literal with values: "CHANGE_DETECTION", "WINDOW_BASED", "DISTANCE_BASED", "STATISTICAL_TEST", etc. |
+| **REQ-LIT-007** | **Drift Pattern Literals**         | Must define `DriftPattern` literal with values: "SUDDEN", "GRADUAL"                                                            |
+| **REQ-LIT-008** | **Dataset Source Literals**        | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC", "SCENARIO"                                               |
+| **REQ-LIT-009** | **File Format Literals**           | Must define `FileFormat` literal with values: "CSV", "JSON"                                                                    |
+| **REQ-LIT-010** | **Log Level Literals**             | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                                    |
+| **REQ-LIT-011** | **Classification Metric Literals** | Must define `ClassificationMetric` literal with values: "ACCURACY", "PRECISION", "RECALL", "F1_SCORE"                          |
+| **REQ-LIT-012** | **Performance Metric Literals**    | Must define `PerformanceMetric` literal with values: "COMPUTATION_TIME", "MEMORY_USAGE"                                        |
+| **REQ-LIT-013** | **Metric Union Type**              | Must define `Metric` as union of all metric literal types for evaluation support                                               |
+| **REQ-LIT-014** | **Detection Result Literals**      | Must define `DetectionResult` literal with values: "true_positive", "true_negative", "false_positive", "false_negative"        |
 
 ## 🔧 Utilities Module
 
@@ -309,26 +289,15 @@ This module contains the data models used throughout the drift-benchmark library
 
 ### 🔧 Cross-Model Requirements
 
-| ID              | Requirement                  | Description                                                                                                         |
-| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **REQ-MOD-001** | **Pydantic BaseModel**       | All data models must inherit from Pydantic v2 `BaseModel` for automatic validation and serialization                |
-| **REQ-MOD-002** | **Field Validation**         | Models must use Pydantic `Field()` with constraints (gt, ge, le, lt) for automatic data quality validation          |
-| **REQ-MOD-003** | **Custom Validators**        | Models must use `@field_validator` and `@model_validator` decorators for business logic validation                  |
-| **REQ-MOD-004** | **ValidationError Handling** | Application must catch and transform Pydantic `ValidationError` into user-friendly error messages                   |
-| **REQ-MOD-005** | **Model Type Safety**        | Models must use Literal types from literals module for enumerated fields                                            |
-| **REQ-MOD-006** | **Model Inheritance**        | Related models must share common base classes where appropriate to ensure consistency and reduce code duplication   |
-| **REQ-MOD-007** | **Model Relationships**      | Models must properly reference each other using appropriate foreign key patterns and maintain referential integrity |
-| **REQ-MOD-008** | **Model Composition**        | Models must support composition patterns allowing complex models to be built from simpler components                |
-| **REQ-MOD-009** | **Model Versioning**         | Models must support version information to handle schema evolution and backward compatibility                       |
-| **REQ-MOD-010** | **Model Documentation**      | Model fields must include comprehensive docstrings and examples for clear API documentation                         |
-| **REQ-MOD-011** | **Model Error Handling**     | Models must provide clear, actionable error messages for validation failures with suggestions for correction        |
-| **REQ-MOD-012** | **Model Serialization**      | Models must support consistent serialization/deserialization across JSON, TOML, and Python dict formats             |
-| **REQ-MOD-013** | **Model Path Validation**    | File path fields in configs must auto-resolve relative paths to absolute and validate existence where required      |
-| **REQ-MOD-014** | **Model Default Values**     | Models must provide sensible defaults following drift detection best practices to simplify user configuration       |
-| **REQ-MOD-015** | **Model Reusability**        | Models must support inheritance and composition patterns for reusable configuration components                      |
-| **REQ-MOD-016** | **Model Consistency**        | Models must ensure consistency between related fields (e.g., drift_type matches has_drift boolean)                  |
+| ID              | Requirement                | Description                                                                                          |
+| --------------- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **REQ-MOD-001** | **Pydantic BaseModel**     | All data models must inherit from Pydantic v2 `BaseModel` for automatic validation and serialization |
+| **REQ-MOD-002** | **Basic Field Validation** | Models must use Pydantic basic type checking and constraints for data validation                     |
+| **REQ-MOD-003** | **Model Type Safety**      | Models must use Literal types from literals module for enumerated fields                             |
+| **REQ-MOD-004** | **Model Serialization**    | Models must support basic serialization/deserialization for JSON and TOML formats                    |
+| **REQ-MOD-005** | **Basic Default Values**   | Models must provide reasonable defaults for optional fields                                          |
 
-> **NOTE**: This module ensures that all data exchanged within the drift-benchmark library is well-structured, validated, and type-safe, supporting maintainable and robust development. All models use Pydantic v2 for automatic validation. No separate quality validation module needed.
+> **NOTE**: This module ensures that all data exchanged within the drift-benchmark library is well-structured and type-safe using Pydantic v2's built-in validation mechanisms.
 
 ### ⚙️ Configuration Models
 
@@ -501,22 +470,18 @@ This module provides adapters for integrating various drift detection libraries 
 
 ### 🏗️ Base Module
 
-| ID              | Requirement                      | Description                                                                                                                                            |
-| --------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **REQ-ADP-001** | **BaseDetector Abstract Class**  | `BaseDetector` must be an abstract class with abstract methods `fit()`, `detect()`, and concrete methods `preprocess()`, `score()`, `reset()`          |
-| **REQ-ADP-002** | **Method ID Property**           | `BaseDetector` must have read-only property `method_id: str` that returns the drift detection method identifier (e.g., "kolmogorov_smirnov")           |
-| **REQ-ADP-003** | **Implementation ID Property**   | `BaseDetector` must have read-only property `implementation_id: str` that returns the implementation variant (e.g., "ks_batch", "ks_streaming")        |
-| **REQ-ADP-004** | **Metadata Class Method**        | `BaseDetector` must implement `@classmethod metadata() -> DetectorMetadata` returning structured metadata about the method and implementation          |
-| **REQ-ADP-005** | **Preprocess Method**            | `BaseDetector.preprocess(data: DatasetResult, **kwargs) -> Any` must handle data format conversion for the specific detector requirements              |
-| **REQ-ADP-006** | **Abstract Fit Method**          | `BaseDetector.fit(preprocessed_data: Any, **kwargs) -> Self` must be abstract and train the detector on reference data                                 |
-| **REQ-ADP-007** | **Abstract Detect Method**       | `BaseDetector.detect(preprocessed_data: Any, **kwargs) -> bool` must be abstract and return True if drift is detected, False otherwise                 |
-| **REQ-ADP-008** | **Score Method**                 | `BaseDetector.score() -> ScoreResult` must return drift scores/statistics after detection in standardized format                                       |
-| **REQ-ADP-009** | **Reset Method**                 | `BaseDetector.reset() -> None` must clear internal state allowing detector reuse without reinitialization                                              |
-| **REQ-ADP-010** | **Initialization Validation**    | `BaseDetector.__init__()` must validate that `method_id` and `implementation_id` exist in the methods registry and raise `InvalidDetectorError` if not |
-| **REQ-ADP-011** | **Library Version Check**        | `BaseDetector` must validate external library versions during initialization: numpy>=1.20.0, pandas>=1.3.0, scikit-learn>=1.0.0 if required            |
-| **REQ-ADP-012** | **Dependency Compatibility**     | Adapters must declare compatible versions using version specifiers and raise ImportError with clear upgrade instructions if incompatible               |
-| **REQ-ADP-013** | **Library Feature Detection**    | Adapters must check for required library features/functions and provide fallback implementations or clear error messages if unavailable                |
-| **REQ-ADP-014** | **Version Compatibility Matrix** | Documentation must specify tested library versions: evidently>=0.4.0, alibi-detect>=0.11.0, frouros>=0.6.0, river>=0.20.0, menelaus>=0.2.0             |
+| ID              | Requirement                     | Description                                                                                                                                     |
+| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-ADP-001** | **BaseDetector Abstract Class** | `BaseDetector` must be an abstract class with abstract methods `fit()`, `detect()`, and concrete methods `preprocess()`, `score()`, `reset()`   |
+| **REQ-ADP-002** | **Method ID Property**          | `BaseDetector` must have read-only property `method_id: str` that returns the drift detection method identifier (e.g., "kolmogorov_smirnov")    |
+| **REQ-ADP-003** | **Implementation ID Property**  | `BaseDetector` must have read-only property `implementation_id: str` that returns the implementation variant (e.g., "ks_batch", "ks_streaming") |
+| **REQ-ADP-004** | **Metadata Class Method**       | `BaseDetector` must implement `@classmethod metadata() -> DetectorMetadata` returning structured metadata about the method and implementation   |
+| **REQ-ADP-005** | **Preprocess Method**           | `BaseDetector.preprocess(data: DatasetResult, **kwargs) -> Any` must handle data format conversion for the specific detector requirements       |
+| **REQ-ADP-006** | **Abstract Fit Method**         | `BaseDetector.fit(preprocessed_data: Any, **kwargs) -> Self` must be abstract and train the detector on reference data                          |
+| **REQ-ADP-007** | **Abstract Detect Method**      | `BaseDetector.detect(preprocessed_data: Any, **kwargs) -> bool` must be abstract and return True if drift is detected, False otherwise          |
+| **REQ-ADP-008** | **Score Method**                | `BaseDetector.score() -> ScoreResult` must return drift scores/statistics after detection in standardized format                                |
+| **REQ-ADP-009** | **Reset Method**                | `BaseDetector.reset() -> None` must clear internal state allowing detector reuse without reinitialization                                       |
+| **REQ-ADP-010** | **Basic Validation**            | `BaseDetector.__init__()` must validate that `method_id` and `implementation_id` exist in the methods registry                                  |
 
 ### 🗂️ Registry Module
 
@@ -531,22 +496,6 @@ This module provides adapters for integrating various drift detection libraries 
 | **REQ-REG-007** | **Duplicate Registration**        | Must raise `DuplicateDetectorError` when attempting to register same (method_id, implementation_id) combination twice                 |
 | **REQ-REG-008** | **Registry Validation**           | Must validate that registered Detector classes inherit from `BaseDetector` and have valid method_id/implementation_id in methods.toml |
 | **REQ-REG-009** | **Clear Registry**                | Must provide `clear_registry()` method to remove all registrations (primarily for testing)                                            |
-
-### 🔌 Plugin Architecture
-
-| ID              | Requirement              | Description                                                                                                                        |
-| --------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-PLG-001** | **Plugin Discovery**     | System must automatically discover and load adapter plugins from `components/` directory using Python module importing             |
-| **REQ-PLG-002** | **Plugin Interface**     | All plugins must implement `BaseDetector` interface and register using `@register_detector` decorator for automatic discovery      |
-| **REQ-PLG-003** | **Plugin Isolation**     | Plugin loading errors must not crash the application; failed plugins are logged and excluded from available detector list          |
-| **REQ-PLG-004** | **Plugin Metadata**      | Plugins must declare metadata including name, version, author, supported_methods, required_libraries through module attributes     |
-| **REQ-PLG-005** | **Dynamic Registration** | Plugins can be added at runtime without application restart by calling `discover_adapters()` on new plugin directories             |
-| **REQ-PLG-006** | **Plugin Validation**    | System must validate plugin compatibility: required libraries installed, method_id exists in registry, implementation_id is unique |
-| **REQ-PLG-007** | **Plugin Dependencies**  | Plugins must declare library dependencies; system checks availability and versions before registration                             |
-| **REQ-PLG-008** | **Plugin Configuration** | Plugins can accept custom configuration through detector parameters in benchmark configuration files                               |
-| **REQ-PLG-009** | **Plugin Documentation** | System must generate plugin documentation automatically from metadata and method registry information                              |
-
-> **Note**: Plugin security considerations are deferred to future versions. Initial implementation focuses on basic plugin discovery and loading from trusted sources.
 
 ## 📊 Data Module
 
@@ -563,30 +512,23 @@ This module provides comprehensive, configuration-driven utilities for data load
 
 ### 🎲 Synthetic Data
 
-| ID              | Requirement                 | Description                                                                                                            |
-| --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **REQ-DAT-101** | **Generator Discovery**     | Data module must provide `get_synthetic_methods() -> List[str]` that returns available synthetic data generator names  |
-| **REQ-DAT-102** | **Synthetic Generation**    | Data module must provide `gen_synthetic(config: SyntheticConfig) -> DatasetResult` for generating synthetic drift data |
-| **REQ-DAT-103** | **Drift Pattern Support**   | Synthetic generators must support DriftPattern literals: SUDDEN, GRADUAL, INCREMENTAL, RECURRING                       |
-| **REQ-DAT-104** | **Feature Type Handling**   | Synthetic generators must handle continuous and categorical features based on categorical_features parameter           |
-| **REQ-DAT-105** | **Reproducible Generation** | Synthetic data generation must be reproducible when provided with random_state parameter                               |
-| **REQ-DAT-106** | **Gaussian Generator**      | Must implement gaussian generator for multivariate normal distributions with configurable drift                        |
+| ID              | Requirement                    | Description                                                                                                                  |
+| --------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-DAT-101** | **Basic Synthetic Generation** | Data module must provide `gen_synthetic(config: SyntheticConfig) -> DatasetResult` for generating basic synthetic drift data |
+| **REQ-DAT-102** | **Gaussian Generator**         | Must implement gaussian generator for multivariate normal distributions with basic drift patterns                            |
+| **REQ-DAT-103** | **Reproducible Generation**    | Synthetic data generation must be reproducible when provided with random_state parameter                                     |
 
 ### 📁 File Data
 
-| ID              | Requirement                 | Description                                                                                                      |
-| --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **REQ-DAT-201** | **File Loading Interface**  | Data module must provide `load_dataset(config: DatafileConfig) -> DatasetResult` for loading datasets from files |
-| **REQ-DAT-202** | **Feature Selection**       | File loading must support feature_columns and target_column parameters for column selection                      |
-| **REQ-DAT-203** | **Split Configuration**     | File datasets must support reference_split ratio (0.0 to 1.0) for creating X_ref/X_test divisions                |
-| **REQ-DAT-204** | **CSV Format Support**      | File loading must support CSV format with automatic type inference and configurable missing value handling       |
-| **REQ-DAT-205** | **Path Validation**         | File loading must validate file exists and is readable, raising FileNotFoundError with descriptive message       |
-| **REQ-DAT-206** | **Data Type Inference**     | File loading must automatically infer data types and set appropriate DataType in metadata                        |
-| **REQ-DAT-207** | **Parquet Format Support**  | File loading must support Parquet format with automatic schema inference and efficient columnar reading          |
-| **REQ-DAT-208** | **JSON Format Support**     | File loading must support JSON format with configurable record structure (records, lines, nested objects)        |
-| **REQ-DAT-209** | **Streaming Data Support**  | File loading must support streaming formats with configurable batch sizes and incremental processing             |
-| **REQ-DAT-210** | **Multi-File Datasets**     | File loading must support directories containing multiple data files with automatic concatenation and validation |
-| **REQ-DAT-211** | **Compressed File Support** | File loading must support compressed formats: .gz, .bz2, .xz with automatic decompression during loading         |
+| ID              | Requirement                | Description                                                                                                      |
+| --------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **REQ-DAT-201** | **File Loading Interface** | Data module must provide `load_dataset(config: DatafileConfig) -> DatasetResult` for loading datasets from files |
+| **REQ-DAT-202** | **Feature Selection**      | File loading must support feature_columns and target_column parameters for column selection                      |
+| **REQ-DAT-203** | **Split Configuration**    | File datasets must support reference_split ratio (0.0 to 1.0) for creating X_ref/X_test divisions                |
+| **REQ-DAT-204** | **CSV Format Support**     | File loading must support CSV format with automatic type inference and configurable missing value handling       |
+| **REQ-DAT-205** | **Path Validation**        | File loading must validate file exists and is readable, raising FileNotFoundError with descriptive message       |
+| **REQ-DAT-206** | **Data Type Inference**    | File loading must automatically infer data types and set appropriate DataType in metadata                        |
+| **REQ-DAT-207** | **Basic Format Support**   | File loading must support common formats (CSV, JSON) for basic benchmarking needs                                |
 
 ### 🔄 Data Preprocessing
 
@@ -602,14 +544,12 @@ This module provides comprehensive, configuration-driven utilities for data load
 
 ### ⚡ Performance & Caching
 
-| ID              | Requirement              | Description                                                                                                                                                                   |
-| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-DAT-501** | **Caching Support**      | Data loading must support optional caching for expensive operations when settings.enable_caching is True                                                                      |
-| **REQ-DAT-502** | **Memory Efficiency**    | Data operations must handle large datasets with memory usage not exceeding 80% of available system memory and support datasets up to 1GB using chunked processing when needed |
-| **REQ-DAT-503** | **Lazy Loading**         | Dataset loading should support lazy evaluation for improved performance in benchmark scenarios                                                                                |
-| **REQ-DAT-504** | **Cache Key Generation** | Caching must generate deterministic keys based on data configuration to ensure consistent cache hits                                                                          |
+| ID              | Requirement               | Description                                                                                          |
+| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **REQ-DAT-501** | **Basic Caching Support** | Data loading may support basic caching for loaded datasets when settings.enable_caching is True      |
+| **REQ-DAT-502** | **Memory Efficiency**     | Data operations should handle datasets efficiently using standard Python memory management practices |
 
-> Memory consumption is not strictly quantified but should be minimized through standard data engineering techniques (e.g., chunked reading, avoiding unnecessary copies, using memory-mapped files where appropriate).
+> Memory consumption should be minimized through standard data engineering techniques (e.g., avoiding unnecessary copies, using appropriate data structures).
 
 ## 📊 Evaluation Module
 
@@ -632,60 +572,43 @@ This module provides comprehensive evaluation capabilities for benchmarking drif
 
 ### 🎯 Classification Metrics
 
-| ID              | Requirement                 | Description                                                                                                                                   |
-| --------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-EVL-021** | **Accuracy Calculation**    | Evaluation engine must calculate accuracy as the ratio of correct predictions to total predictions for drift detection binary classification  |
-| **REQ-EVL-022** | **Precision Measurement**   | Evaluation engine must calculate precision as the ratio of true positive drift detections to all positive drift predictions                   |
-| **REQ-EVL-023** | **Recall Measurement**      | Evaluation engine must calculate recall as the ratio of true positive drift detections to all actual drift occurrences                        |
-| **REQ-EVL-024** | **F1 Score Calculation**    | Evaluation engine must calculate F1 score as the harmonic mean of precision and recall for balanced drift detection performance assessment    |
-| **REQ-EVL-025** | **Specificity Measurement** | Evaluation engine must calculate specificity as the ratio of true negative predictions to all actual negative cases (no drift)                |
-| **REQ-EVL-026** | **Balanced Accuracy**       | Evaluation engine must calculate balanced accuracy as the average of sensitivity (recall) and specificity to handle imbalanced drift datasets |
+| ID              | Requirement               | Description                                                                                                                                  |
+| --------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-EVL-021** | **Accuracy Calculation**  | Evaluation engine must calculate accuracy as the ratio of correct predictions to total predictions for drift detection binary classification |
+| **REQ-EVL-022** | **Precision Measurement** | Evaluation engine must calculate precision as the ratio of true positive drift detections to all positive drift predictions                  |
+| **REQ-EVL-023** | **Recall Measurement**    | Evaluation engine must calculate recall as the ratio of true positive drift detections to all actual drift occurrences                       |
+| **REQ-EVL-024** | **F1 Score Calculation**  | Evaluation engine must calculate F1 score as the harmonic mean of precision and recall for balanced drift detection performance assessment   |
 
 ### 🔍 Detection Metrics
 
-| ID              | Requirement                  | Description                                                                                                                                               |
-| --------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-EVL-031** | **Detection Delay Tracking** | Evaluation engine must measure detection delay as the time difference between actual drift occurrence and first detection                                 |
-| **REQ-EVL-032** | **ROC Curve Generation**     | Evaluation engine must generate ROC curves plotting true positive rate vs false positive rate across different detection thresholds                       |
-| **REQ-EVL-033** | **AUC Score Calculation**    | Evaluation engine must calculate Area Under the Curve (AUC) score to summarize ROC curve performance in a single metric                                   |
-| **REQ-EVL-034** | **False Alarm Rate**         | Evaluation engine must calculate false alarm rate as the ratio of false positive detections to total no-drift periods for practical deployment assessment |
-| **REQ-EVL-035** | **Detection Power**          | Evaluation engine must measure detection power as the probability of correctly identifying drift when it actually occurs                                  |
-| **REQ-EVL-036** | **Precision-Recall Curve**   | Evaluation engine must generate precision-recall curves for evaluating performance on imbalanced drift detection scenarios                                |
+| ID              | Requirement                 | Description                                                                                                        |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **REQ-EVL-031** | **Basic Detection Metrics** | Evaluation engine must calculate basic detection performance metrics including detection rate and false alarm rate |
+| **REQ-EVL-032** | **AUC Score Calculation**   | Evaluation engine must calculate Area Under the Curve (AUC) score for performance summary                          |
 
 ### 📈 Statistical Tests
 
-| ID              | Requirement                 | Description                                                                                                                         |
-| --------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-EVL-041** | **T-Test Implementation**   | Evaluation engine must implement t-test for comparing means between detector performance groups with normal distributions           |
-| **REQ-EVL-042** | **Mann-Whitney U Test**     | Evaluation engine must implement Mann-Whitney U test for non-parametric comparison of detector performance distributions            |
-| **REQ-EVL-043** | **Kolmogorov-Smirnov Test** | Evaluation engine must implement KS test for comparing distributions between reference and test data in drift detection scenarios   |
-| **REQ-EVL-044** | **Chi-Square Test**         | Evaluation engine must implement chi-square test for categorical data drift detection and independence testing                      |
-| **REQ-EVL-045** | **Wilcoxon Test**           | Evaluation engine must implement Wilcoxon signed-rank test for paired sample comparisons in detector performance evaluation         |
-| **REQ-EVL-046** | **Friedman Test**           | Evaluation engine must implement Friedman test for non-parametric comparison of multiple detector methods across different datasets |
+| ID              | Requirement               | Description                                                                                                               |
+| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-EVL-041** | **T-Test Implementation** | Evaluation engine must implement t-test for comparing means between detector performance groups with normal distributions |
 
 ### 📊 Performance Analysis
 
-| ID              | Requirement                  | Description                                                                                                                                              |
-| --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-EVL-051** | **Method Rankings**          | Evaluation engine must generate detector method rankings based on specified performance metrics with confidence intervals                                |
-| **REQ-EVL-052** | **Robustness Analysis**      | Evaluation engine must assess detector robustness by evaluating performance stability across different noise levels and data conditions                  |
-| **REQ-EVL-053** | **Performance Heatmaps**     | Evaluation engine must generate heatmaps visualizing detector performance across different datasets and parameter combinations                           |
-| **REQ-EVL-054** | **Critical Difference**      | Evaluation engine must calculate critical difference plots for statistical comparison of multiple detector methods using Nemenyi post-hoc test           |
-| **REQ-EVL-055** | **Statistical Significance** | Evaluation engine must determine statistical significance of performance differences between detector methods with p-value calculations and effect sizes |
+| ID              | Requirement                    | Description                                                                                         |
+| --------------- | ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| **REQ-EVL-051** | **Method Rankings**            | Evaluation engine must generate detector method rankings based on specified performance metrics     |
+| **REQ-EVL-052** | **Basic Performance Analysis** | Evaluation engine must provide basic performance comparison across different detectors and datasets |
 
 ### ⚡ Runtime Analysis
 
-| ID              | Requirement                 | Description                                                                                                                        |
-| --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-EVL-061** | **Memory Usage Tracking**   | Evaluation engine must monitor and record peak memory consumption during detector training and inference phases                    |
-| **REQ-EVL-062** | **CPU Time Measurement**    | Evaluation engine must measure CPU time consumed by detector methods during both training and inference operations                 |
-| **REQ-EVL-063** | **Peak Memory Monitoring**  | Evaluation engine must track peak memory usage to identify memory-intensive detector methods for resource-constrained environments |
-| **REQ-EVL-064** | **Training Time Analysis**  | Evaluation engine must separately measure and record training time for detector methods that require model fitting or calibration  |
-| **REQ-EVL-065** | **Inference Time Tracking** | Evaluation engine must measure inference time for drift detection operations to assess real-time deployment feasibility            |
+| ID              | Requirement                    | Description                                                                                     |
+| --------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| **REQ-EVL-061** | **Basic Timing Tracking**      | Evaluation engine must record basic execution time for detector training and inference phases   |
+| **REQ-EVL-062** | **Simple Performance Metrics** | Evaluation engine must collect basic performance metrics (time, memory) for detector comparison |
 
 ## 💾 Results Module
 
-This module provides a comprehensive results management system for the drift-benchmark library to store benchmark results with writing performance under 5 seconds for typical benchmark results and atomic file operations to prevent data corruption.
+This module provides a comprehensive results management system for the drift-benchmark library to store benchmark results with atomic file operations to prevent data corruption.
 
 | ID              | Requirement                    | Description                                                                                                                      |
 | --------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -762,38 +685,3 @@ This module contains the benchmark runner to benchmark adapters against each oth
 | **REQ-STR-005** | **Performance Measurement** | All strategies must measure and record fit_time, detect_time, and memory_usage for each detector execution                                                  |
 
 > **Note**: For the moment we are going to implement only the sequential strategy, but the architecture is designed to allow easy addition of parallel strategies in the future.
-
-## 🖥️ CLI Module
-
-This module provides a basic command-line interface for the drift-benchmark library, focusing on essential operations for running benchmarks and basic information commands.
-
-### 🚀 CLI Core Interface
-
-| ID              | Requirement               | Description                                                                                                       |
-| --------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **REQ-CLI-001** | **Main CLI Entry Point**  | Must provide `drift-benchmark` command as main entry point (via `console_scripts` in pyproject.toml)              |
-| **REQ-CLI-002** | **Argument Parser Setup** | Must use `argparse` to handle command-line arguments with proper help text and error handling                     |
-| **REQ-CLI-003** | **Run Command**           | Must provide `drift-benchmark run <config_file>` to execute benchmarks from TOML configuration files              |
-| **REQ-CLI-004** | **Help Command**          | Must provide `drift-benchmark --help` and help for all subcommands with usage examples                            |
-| **REQ-CLI-005** | **Version Command**       | Must provide `drift-benchmark --version` to display library version                                               |
-| **REQ-CLI-006** | **Error Handling**        | Must catch and display user-friendly error messages for validation errors, file not found, and execution failures |
-| **REQ-CLI-007** | **Exit Codes**            | Must return proper exit codes: 0 (success), 1 (general error), 2 (configuration error)                            |
-
-### 📊 Basic Commands
-
-| ID              | Requirement                 | Description                                                                                                      |
-| --------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| **REQ-CLI-101** | **Validate Config Command** | Must provide `drift-benchmark validate <config_file>` to validate configuration files without running benchmarks |
-| **REQ-CLI-102** | **List Detectors Command**  | Must provide `drift-benchmark list-detectors` to show available detection methods from registry                  |
-| **REQ-CLI-103** | **List Data Command**       | Must provide `drift-benchmark list-data` to show available scenarios and synthetic generators                    |
-
-### ⚙️ Basic Options
-
-| ID              | Requirement                 | Description                                                                                 |
-| --------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
-| **REQ-CLI-201** | **Config File Argument**    | Run and validate commands must accept `--config` or `-c` to specify configuration file path |
-| **REQ-CLI-202** | **Output Directory Option** | Run command must accept `--output` or `-o` to override results output directory             |
-| **REQ-CLI-203** | **Verbosity Control**       | Must support `--verbose/-v` for detailed output and `--quiet/-q` for minimal output         |
-| **REQ-CLI-204** | **Log Level Override**      | Must support `--log-level` to override configured logging level for CLI execution           |
-
-> **CLI Design Philosophy**: The CLI provides essential functionality to run benchmarks and access basic information. Advanced configuration and customization should be done through TOML configuration files and the programmatic BenchmarkRunner interface.
