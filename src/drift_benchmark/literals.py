@@ -23,7 +23,7 @@ DataLabeling = Literal["SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"]
 ExecutionMode = Literal["BATCH", "STREAMING"]
 
 # REQ-LIT-006: Method Family Literals
-MethodFamily = Literal["STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED"]
+MethodFamily = Literal["STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED", "STATISTICAL_PROCESS_CONTROL"]
 
 # REQ-LIT-007: Dataset Source Literals
 DatasetSource = Literal["FILE", "SYNTHETIC"]

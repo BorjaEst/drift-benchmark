@@ -7,13 +7,14 @@ Registry system for managing detector class registrations and lookups.
 from typing import Dict, List, Tuple, Type
 
 from ..exceptions import DetectorNotFoundError, DuplicateDetectorError
+from ..literals import LibraryId
 from .base_detector import BaseDetector
 
 # Global registry mapping (method_id, variant_id, library_id) -> detector class
-_detector_registry: Dict[Tuple[str, str, str], Type[BaseDetector]] = {}
+_detector_registry: Dict[Tuple[str, str, LibraryId], Type[BaseDetector]] = {}
 
 
-def register_detector(method_id: str, variant_id: str, library_id: str):
+def register_detector(method_id: str, variant_id: str, library_id: LibraryId):
     """
     Decorator to register detector classes.
 
@@ -36,7 +37,7 @@ def register_detector(method_id: str, variant_id: str, library_id: str):
     return decorator
 
 
-def get_detector_class(method_id: str, variant_id: str, library_id: str) -> Type[BaseDetector]:
+def get_detector_class(method_id: str, variant_id: str, library_id: LibraryId) -> Type[BaseDetector]:
     """
     Get detector class by method, variant, and library IDs.
 
@@ -52,7 +53,7 @@ def get_detector_class(method_id: str, variant_id: str, library_id: str) -> Type
     return _detector_registry[key]
 
 
-def list_detectors() -> List[Tuple[str, str, str]]:
+def list_detectors() -> List[Tuple[str, str, LibraryId]]:
     """
     List all registered detector combinations.
 

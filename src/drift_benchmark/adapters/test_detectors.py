@@ -3,13 +3,14 @@ Simple test detectors for development and testing.
 """
 
 from ..adapters import BaseDetector, register_detector
+from ..literals import LibraryId
 
 
 @register_detector("ks_test", "scipy", "SCIPY")
 class TestKSDetector(BaseDetector):
     """Simple test detector for ks_test.scipy"""
 
-    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
     def preprocess(self, data, **kwargs):
@@ -26,7 +27,7 @@ class TestKSDetector(BaseDetector):
 class TestDriftDetector(BaseDetector):
     """Simple test detector for drift_detector.custom"""
 
-    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
     def preprocess(self, data, **kwargs):

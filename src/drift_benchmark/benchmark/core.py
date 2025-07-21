@@ -135,10 +135,10 @@ class Benchmark:
 
                     # Execute detector workflow: preprocess -> fit -> preprocess -> detect -> score
                     # REQ-FLW-008: Preprocessing workflow pattern
-                    ref_data = detector.preprocess(dataset)
+                    ref_data = detector.preprocess(dataset, phase="reference")
                     detector.fit(ref_data)
 
-                    test_data = detector.preprocess(dataset)
+                    test_data = detector.preprocess(dataset, phase="test")
                     drift_detected = detector.detect(test_data)
                     drift_score = detector.score()
 

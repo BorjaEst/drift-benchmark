@@ -48,9 +48,10 @@ def mock_detector():
     """Provide mock detector for testing"""
 
     class MockDetector:
-        def __init__(self, method_id: str, variant_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "CUSTOM", **kwargs):
             self.method_id = method_id
             self.variant_id = variant_id
+            self.library_id = library_id
             self._fitted = False
             self._last_score = None
             self._execution_count = 0
@@ -86,9 +87,10 @@ def mock_failing_detector():
     """Provide mock detector that fails for error handling testing"""
 
     class FailingDetector:
-        def __init__(self, method_id: str, variant_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "CUSTOM", **kwargs):
             self.method_id = method_id
             self.variant_id = variant_id
+            self.library_id = library_id
 
         def preprocess(self, data, **kwargs) -> Any:
             return data

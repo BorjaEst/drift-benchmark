@@ -126,7 +126,7 @@ def mock_detector_variants():
     """Provide mock detector variants for testing"""
 
     class MockDetector:
-        def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "CUSTOM", **kwargs):
             self.method_id = method_id
             self.variant_id = variant_id
             self.library_id = library_id
@@ -234,7 +234,7 @@ def mock_detector():
     import numpy as np
 
     class MockDetector:
-        def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "CUSTOM", **kwargs):
             self.method_id = method_id
             self.variant_id = variant_id
             self.library_id = library_id
@@ -274,9 +274,10 @@ def mock_failing_detector():
     from typing import Any, Optional
 
     class FailingDetector:
-        def __init__(self, method_id: str, variant_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "CUSTOM", **kwargs):
             self.method_id = method_id
             self.variant_id = variant_id
+            self.library_id = library_id
 
         def preprocess(self, data, **kwargs) -> Any:
             return data

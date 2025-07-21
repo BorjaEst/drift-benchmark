@@ -7,6 +7,7 @@ Provides the base adapter framework for integrating drift detection libraries.
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
+from ..literals import LibraryId
 from ..models.results import DatasetResult
 
 
@@ -17,7 +18,7 @@ class BaseDetector(ABC):
     REQ-ADP-001: BaseDetector abstract class with abstract and concrete methods
     """
 
-    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         """
         Initialize base detector.
 
@@ -48,7 +49,7 @@ class BaseDetector(ABC):
         return self._variant_id
 
     @property
-    def library_id(self) -> str:
+    def library_id(self) -> LibraryId:
         """
         Get the library implementation identifier.
 
@@ -56,16 +57,28 @@ class BaseDetector(ABC):
         """
         return self._library_id
 
-    def preprocess(self, data: DatasetResult, **kwargs) -> Any:
+    def preprocess(self, data: DatasetResult, phase: str = "reference", **kwargs) -> Any:
         """
         Handle data format conversion from pandas DataFrames to detector-specific format.
 
-        REQ-ADP-004: Preprocess method for data format conversion
-        REQ-ADP-009: Extract appropriate data from DatasetResult for training/detection phases
-        REQ-ADP-010: Format flexibility for different detector libraries
+        REQ-ADP-005: Preprocess method for data format conversion
+        REQ-ADP-010: Extract appropriate data from DatasetResult for training/detection phases
+        REQ-ADP-011: Format flexibility for different detector libraries
+
+        Args:
+            data: DatasetResult containing X_ref and X_test DataFrames
+            phase: Either "reference" for training or "test" for detection
+            **kwargs: Additional preprocessing parameters
+
+        Returns:
+            Processed data in detector-specific format
         """
-        # Default variant extracts DataFrames - subclasses can override for specific formats
-        return {"X_ref": data.X_ref, "X_test": data.X_test, "metadata": data.metadata}
+        if phase == "reference":
+            return data.X_ref  # Return reference data for training
+        elif phase == "test":
+            return data.X_test  # Return test data for detection
+        else:
+            raise ValueError(f"Invalid phase '{phase}'. Must be 'reference' or 'test'.")
 
     @abstractmethod
     def fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector":

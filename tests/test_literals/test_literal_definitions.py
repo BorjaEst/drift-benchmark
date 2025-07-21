@@ -96,7 +96,7 @@ def test_should_define_execution_mode_literals_when_imported():
 
 
 def test_should_define_method_family_literals_when_imported():
-    """Test REQ-LIT-006: Must define MethodFamily literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED" """
+    """Test REQ-LIT-006: Must define MethodFamily literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED", "STATISTICAL_PROCESS_CONTROL" """
     # Arrange & Act
     try:
         from drift_benchmark.literals import MethodFamily
@@ -106,7 +106,7 @@ def test_should_define_method_family_literals_when_imported():
         pytest.fail(f"Failed to import MethodFamily from literals module: {e}")
 
     # Assert
-    expected_values = {"STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED"}
+    expected_values = {"STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED", "STATISTICAL_PROCESS_CONTROL"}
     actual_values = set(family_values)
 
     assert actual_values == expected_values, f"MethodFamily literal must have exactly {expected_values}, " f"but found {actual_values}"
