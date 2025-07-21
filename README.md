@@ -121,7 +121,7 @@ src/drift_benchmark/
 │   └── registry.py         # Method loading and lookup
 ├── adapters/               # Detector interface framework
 │   ├── __init__.py
-│   ├── base.py             # BaseDetector abstract class
+│   ├── base_detector.py    # BaseDetector abstract class
 │   └── registry.py         # Detector registration system
 ├── data/                   # Data loading utilities
 │   ├── __init__.py
