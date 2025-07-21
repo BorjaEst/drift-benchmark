@@ -137,11 +137,18 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
 
     # Act & Assert
     try:
+        # Mock the methods registry to contain our test methods
+        # Also disable skip validation for this test
+        from pathlib import Path
+
         from drift_benchmark.config import load_config
         from drift_benchmark.exceptions import ConfigurationError
+        from drift_benchmark.settings import settings
 
-        # Mock the methods registry to contain our test methods
-        with patch("drift_benchmark.settings.settings.methods_registry_path", str(mock_methods_toml_file)):
+        with (
+            patch.object(settings, "methods_registry_path", Path(str(mock_methods_toml_file))),
+            patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}),
+        ):
 
             # Valid configuration should load successfully
             try:
@@ -233,20 +240,22 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files, tmp_
         from drift_benchmark.config import load_config
         from drift_benchmark.exceptions import ConfigurationError
 
-        # Valid configuration with existing file should load
-        try:
-            valid_config = load_config(str(valid_config_path))
-            assert valid_config is not None
-        except Exception as e:
-            pytest.fail(f"Valid configuration with existing file should not raise error: {e}")
+        # Disable skip validation for this test to ensure file existence is checked
+        with patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}):
+            # Valid configuration with existing file should load
+            try:
+                valid_config = load_config(str(valid_config_path))
+                assert valid_config is not None
+            except Exception as e:
+                pytest.fail(f"Valid configuration with existing file should not raise error: {e}")
 
-        # Invalid configuration with non-existent file should fail
-        with pytest.raises(ConfigurationError) as exc_info:
-            invalid_config = load_config(str(invalid_config_path))
+            # Invalid configuration with non-existent file should fail
+            with pytest.raises(ConfigurationError) as exc_info:
+                invalid_config = load_config(str(invalid_config_path))
 
-        # Check that error message mentions file not found
-        error_msg = str(exc_info.value).lower()
-        assert "file not found" in error_msg or "not found" in error_msg or "does not exist" in error_msg
+            # Check that error message mentions file not found
+            error_msg = str(exc_info.value).lower()
+            assert "file not found" in error_msg or "not found" in error_msg or "does not exist" in error_msg
 
     except ImportError as e:
         pytest.fail(f"Failed to import components for file existence test: {e}")

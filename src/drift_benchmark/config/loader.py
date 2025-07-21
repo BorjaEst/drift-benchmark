@@ -79,7 +79,8 @@ def _validate_file_existence(config: BenchmarkConfig) -> None:
     REQ-CFG-006: Validate dataset file paths exist during configuration loading.
     """
     # Skip validation if in test mode (for TDD)
-    if os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION"):
+    skip_validation = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION", "0")
+    if skip_validation not in ("0", "false", "False", "FALSE"):
         return
 
     for dataset_config in config.datasets:
@@ -93,7 +94,8 @@ def _validate_detector_configurations(config: BenchmarkConfig) -> None:
     REQ-CFG-004: Validate detector method_id/implementation_id exist in methods registry.
     """
     # Skip validation if in test mode (for TDD)
-    if os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION"):
+    skip_validation = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION", "0")
+    if skip_validation not in ("0", "false", "False", "FALSE"):
         return
 
     for detector_config in config.detectors:
