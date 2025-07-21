@@ -27,7 +27,7 @@ def test_should_define_base_detector_abstract_class_when_imported():
 
     # Assert - cannot instantiate directly
     with pytest.raises(TypeError):
-        BaseDetector("method_id", "variant_id")
+        BaseDetector("method_id", "variant_id", "library_id")
 
     # Assert - has required abstract methods
     abstract_methods = BaseDetector.__abstractmethods__
@@ -213,8 +213,8 @@ def test_should_have_abstract_detect_method_when_subclassed():
 
         # Create concrete variant
         class TestDetector(BaseDetector):
-            def __init__(self, method_id: str, variant_id: str, **kwargs):
-                super().__init__(method_id, variant_id, **kwargs)
+            def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+                super().__init__(method_id, variant_id, library_id, **kwargs)
                 self._fitted = False
 
             def fit(self, preprocessed_data: Any, **kwargs):
@@ -322,8 +322,8 @@ def test_should_handle_data_flow_in_preprocess_when_called(sample_dataset_result
 
         # Create concrete variant that tracks data flow
         class DataFlowDetector(BaseDetector):
-            def __init__(self, method_id: str, variant_id: str, **kwargs):
-                super().__init__(method_id, variant_id, **kwargs)
+            def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+                super().__init__(method_id, variant_id, library_id, **kwargs)
                 self.preprocessed_data_log = []
 
             def preprocess(self, data, **kwargs):
@@ -344,7 +344,7 @@ def test_should_handle_data_flow_in_preprocess_when_called(sample_dataset_result
             def detect(self, preprocessed_data: Any, **kwargs) -> bool:
                 return True
 
-        detector = DataFlowDetector("test_method", "test_impl")
+        detector = DataFlowDetector("test_method", "test_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for data flow test: {e}")
@@ -391,8 +391,8 @@ def test_should_support_format_flexibility_when_preprocessing():
             def detect(self, preprocessed_data: Any, **kwargs) -> bool:
                 return True
 
-        numpy_detector = NumpyDetector("numpy_method", "numpy_impl")
-        pandas_detector = PandasDetector("pandas_method", "pandas_impl")
+        numpy_detector = NumpyDetector("numpy_method", "numpy_impl", "NUMPY_LIB")
+        pandas_detector = PandasDetector("pandas_method", "pandas_impl", "PANDAS_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for format flexibility test: {e}")

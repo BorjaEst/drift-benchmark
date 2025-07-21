@@ -1,8 +1,19 @@
 """
 Test suite for adapters.registry module - REQ-REG-XXX
 
-This module tests the registry system for detector adapter classes
-that integrates with the drift-benchmark framework.
+This module tests the registry system for detector adapter classes        @register_detector(method_id="existing_method", variant_id="existing_impl", library_id="TEST_LIB")
+        class ExistingDetector(BaseDetector):
+            def fit(self, preprocessed_data, **kwargs):
+                return self
+
+            def detect(self, preprocessed_data, **kwargs) -> bool:
+                return True
+
+        with pytest.raises(DetectorNotFoundError) as exc_info:
+            get_detector_class("existing_method", "non_existent_impl", "TEST_LIB")
+
+        error_message = str(exc_info.value).lower()
+        assert "existing_method" in error_message or "non_existent_impl" in error_message, "Error should mention the missing variant_id"tes with the drift-benchmark framework.
 """
 
 from typing import List, Tuple, Type
@@ -123,7 +134,7 @@ def test_should_raise_error_for_missing_detector_when_requested():
         # First register a method to test missing variant
         from drift_benchmark.adapters import BaseDetector, register_detector
 
-        @register_detector(method_id="existing_method", variant_id="existing_impl")
+        @register_detector(method_id="existing_method", variant_id="existing_impl", library_id="TEST_LIB")
         class ExistingDetector(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -132,7 +143,7 @@ def test_should_raise_error_for_missing_detector_when_requested():
                 return True
 
         with pytest.raises(DetectorNotFoundError) as exc_info:
-            get_detector_class("existing_method", "non_existent_impl")
+            get_detector_class("existing_method", "non_existent_impl", "TEST_LIB")
 
         error_message = str(exc_info.value).lower()
         assert "existing_method" in error_message or "non_existent_impl" in error_message, "Error should mention the missing variant_id"
@@ -335,7 +346,7 @@ def test_should_support_registry_introspection_when_requested():
         from drift_benchmark.adapters import BaseDetector, get_detector_class, list_detectors, register_detector
 
         # Register a detector for introspection
-        @register_detector(method_id="introspect_method", variant_id="introspect_impl")
+        @register_detector(method_id="introspect_method", variant_id="introspect_impl", library_id="TEST_LIB")
         class IntrospectDetector(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -345,17 +356,17 @@ def test_should_support_registry_introspection_when_requested():
 
         # Act - introspect the registry
         all_detectors = list_detectors()
-        specific_detector = get_detector_class("introspect_method", "introspect_impl")
+        specific_detector = get_detector_class("introspect_method", "introspect_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import components for introspection test: {e}")
 
     # Assert
-    introspect_combination = ("introspect_method", "introspect_impl")
+    introspect_combination = ("introspect_method", "introspect_impl", "TEST_LIB")
     assert introspect_combination in all_detectors, "registered detector should appear in list"
     assert specific_detector is IntrospectDetector, "get_detector_class should return correct class"
 
     # Test that we can create an instance from introspection
-    instance = specific_detector("introspect_method", "introspect_impl")
+    instance = specific_detector("introspect_method", "introspect_impl", "TEST_LIB")
     assert isinstance(instance, BaseDetector), "created instance should be BaseDetector"
     assert isinstance(instance, IntrospectDetector), "created instance should be correct type"

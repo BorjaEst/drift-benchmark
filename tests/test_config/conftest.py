@@ -67,8 +67,8 @@ def valid_benchmark_config_toml():
             {"path": "datasets/validation_data.csv", "format": "CSV", "reference_split": 0.7},
         ],
         "detectors": [
-            {"method_id": "ks_test", "variant_id": "scipy"},
-            {"method_id": "drift_detector", "variant_id": "custom"},
+            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"},
+            {"method_id": "drift_detector", "variant_id": "custom", "library_id": "CUSTOM"},
         ],
     }
 

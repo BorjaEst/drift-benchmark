@@ -91,13 +91,15 @@ class Benchmark:
                 from ..adapters import get_detector_class
 
                 # Validate detector exists in registry
-                detector_class = get_detector_class(detector_config.method_id, detector_config.variant_id)
+                detector_class = get_detector_class(detector_config.method_id, detector_config.variant_id, detector_config.library_id)
 
                 # Instantiate detector
-                detector = detector_class(method_id=detector_config.method_id, variant_id=detector_config.variant_id)
+                detector = detector_class(
+                    method_id=detector_config.method_id, variant_id=detector_config.variant_id, library_id=detector_config.library_id
+                )
                 self.detectors.append(detector)
 
-                logger.info(f"Instantiated detector: {detector_config.method_id}.{detector_config.variant_id}")
+                logger.info(f"Instantiated detector: {detector_config.method_id}.{detector_config.variant_id}.{detector_config.library_id}")
 
             except Exception as e:
                 raise BenchmarkExecutionError(
@@ -123,7 +125,7 @@ class Benchmark:
         # REQ-BEN-005: Sequential execution on each dataset
         for dataset in self.datasets:
             for detector in self.detectors:
-                detector_id = f"{detector.method_id}.{detector.variant_id}"
+                detector_id = f"{detector.method_id}.{detector.variant_id}.{detector.library_id}"
 
                 try:
                     logger.info(f"Running detector {detector_id} on dataset {dataset.metadata.name}")
@@ -146,6 +148,7 @@ class Benchmark:
                     # Create detector result
                     result = DetectorResult(
                         detector_id=detector_id,
+                        library_id=detector.library_id,
                         dataset_name=dataset.metadata.name,
                         drift_detected=drift_detected,
                         execution_time=execution_time,

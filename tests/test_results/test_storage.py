@@ -351,10 +351,20 @@ def test_should_integrate_with_pydantic_models_when_saving(temp_results_dir):
         # Create real DetectorResult instances
         detector_results = [
             DetectorResult(
-                detector_id="ks_test.scipy", dataset_name="integration_test", drift_detected=True, execution_time=0.042, drift_score=0.89
+                detector_id="ks_test.scipy.SCIPY",
+                library_id="SCIPY",
+                dataset_name="integration_test",
+                drift_detected=True,
+                execution_time=0.042,
+                drift_score=0.89,
             ),
             DetectorResult(
-                detector_id="cvm.batch", dataset_name="integration_test", drift_detected=False, execution_time=0.031, drift_score=0.12
+                detector_id="cvm.batch.SCIPY",
+                library_id="SCIPY",
+                dataset_name="integration_test",
+                drift_detected=False,
+                execution_time=0.031,
+                drift_score=0.12,
             ),
         ]
 
@@ -366,7 +376,7 @@ def test_should_integrate_with_pydantic_models_when_saving(temp_results_dir):
         # Create real BenchmarkResult
         config_dict = {
             "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-            "detectors": [{"method_id": "ks_test", "variant_id": "scipy"}],
+            "detectors": [{"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"}],
         }
 
         benchmark_result = BenchmarkResult(config=config_dict, detector_results=detector_results, summary=summary)

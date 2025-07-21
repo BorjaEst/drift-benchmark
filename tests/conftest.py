@@ -126,9 +126,10 @@ def mock_detector_variants():
     """Provide mock detector variants for testing"""
 
     class MockDetector:
-        def __init__(self, method_id: str, variant_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
             self.method_id = method_id
             self.variant_id = variant_id
+            self.library_id = library_id
             self._fitted = False
             self._last_score = None
 
@@ -169,9 +170,10 @@ def mock_benchmark_config():
             self.reference_split = reference_split
 
     class MockDetectorConfig:
-        def __init__(self, method_id, variant_id):
+        def __init__(self, method_id, variant_id, library_id):
             self.method_id = method_id
             self.variant_id = variant_id
+            self.library_id = library_id
 
     class MockBenchmarkConfig:
         def __init__(self):
@@ -180,8 +182,8 @@ def mock_benchmark_config():
                 MockDatasetConfig("tests/assets/datasets/test2.csv", "CSV", 0.7),
             ]
             self.detectors = [
-                MockDetectorConfig("ks_test", "scipy"),
-                MockDetectorConfig("drift_detector", "custom"),
+                MockDetectorConfig("ks_test", "scipy", "SCIPY"),
+                MockDetectorConfig("drift_detector", "custom", "CUSTOM"),
             ]
 
     return MockBenchmarkConfig()
@@ -232,9 +234,10 @@ def mock_detector():
     import numpy as np
 
     class MockDetector:
-        def __init__(self, method_id: str, variant_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
             self.method_id = method_id
             self.variant_id = variant_id
+            self.library_id = library_id
             self._fitted = False
             self._last_score = None
             self._execution_count = 0

@@ -28,8 +28,8 @@ def sample_benchmark_config():
     return {
         "datasets": [{"path": "datasets/test_dataset.csv", "format": "CSV", "reference_split": 0.5}],
         "detectors": [
-            {"method_id": "ks_test", "variant_id": "scipy"},
-            {"method_id": "cramer_von_mises", "variant_id": "cvm_batch"},
+            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"},
+            {"method_id": "cramer_von_mises", "variant_id": "cvm_batch", "library_id": "SCIPY"},
         ],
     }
 
