@@ -48,6 +48,7 @@ class BenchmarkConfig(BaseModel):
     Configuration for complete benchmark.
 
     REQ-CFM-001: BenchmarkConfig with basic fields: datasets, detectors
+    REQ-CFG-007: Pure data model without file I/O operations
     """
 
     datasets: List[DatasetConfig] = Field(..., description="List of datasets to benchmark")
@@ -68,29 +69,3 @@ class BenchmarkConfig(BaseModel):
         if len(v) == 0:
             raise ValueError("detectors list cannot be empty")
         return v
-
-    @classmethod
-    def from_toml(cls, path: str) -> "BenchmarkConfig":
-        """
-        Load BenchmarkConfig from TOML file.
-
-        REQ-CFG-001: Load BenchmarkConfig from .toml files
-        """
-        from pathlib import Path
-
-        import toml
-
-        config_path = Path(path)
-        if not config_path.exists():
-            from ..exceptions import ConfigurationError
-
-            raise ConfigurationError(f"Configuration file not found: {path}")
-
-        try:
-            with open(config_path, "r") as f:
-                data = toml.load(f)
-            return cls(**data)
-        except Exception as e:
-            from ..exceptions import ConfigurationError
-
-            raise ConfigurationError(f"Failed to load configuration from {path}: {e}")

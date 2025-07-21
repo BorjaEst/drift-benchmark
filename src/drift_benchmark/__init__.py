@@ -10,7 +10,7 @@ try:
     # REQ-INI-002: Settings first to ensure configuration is available
     from .adapters import BaseDetector, get_detector_class, list_detectors, register_detector
     from .benchmark import Benchmark, BenchmarkRunner
-    from .config import BenchmarkConfig as ConfigLoader
+    from .config import load_config
 
     # High-level orchestration components
     from .data import load_dataset
@@ -106,7 +106,7 @@ __all__ = [
     "list_detectors",
     # High-level components
     "load_dataset",
-    "ConfigLoader",
+    "load_config",
     "Benchmark",
     "BenchmarkRunner",
     "save_results",

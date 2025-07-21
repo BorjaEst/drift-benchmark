@@ -6,7 +6,8 @@ High-level interface for running benchmarks from configuration files.
 
 from pathlib import Path
 
-from ..config import BenchmarkConfig
+from ..config import load_config
+from ..models.configurations import BenchmarkConfig
 from ..results import save_results
 from ..settings import get_logger, setup_logging
 from .core import Benchmark
@@ -40,8 +41,8 @@ class BenchmarkRunner:
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-        # Load and validate configuration
-        config = BenchmarkConfig.from_toml(str(config_path))
+        # Load and validate configuration using new architecture
+        config = load_config(str(config_path))
 
         return cls(config)
 
