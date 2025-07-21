@@ -175,8 +175,14 @@ def mock_benchmark_config():
 
     class MockBenchmarkConfig:
         def __init__(self):
-            self.datasets = [MockDatasetConfig("datasets/test1.csv", "CSV", 0.6), MockDatasetConfig("datasets/test2.csv", "CSV", 0.7)]
-            self.detectors = [MockDetectorConfig("ks_test", "scipy"), MockDetectorConfig("drift_detector", "custom")]
+            self.datasets = [
+                MockDatasetConfig("tests/assets/datasets/test1.csv", "CSV", 0.6),
+                MockDatasetConfig("tests/assets/datasets/test2.csv", "CSV", 0.7),
+            ]
+            self.detectors = [
+                MockDetectorConfig("ks_test", "scipy"),
+                MockDetectorConfig("drift_detector", "custom"),
+            ]
 
     return MockBenchmarkConfig()
 

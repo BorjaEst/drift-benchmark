@@ -9,29 +9,6 @@ import pytest
 
 
 @pytest.fixture
-def mock_benchmark_config():
-    """Provide mock BenchmarkConfig for testing"""
-
-    class MockDatasetConfig:
-        def __init__(self, path, format, reference_split):
-            self.path = path
-            self.format = format
-            self.reference_split = reference_split
-
-    class MockDetectorConfig:
-        def __init__(self, method_id, implementation_id):
-            self.method_id = method_id
-            self.implementation_id = implementation_id
-
-    class MockBenchmarkConfig:
-        def __init__(self):
-            self.datasets = [MockDatasetConfig("datasets/test1.csv", "CSV", 0.6), MockDatasetConfig("datasets/test2.csv", "CSV", 0.7)]
-            self.detectors = [MockDetectorConfig("ks_test", "scipy"), MockDetectorConfig("drift_detector", "custom")]
-
-    return MockBenchmarkConfig()
-
-
-@pytest.fixture
 def mock_dataset_result():
     """Provide mock DatasetResult for testing"""
     ref_data = pd.DataFrame(
