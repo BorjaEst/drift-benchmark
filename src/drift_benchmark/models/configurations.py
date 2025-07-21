@@ -9,7 +9,7 @@ from typing import List, Union
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..literals import FileFormat
+from ..literals import FileFormat, LibraryId
 
 
 class DatasetConfig(BaseModel):
@@ -36,11 +36,12 @@ class DetectorConfig(BaseModel):
     """
     Configuration for individual detector.
 
-    REQ-CFM-003: DetectorConfig with fields: method_id, variant_id
+    REQ-CFM-003: DetectorConfig with fields: method_id, variant_id, library_id
     """
 
     method_id: str = Field(..., description="Method identifier from registry")
     variant_id: str = Field(..., description="Variant variant identifier")
+    library_id: LibraryId = Field(..., description="Library implementation identifier")
 
 
 class BenchmarkConfig(BaseModel):

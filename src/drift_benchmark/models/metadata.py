@@ -8,7 +8,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, validator
 
-from ..literals import DataDimension, DataType, MethodFamily
+from ..literals import DataDimension, DataType, LibraryId, MethodFamily
 
 
 class DatasetMetadata(BaseModel):
@@ -41,6 +41,7 @@ class DetectorMetadata(BaseModel):
 
     method_id: str = Field(..., description="Method identifier")
     variant_id: str = Field(..., description="Variant variant identifier")
+    library_id: LibraryId = Field(..., description="Library implementation identifier")
     name: str = Field(..., description="Human-readable detector name")
     family: MethodFamily = Field(..., description="Method family classification")
 

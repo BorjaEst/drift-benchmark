@@ -152,6 +152,7 @@ def test_should_use_literal_types_for_enums_when_created():
         detector_metadata = DetectorMetadata(
             method_id="test_method",
             variant_id="test_impl",
+            library_id="CUSTOM",
             name="Test Detector",
             family="DISTANCE_BASED",  # Should be MethodFamily literal
         )
@@ -248,6 +249,7 @@ def test_should_support_serialization_for_metadata():
     detector_metadata_data = {
         "method_id": "test_method",
         "variant_id": "test_impl",
+        "library_id": "CUSTOM",
         "name": "Test Detection Method",
         "family": "STATISTICAL_TEST",
     }

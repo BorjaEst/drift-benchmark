@@ -148,6 +148,7 @@ def test_should_support_optional_drift_score_when_created():
     # Arrange
     result_data_no_score = {
         "detector_id": "test_detector",
+        "library_id": "CUSTOM",
         "dataset_name": "test_dataset",
         "drift_detected": False,
         "execution_time": 0.001,
@@ -156,6 +157,7 @@ def test_should_support_optional_drift_score_when_created():
 
     result_data_with_score = {
         "detector_id": "test_detector",
+        "library_id": "CUSTOM",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.002,
@@ -211,6 +213,7 @@ def test_should_validate_execution_time_precision_when_created():
     # Arrange
     high_precision_data = {
         "detector_id": "precise_detector",
+        "library_id": "CUSTOM",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.001234567,  # High precision float
@@ -236,6 +239,7 @@ def test_should_support_model_serialization_for_results():
     # Arrange
     detector_result_data = {
         "detector_id": "test_detector",
+        "library_id": "CUSTOM",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.123,

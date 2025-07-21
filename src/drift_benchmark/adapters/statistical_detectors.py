@@ -19,7 +19,7 @@ from .registry import register_detector
 logger = get_logger(__name__)
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="SCIPY")
 class KolmogorovSmirnovDetector(BaseDetector):
     """
     Kolmogorov-Smirnov drift detector variant.
@@ -32,17 +32,18 @@ class KolmogorovSmirnovDetector(BaseDetector):
     - Massey Jr (1951): https://doi.org/10.2307/2280095
     """
 
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
         """
         Initialize Kolmogorov-Smirnov detector.
 
         Args:
             method_id: Must be "kolmogorov_smirnov"
             variant_id: Must be "ks_batch"
+            library_id: Must be "SCIPY"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """
-        super().__init__(method_id, variant_id, **kwargs)
+        super().__init__(method_id, variant_id, library_id, **kwargs)
 
         # Hyperparameters from methods.toml
         self.threshold = kwargs.get("threshold", 0.05)
@@ -187,7 +188,7 @@ class KolmogorovSmirnovDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch")
+@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="SCIPY")
 class CramerVonMisesDetector(BaseDetector):
     """
     Cramér-von Mises drift detector variant.
@@ -199,17 +200,18 @@ class CramerVonMisesDetector(BaseDetector):
     - Cramér (1902): https://doi.org/10.1080/03461238.1928.10416862
     """
 
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
         """
         Initialize Cramér-von Mises detector.
 
         Args:
             method_id: Must be "cramer_von_mises"
             variant_id: Must be "cvm_batch"
+            library_id: Must be "SCIPY"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """
-        super().__init__(method_id, variant_id, **kwargs)
+        super().__init__(method_id, variant_id, library_id, **kwargs)
 
         # Hyperparameters from methods.toml
         self.threshold = kwargs.get("threshold", 0.05)

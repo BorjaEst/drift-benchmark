@@ -33,3 +33,6 @@ FileFormat = Literal["CSV"]
 
 # REQ-LIT-009: Log Level Literals
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+# REQ-LIT-010: Library ID Literals
+LibraryId = Literal["EVIDENTLY", "ALIBI_DETECT", "SCIKIT_LEARN", "RIVER", "SCIPY", "CUSTOM"]
