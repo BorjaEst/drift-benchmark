@@ -40,7 +40,7 @@ class DetectorMetadata(BaseModel):
     """
 
     method_id: str = Field(..., description="Method identifier")
-    implementation_id: str = Field(..., description="Implementation variant identifier")
+    variant_id: str = Field(..., description="Variant variant identifier")
     name: str = Field(..., description="Human-readable detector name")
     family: MethodFamily = Field(..., description="Method family classification")
 

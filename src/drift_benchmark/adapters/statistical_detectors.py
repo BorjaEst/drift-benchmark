@@ -1,5 +1,5 @@
 """
-Statistical test-based drift detectors implementation.
+Statistical test-based drift detectors variant.
 
 This module implements drift detectors based on statistical tests like
 Kolmogorov-Smirnov and Cramér-von Mises for distribution comparison.
@@ -19,10 +19,10 @@ from .registry import register_detector
 logger = get_logger(__name__)
 
 
-@register_detector(method_id="kolmogorov_smirnov", implementation_id="ks_batch")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch")
 class KolmogorovSmirnovDetector(BaseDetector):
     """
-    Kolmogorov-Smirnov drift detector implementation.
+    Kolmogorov-Smirnov drift detector variant.
 
     This detector implements the two-sample Kolmogorov-Smirnov test to detect
     covariate drift by comparing the empirical distribution functions of
@@ -32,17 +32,17 @@ class KolmogorovSmirnovDetector(BaseDetector):
     - Massey Jr (1951): https://doi.org/10.2307/2280095
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
         """
         Initialize Kolmogorov-Smirnov detector.
 
         Args:
             method_id: Must be "kolmogorov_smirnov"
-            implementation_id: Must be "ks_batch"
+            variant_id: Must be "ks_batch"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """
-        super().__init__(method_id, implementation_id, **kwargs)
+        super().__init__(method_id, variant_id, **kwargs)
 
         # Hyperparameters from methods.toml
         self.threshold = kwargs.get("threshold", 0.05)
@@ -187,10 +187,10 @@ class KolmogorovSmirnovDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="cramer_von_mises", implementation_id="cvm_batch")
+@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch")
 class CramerVonMisesDetector(BaseDetector):
     """
-    Cramér-von Mises drift detector implementation.
+    Cramér-von Mises drift detector variant.
 
     This detector implements the two-sample Cramér-von Mises test to detect
     covariate drift by comparing the distribution functions of reference and test datasets.
@@ -199,17 +199,17 @@ class CramerVonMisesDetector(BaseDetector):
     - Cramér (1902): https://doi.org/10.1080/03461238.1928.10416862
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
         """
         Initialize Cramér-von Mises detector.
 
         Args:
             method_id: Must be "cramer_von_mises"
-            implementation_id: Must be "cvm_batch"
+            variant_id: Must be "cvm_batch"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """
-        super().__init__(method_id, implementation_id, **kwargs)
+        super().__init__(method_id, variant_id, **kwargs)
 
         # Hyperparameters from methods.toml
         self.threshold = kwargs.get("threshold", 0.05)
@@ -322,7 +322,7 @@ class CramerVonMisesDetector(BaseDetector):
 
         # Perform two-sample Cramér-von Mises test
         try:
-            # Use scipy's implementation
+            # Use scipy's variant
             result = stats.cramervonmises_2samp(self._reference_data, test_data)
             statistic = result.statistic
             pvalue = result.pvalue

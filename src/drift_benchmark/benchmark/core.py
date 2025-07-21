@@ -1,5 +1,5 @@
 """
-Core benchmark implementation - REQ-BEN-XXX
+Core benchmark variant - REQ-BEN-XXX
 
 Contains the core Benchmark class for executing detector evaluations.
 """
@@ -91,17 +91,17 @@ class Benchmark:
                 from ..adapters import get_detector_class
 
                 # Validate detector exists in registry
-                detector_class = get_detector_class(detector_config.method_id, detector_config.implementation_id)
+                detector_class = get_detector_class(detector_config.method_id, detector_config.variant_id)
 
                 # Instantiate detector
-                detector = detector_class(method_id=detector_config.method_id, implementation_id=detector_config.implementation_id)
+                detector = detector_class(method_id=detector_config.method_id, variant_id=detector_config.variant_id)
                 self.detectors.append(detector)
 
-                logger.info(f"Instantiated detector: {detector_config.method_id}.{detector_config.implementation_id}")
+                logger.info(f"Instantiated detector: {detector_config.method_id}.{detector_config.variant_id}")
 
             except Exception as e:
                 raise BenchmarkExecutionError(
-                    f"Failed to instantiate detector {detector_config.method_id}.{detector_config.implementation_id}: {e}"
+                    f"Failed to instantiate detector {detector_config.method_id}.{detector_config.variant_id}: {e}"
                 )
 
     def run(self) -> BenchmarkResult:
@@ -123,7 +123,7 @@ class Benchmark:
         # REQ-BEN-005: Sequential execution on each dataset
         for dataset in self.datasets:
             for detector in self.detectors:
-                detector_id = f"{detector.method_id}.{detector.implementation_id}"
+                detector_id = f"{detector.method_id}.{detector.variant_id}"
 
                 try:
                     logger.info(f"Running detector {detector_id} on dataset {dataset.metadata.name}")
@@ -174,9 +174,9 @@ class Benchmark:
             successful_runs=successful_runs,
             failed_runs=failed_runs,
             avg_execution_time=avg_execution_time,
-            accuracy=None,  # Not computed for basic implementation
-            precision=None,  # Not computed for basic implementation
-            recall=None,  # Not computed for basic implementation
+            accuracy=None,  # Not computed for basic variant
+            precision=None,  # Not computed for basic variant
+            recall=None,  # Not computed for basic variant
         )
 
         logger.info(f"Benchmark completed: {successful_runs} successful, {failed_runs} failed, " f"avg_time={avg_execution_time:.4f}s")

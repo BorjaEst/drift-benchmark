@@ -49,7 +49,7 @@ def test_should_define_dataset_metadata_model_when_imported(sample_dataset_metad
 
 
 def test_should_define_detector_metadata_model_when_imported(sample_detector_metadata_data):
-    """Test REQ-MET-002: Must define DetectorMetadata with fields: method_id (str), implementation_id (str), name (str), family (MethodFamily) for basic detector information"""
+    """Test REQ-MET-002: Must define DetectorMetadata with fields: method_id (str), variant_id (str), name (str), family (MethodFamily) for basic detector information"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorMetadata
@@ -68,18 +68,18 @@ def test_should_define_detector_metadata_model_when_imported(sample_detector_met
 
     # Assert - has required fields
     assert hasattr(metadata, "method_id"), "DetectorMetadata must have method_id field"
-    assert hasattr(metadata, "implementation_id"), "DetectorMetadata must have implementation_id field"
+    assert hasattr(metadata, "variant_id"), "DetectorMetadata must have variant_id field"
     assert hasattr(metadata, "name"), "DetectorMetadata must have name field"
     assert hasattr(metadata, "family"), "DetectorMetadata must have family field"
 
     # Assert - field types and values are correct
     assert isinstance(metadata.method_id, str), "method_id must be string"
-    assert isinstance(metadata.implementation_id, str), "implementation_id must be string"
+    assert isinstance(metadata.variant_id, str), "variant_id must be string"
     assert isinstance(metadata.name, str), "name must be string"
 
     # Assert - specific values from test data
     assert metadata.method_id == "ks_test"
-    assert metadata.implementation_id == "scipy"
+    assert metadata.variant_id == "scipy"
     assert metadata.name == "Kolmogorov-Smirnov Test"
     assert metadata.family == "STATISTICAL_TEST"
 
@@ -148,7 +148,7 @@ def test_should_use_literal_types_for_enums_when_created():
         # Test DetectorMetadata with literal enum values
         detector_metadata = DetectorMetadata(
             method_id="test_method",
-            implementation_id="test_impl",
+            variant_id="test_impl",
             name="Test Detector",
             family="DISTANCE_BASED",  # Should be MethodFamily literal
         )
@@ -244,7 +244,7 @@ def test_should_support_serialization_for_metadata():
     # Arrange
     detector_metadata_data = {
         "method_id": "test_method",
-        "implementation_id": "test_impl",
+        "variant_id": "test_impl",
         "name": "Test Detection Method",
         "family": "STATISTICAL_TEST",
     }
@@ -265,12 +265,12 @@ def test_should_support_serialization_for_metadata():
     # Assert
     assert isinstance(serialized, dict), "model_dump() must return dictionary for JSON export"
     assert serialized["method_id"] == detector_metadata_data["method_id"]
-    assert serialized["implementation_id"] == detector_metadata_data["implementation_id"]
+    assert serialized["variant_id"] == detector_metadata_data["variant_id"]
     assert serialized["name"] == detector_metadata_data["name"]
     assert serialized["family"] == detector_metadata_data["family"]
 
     # Assert restoration
     assert restored_metadata.method_id == metadata.method_id
-    assert restored_metadata.implementation_id == metadata.implementation_id
+    assert restored_metadata.variant_id == metadata.variant_id
     assert restored_metadata.name == metadata.name
     assert restored_metadata.family == metadata.family

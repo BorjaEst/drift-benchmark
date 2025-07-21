@@ -1,5 +1,5 @@
 """
-Result storage implementation - REQ-RST-XXX
+Result storage variant - REQ-RST-XXX
 
 This module provides storage functionality for saving benchmark results to
 timestamped directories with the required file formats.
@@ -139,7 +139,7 @@ def get_log_content() -> Optional[str]:
     """
     try:
         # Try to get log content from the logging system
-        # This is a simplified implementation - in a full implementation
+        # This is a simplified variant - in a full variant
         # we might need to read from the log file or buffer
 
         # For now, return None to indicate log content not available

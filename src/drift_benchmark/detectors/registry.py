@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 import toml
 
-from ..exceptions import ConfigurationError, DataLoadingError, ImplementationNotFoundError, MethodNotFoundError
+from ..exceptions import ConfigurationError, DataLoadingError, MethodNotFoundError, VariantNotFoundError
 
 
 def load_methods() -> Dict[str, Dict[str, Any]]:
@@ -72,31 +72,31 @@ def _validate_method_schema(method_id: str, method_data: Dict[str, Any]) -> None
         if field not in method_data:
             raise ConfigurationError(f"Method '{method_id}' missing required field: {field}")
 
-    # Validate implementations structure
-    if "implementations" not in method_data:
-        raise ConfigurationError(f"Method '{method_id}' missing implementations section")
+    # Validate variants structure
+    if "variants" not in method_data:
+        raise ConfigurationError(f"Method '{method_id}' missing variants section")
 
-    implementations = method_data["implementations"]
-    if not isinstance(implementations, dict):
-        raise ConfigurationError(f"Method '{method_id}' implementations must be a dictionary")
+    variants = method_data["variants"]
+    if not isinstance(variants, dict):
+        raise ConfigurationError(f"Method '{method_id}' variants must be a dictionary")
 
-    # REQ-DET-011: Validate each implementation has required fields
-    for impl_id, impl_data in implementations.items():
-        _validate_implementation_schema(method_id, impl_id, impl_data)
+    # REQ-DET-011: Validate each variant has required fields
+    for impl_id, impl_data in variants.items():
+        _validate_variant_schema(method_id, impl_id, impl_data)
 
 
-def _validate_implementation_schema(method_id: str, impl_id: str, impl_data: Dict[str, Any]) -> None:
+def _validate_variant_schema(method_id: str, impl_id: str, impl_data: Dict[str, Any]) -> None:
     """
-    Validate implementation schema compliance.
+    Validate variant schema compliance.
 
-    REQ-DET-003: Each implementation must have required fields
-    REQ-DET-011: Implementation required fields validation
+    REQ-DET-003: Each variant must have required fields
+    REQ-DET-011: Variant required fields validation
     """
     required_fields = ["name", "execution_mode", "hyperparameters", "references"]
 
     for field in required_fields:
         if field not in impl_data:
-            raise ConfigurationError(f"Implementation '{impl_id}' in method '{method_id}' missing required field: {field}")
+            raise ConfigurationError(f"Variant '{impl_id}' in method '{method_id}' missing required field: {field}")
 
 
 def get_method(method_id: str) -> Dict[str, Any]:
@@ -114,26 +114,24 @@ def get_method(method_id: str) -> Dict[str, Any]:
     return methods[method_id]
 
 
-def get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]:
+def get_variant(method_id: str, impl_id: str) -> Dict[str, Any]:
     """
-    Get implementation information for a method.
+    Get variant information for a method.
 
-    REQ-DET-005: Implementation lookup or raises ImplementationNotFoundError
+    REQ-DET-005: Variant lookup or raises VariantNotFoundError
     """
     try:
         method_data = get_method(method_id)  # This will raise MethodNotFoundError if method doesn't exist
     except MethodNotFoundError:
-        # Convert MethodNotFoundError to ImplementationNotFoundError as specified in test
-        raise ImplementationNotFoundError(f"Implementation '{impl_id}' not found for method '{method_id}': method does not exist")
+        # Convert MethodNotFoundError to VariantNotFoundError as specified in test
+        raise VariantNotFoundError(f"Variant '{impl_id}' not found for method '{method_id}': method does not exist")
 
-    implementations = method_data.get("implementations", {})
-    if impl_id not in implementations:
-        available_impls = list(implementations.keys())
-        raise ImplementationNotFoundError(
-            f"Implementation '{impl_id}' not found for method '{method_id}'. " f"Available implementations: {available_impls}"
-        )
+    variants = method_data.get("variants", {})
+    if impl_id not in variants:
+        available_impls = list(variants.keys())
+        raise VariantNotFoundError(f"Variant '{impl_id}' not found for method '{method_id}'. " f"Available variants: {available_impls}")
 
-    return implementations[impl_id]
+    return variants[impl_id]
 
 
 def list_methods() -> List[str]:

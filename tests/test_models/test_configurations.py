@@ -69,7 +69,7 @@ def test_should_define_dataset_config_model_when_imported(sample_dataset_config_
 
 
 def test_should_define_detector_config_model_when_imported(sample_detector_config_data):
-    """Test REQ-CFM-003: Must define DetectorConfig with fields: method_id, implementation_id for individual detector setup"""
+    """Test REQ-CFM-003: Must define DetectorConfig with fields: method_id, variant_id for individual detector setup"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorConfig
@@ -88,11 +88,11 @@ def test_should_define_detector_config_model_when_imported(sample_detector_confi
 
     # Assert - has required fields
     assert hasattr(config, "method_id"), "DetectorConfig must have method_id field"
-    assert hasattr(config, "implementation_id"), "DetectorConfig must have implementation_id field"
+    assert hasattr(config, "variant_id"), "DetectorConfig must have variant_id field"
 
     # Assert - field values are correct
     assert config.method_id == "ks_test"
-    assert config.implementation_id == "scipy"
+    assert config.variant_id == "scipy"
 
 
 def test_should_use_pydantic_v2_validation_when_created():
@@ -186,7 +186,7 @@ def test_should_validate_nested_models_when_created(sample_benchmark_config_data
     # Check first detector is properly typed
     first_detector = config.detectors[0]
     assert hasattr(first_detector, "method_id"), "Nested DetectorConfig must have method_id field"
-    assert hasattr(first_detector, "implementation_id"), "Nested DetectorConfig must have implementation_id field"
+    assert hasattr(first_detector, "variant_id"), "Nested DetectorConfig must have variant_id field"
 
 
 def test_should_provide_model_validation_errors_when_invalid():

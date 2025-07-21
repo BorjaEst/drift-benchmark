@@ -36,11 +36,11 @@ class DetectorConfig(BaseModel):
     """
     Configuration for individual detector.
 
-    REQ-CFM-003: DetectorConfig with fields: method_id, implementation_id
+    REQ-CFM-003: DetectorConfig with fields: method_id, variant_id
     """
 
     method_id: str = Field(..., description="Method identifier from registry")
-    implementation_id: str = Field(..., description="Implementation variant identifier")
+    variant_id: str = Field(..., description="Variant variant identifier")
 
 
 class BenchmarkConfig(BaseModel):

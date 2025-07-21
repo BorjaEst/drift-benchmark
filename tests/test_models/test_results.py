@@ -90,7 +90,7 @@ def test_should_define_benchmark_result_model_when_imported():
     # Arrange
     sample_config = {
         "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "ks_test", "implementation_id": "scipy"}],
+        "detectors": [{"method_id": "ks_test", "variant_id": "scipy"}],
     }
 
     sample_detector_results = [

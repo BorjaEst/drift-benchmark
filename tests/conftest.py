@@ -78,7 +78,7 @@ def mock_methods_registry():
                 "family": "STATISTICAL_TEST",
                 "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
                 "data_types": ["CONTINUOUS"],
-                "implementations": {"scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH"}},
+                "variants": {"scipy": {"name": "SciPy Variant", "execution_mode": "BATCH"}},
             },
             "drift_detector": {
                 "name": "Basic Drift Detector",
@@ -86,7 +86,7 @@ def mock_methods_registry():
                 "family": "CHANGE_DETECTION",
                 "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
                 "data_types": ["CONTINUOUS", "CATEGORICAL"],
-                "implementations": {"custom": {"name": "Custom Implementation", "execution_mode": "BATCH"}},
+                "variants": {"custom": {"name": "Custom Variant", "execution_mode": "BATCH"}},
             },
         }
     }
@@ -122,13 +122,13 @@ def sample_csv_content():
 
 
 @pytest.fixture(scope="module")
-def mock_detector_implementations():
-    """Provide mock detector implementations for testing"""
+def mock_detector_variants():
+    """Provide mock detector variants for testing"""
 
     class MockDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
             self._fitted = False
             self._last_score = None
 
@@ -169,9 +169,9 @@ def mock_benchmark_config():
             self.reference_split = reference_split
 
     class MockDetectorConfig:
-        def __init__(self, method_id, implementation_id):
+        def __init__(self, method_id, variant_id):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
 
     class MockBenchmarkConfig:
         def __init__(self):
@@ -232,9 +232,9 @@ def mock_detector():
     import numpy as np
 
     class MockDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
             self._fitted = False
             self._last_score = None
             self._execution_count = 0
@@ -271,9 +271,9 @@ def mock_failing_detector():
     from typing import Any, Optional
 
     class FailingDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
 
         def preprocess(self, data, **kwargs) -> Any:
             return data

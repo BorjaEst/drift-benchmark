@@ -36,9 +36,9 @@ def mock_detector_class():
     """Provide a mock detector class for registry testing"""
 
     class MockDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
             self._fitted = False
             self._last_score = None
 
@@ -51,12 +51,12 @@ def mock_detector_class():
             self._method_id = value
 
         @property
-        def implementation_id(self) -> str:
-            return self._implementation_id
+        def variant_id(self) -> str:
+            return self._variant_id
 
-        @implementation_id.setter
-        def implementation_id(self, value: str):
-            self._implementation_id = value
+        @variant_id.setter
+        def variant_id(self, value: str):
+            self._variant_id = value
 
         def preprocess(self, data, **kwargs) -> Any:
             # Mock preprocessing - return numpy arrays

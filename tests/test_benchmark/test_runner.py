@@ -44,7 +44,7 @@ reference_split = 0.5
 
 [[detectors]]
 method_id = "ks_test"
-implementation_id = "scipy"
+variant_id = "scipy"
 """
     config_path.write_text(config_content)
 
@@ -208,7 +208,7 @@ reference_split = 0.5
 
 [[detectors]]
 method_id = "ks_test"
-implementation_id = "scipy"
+variant_id = "scipy"
 """
     config_path.write_text(config_content)
 

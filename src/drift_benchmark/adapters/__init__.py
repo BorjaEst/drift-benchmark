@@ -14,7 +14,7 @@ try:
 except ImportError:
     pass  # Test detectors are optional
 
-# Import real detector implementations
+# Import real detector variants
 try:
     from . import statistical_detectors  # Statistical test-based detectors
 except ImportError:

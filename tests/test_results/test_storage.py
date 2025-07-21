@@ -132,7 +132,7 @@ def test_should_copy_configuration_to_toml_when_saving(temp_results_dir, mock_py
 
     for detector in detectors:
         assert "method_id" in detector, "Detector config should have method_id"
-        assert "implementation_id" in detector, "Detector config should have implementation_id"
+        assert "variant_id" in detector, "Detector config should have variant_id"
 
 
 def test_should_export_execution_log_when_saving(temp_results_dir, mock_pydantic_benchmark_result, sample_log_content):
@@ -366,7 +366,7 @@ def test_should_integrate_with_pydantic_models_when_saving(temp_results_dir):
         # Create real BenchmarkResult
         config_dict = {
             "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-            "detectors": [{"method_id": "ks_test", "implementation_id": "scipy"}],
+            "detectors": [{"method_id": "ks_test", "variant_id": "scipy"}],
         }
 
         benchmark_result = BenchmarkResult(config=config_dict, detector_results=detector_results, summary=summary)
@@ -489,7 +489,7 @@ def test_should_follow_results_module_interface_patterns():
         sig = inspect.signature(storage.save_benchmark_results)
         params = list(sig.parameters.keys())
 
-        # Basic signature validation (exact parameters may vary in implementation)
+        # Basic signature validation (exact parameters may vary in variant)
         assert len(params) >= 2, "save_benchmark_results should accept at least 2 parameters"
 
     except ImportError as e:

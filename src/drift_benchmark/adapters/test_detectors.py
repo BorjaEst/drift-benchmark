@@ -9,8 +9,8 @@ from ..adapters import BaseDetector, register_detector
 class TestKSDetector(BaseDetector):
     """Simple test detector for ks_test.scipy"""
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id, **kwargs)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id, **kwargs)
 
     def preprocess(self, data, **kwargs):
         return data
@@ -26,8 +26,8 @@ class TestKSDetector(BaseDetector):
 class TestDriftDetector(BaseDetector):
     """Simple test detector for drift_detector.custom"""
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id, **kwargs)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id, **kwargs)
 
     def preprocess(self, data, **kwargs):
         return data

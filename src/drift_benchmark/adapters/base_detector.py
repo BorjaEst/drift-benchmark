@@ -17,14 +17,14 @@ class BaseDetector(ABC):
     REQ-ADP-001: BaseDetector abstract class with abstract and concrete methods
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
         """
         Initialize base detector.
 
-        REQ-ADP-008: Accept method and implementation identifiers
+        REQ-ADP-008: Accept method and variant identifiers
         """
         self._method_id = method_id
-        self._implementation_id = implementation_id
+        self._variant_id = variant_id
         self._drift_score: Optional[float] = None
         self._kwargs = kwargs
 
@@ -38,13 +38,13 @@ class BaseDetector(ABC):
         return self._method_id
 
     @property
-    def implementation_id(self) -> str:
+    def variant_id(self) -> str:
         """
-        Get the implementation variant identifier.
+        Get the variant variant identifier.
 
-        REQ-ADP-003: Read-only property implementation_id that returns implementation variant
+        REQ-ADP-003: Read-only property variant_id that returns variant variant
         """
-        return self._implementation_id
+        return self._variant_id
 
     def preprocess(self, data: DatasetResult, **kwargs) -> Any:
         """
@@ -54,7 +54,7 @@ class BaseDetector(ABC):
         REQ-ADP-009: Extract appropriate data from DatasetResult for training/detection phases
         REQ-ADP-010: Format flexibility for different detector libraries
         """
-        # Default implementation extracts DataFrames - subclasses can override for specific formats
+        # Default variant extracts DataFrames - subclasses can override for specific formats
         return {"X_ref": data.X_ref, "X_test": data.X_test, "metadata": data.metadata}
 
     @abstractmethod

@@ -8,9 +8,9 @@
 
 # Built-in detectors only
 [[detectors]]
-    method_id         = "kolmogorov_smirnov"
-    implementation_id = "ks_batch"
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
 
 [[detectors]]
-    method_id         = "cramer_von_mises"
-    implementation_id = "cvm_batch"
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"

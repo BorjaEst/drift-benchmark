@@ -59,7 +59,7 @@ def save_results(benchmark_result: BenchmarkResult) -> Path:
 
         logger.info(f"Saving benchmark results to: {results_dir}")
 
-        # Use the storage implementation
+        # Use the storage variant
         output_dir = save_benchmark_results(benchmark_result, results_dir)
 
         return output_dir

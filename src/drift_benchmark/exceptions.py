@@ -23,11 +23,11 @@ class DetectorNotFoundError(DriftBenchmarkError):
     REQ-EXC-002: Detector registry error for missing detectors
     """
 
-    def __init__(self, method_id: str = None, implementation_id: str = None, message: str = None):
+    def __init__(self, method_id: str = None, variant_id: str = None, message: str = None):
         if message:
             super().__init__(message)
-        elif method_id and implementation_id:
-            super().__init__(f"Detector not found for method '{method_id}' and implementation '{implementation_id}'")
+        elif method_id and variant_id:
+            super().__init__(f"Detector not found for method '{method_id}' and variant '{variant_id}'")
         elif method_id:
             super().__init__(f"Detector not found for method '{method_id}'")
         else:
@@ -60,11 +60,11 @@ class MethodNotFoundError(DriftBenchmarkError):
             super().__init__("Method not found")
 
 
-class ImplementationNotFoundError(DriftBenchmarkError):
+class VariantNotFoundError(DriftBenchmarkError):
     """
-    Raised when a requested implementation is not found for a method.
+    Raised when a requested variant is not found for a method.
 
-    REQ-EXC-003: Method registry error for missing implementations
+    REQ-EXC-003: Method registry error for missing variants
     """
 
     pass

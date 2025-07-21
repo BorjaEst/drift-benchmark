@@ -54,7 +54,7 @@ def load_config(path: str) -> BenchmarkConfig:
         # REQ-CFG-006: Validate dataset file paths exist during configuration loading
         _validate_file_existence(config)
 
-        # REQ-CFG-004: Validate detector method_id/implementation_id exist in methods registry
+        # REQ-CFG-004: Validate detector method_id/variant_id exist in methods registry
         _validate_detector_configurations(config)
 
         return config
@@ -91,7 +91,7 @@ def _validate_file_existence(config: BenchmarkConfig) -> None:
 
 def _validate_detector_configurations(config: BenchmarkConfig) -> None:
     """
-    REQ-CFG-004: Validate detector method_id/implementation_id exist in methods registry.
+    REQ-CFG-004: Validate detector method_id/variant_id exist in methods registry.
     """
     # Skip validation if in test mode (for TDD)
     skip_validation = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION", "0")
@@ -100,16 +100,15 @@ def _validate_detector_configurations(config: BenchmarkConfig) -> None:
 
     for detector_config in config.detectors:
         try:
-            from ..detectors import get_implementation, get_method
+            from ..detectors import get_method, get_variant
 
             # This will raise MethodNotFoundError if method doesn't exist
             get_method(detector_config.method_id)
 
-            # This will raise ImplementationNotFoundError if implementation doesn't exist
-            get_implementation(detector_config.method_id, detector_config.implementation_id)
+            # This will raise VariantNotFoundError if variant doesn't exist
+            get_variant(detector_config.method_id, detector_config.variant_id)
 
         except Exception as e:
             raise ConfigurationError(
-                f"Invalid detector configuration - method '{detector_config.method_id}', "
-                f"implementation '{detector_config.implementation_id}': {e}"
+                f"Invalid detector configuration - method '{detector_config.method_id}', " f"variant '{detector_config.variant_id}': {e}"
             )

@@ -21,8 +21,8 @@ def mock_methods_toml_file():
                 "data_types": ["CONTINUOUS"],
                 "requires_labels": False,
                 "references": ["https://doi.org/10.2307/2280095"],
-                "implementations": {
-                    "scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH", "hyperparameters": ["threshold"], "references": []}
+                "variants": {
+                    "scipy": {"name": "SciPy Variant", "execution_mode": "BATCH", "hyperparameters": ["threshold"], "references": []}
                 },
             },
             "drift_detector": {
@@ -34,10 +34,10 @@ def mock_methods_toml_file():
                 "data_types": ["CONTINUOUS", "CATEGORICAL"],
                 "requires_labels": True,
                 "references": [],
-                "implementations": {
-                    "custom": {"name": "Custom Implementation", "execution_mode": "BATCH", "hyperparameters": [], "references": []},
+                "variants": {
+                    "custom": {"name": "Custom Variant", "execution_mode": "BATCH", "hyperparameters": [], "references": []},
                     "river": {
-                        "name": "River Implementation",
+                        "name": "River Variant",
                         "execution_mode": "STREAMING",
                         "hyperparameters": ["window_size"],
                         "references": [],
@@ -66,9 +66,9 @@ def invalid_methods_toml_file():
             "incomplete_method": {
                 "name": "Incomplete Method",
                 # Missing required fields: description, drift_types, family, data_dimension, data_types, requires_labels, references
-                "implementations": {
+                "variants": {
                     "incomplete_impl": {
-                        "name": "Incomplete Implementation"
+                        "name": "Incomplete Variant"
                         # Missing required fields: execution_mode, hyperparameters, references
                     }
                 },

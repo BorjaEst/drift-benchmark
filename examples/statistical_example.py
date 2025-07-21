@@ -1,6 +1,6 @@
 """
 This module implements statistical test-based drift detectors using the
-drift-benchmark adapter framework with custom implementations.
+drift-benchmark adapter framework with custom variants.
 """
 
 from typing import Optional
@@ -12,17 +12,17 @@ from drift_benchmark.adapters import BaseDetector, register_detector
 from drift_benchmark.models.results import DatasetResult
 
 
-@register_detector(method_id="anderson_darling", implementation_id="ad_custom")
+@register_detector(method_id="anderson_darling", variant_id="ad_custom")
 class CustomAndersonDarlingDetector(BaseDetector):
     """
-    Custom Anderson-Darling test implementation for drift detection.
+    Custom Anderson-Darling test variant for drift detection.
 
-    Enhanced implementation with robust preprocessing and multivariate support
+    Enhanced variant with robust preprocessing and multivariate support
     using feature-wise testing with Bonferroni correction.
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get("threshold", 0.05)
         self._reference_data: Optional[np.ndarray] = None
         self._last_score: Optional[float] = None
@@ -100,17 +100,17 @@ class CustomAndersonDarlingDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="mann_whitney", implementation_id="mw_custom")
+@register_detector(method_id="mann_whitney", variant_id="mw_custom")
 class CustomMannWhitneyDetector(BaseDetector):
     """
-    Custom Mann-Whitney U-test implementation for drift detection.
+    Custom Mann-Whitney U-test variant for drift detection.
 
-    Enhanced implementation with robust preprocessing and multivariate support
+    Enhanced variant with robust preprocessing and multivariate support
     using feature-wise testing.
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get("threshold", 0.05)
         self._reference_data: Optional[np.ndarray] = None
         self._last_score: Optional[float] = None

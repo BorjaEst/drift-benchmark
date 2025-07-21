@@ -78,7 +78,7 @@ This module defines how data moves through the benchmark system orchestrated by 
 | ID              | Requirement                         | Description                                                                                                                              |
 | --------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-FLW-001** | **BenchmarkRunner Data Loading**    | BenchmarkRunner must load all datasets specified in BenchmarkConfig during initialization, creating DatasetResult instances              |
-| **REQ-FLW-002** | **BenchmarkRunner Detector Setup**  | BenchmarkRunner must instantiate all configured detectors from registry during initialization, validating method_id/implementation_id    |
+| **REQ-FLW-002** | **BenchmarkRunner Detector Setup**  | BenchmarkRunner must instantiate all configured detectors from registry during initialization, validating method_id/variant_id           |
 | **REQ-FLW-003** | **Detector Preprocessing Phase**    | For each detector-dataset pair, BenchmarkRunner must call detector.preprocess() to transform DatasetResult into detector-specific format |
 | **REQ-FLW-004** | **Detector Training Phase**         | BenchmarkRunner must call detector.fit(preprocessed_reference_data) to train each detector on reference data                             |
 | **REQ-FLW-005** | **Detector Detection Phase**        | BenchmarkRunner must call detector.detect(preprocessed_test_data) to get drift detection boolean result                                  |
@@ -99,7 +99,7 @@ This module defines how BenchmarkConfig is loaded, validated, and processed. It 
 | **REQ-CFG-001** | **TOML File Loading**              | BenchmarkRunner must load BenchmarkConfig from .toml files using `BenchmarkConfig.from_toml(path: str) -> BenchmarkConfig` |
 | **REQ-CFG-002** | **Pydantic V2 Validation**         | BenchmarkConfig must use Pydantic v2 BaseModel with automatic field validation for all nested configuration models         |
 | **REQ-CFG-003** | **Basic Path Resolution**          | Configuration loading must resolve relative file paths to absolute paths for dataset configurations                        |
-| **REQ-CFG-004** | **Basic Configuration Validation** | BenchmarkConfig must validate that detector method_id/implementation_id exist in the methods registry                      |
+| **REQ-CFG-004** | **Basic Configuration Validation** | BenchmarkConfig must validate that detector method_id/variant_id exist in the methods registry                             |
 | **REQ-CFG-005** | **Default Value Handling**         | BenchmarkConfig must provide reasonable defaults for optional fields                                                       |
 | **REQ-CFG-006** | **Nested Configuration Support**   | BenchmarkConfig must support nested models (MetadataConfig, DatasetsConfig, DetectorsConfig, EvaluationConfig)             |
 | **REQ-CFG-007** | **Configuration Serialization**    | BenchmarkConfig must support basic serialization (to_toml/from_toml)                                                       |
@@ -196,7 +196,7 @@ This module provides comprehensive configuration management for the drift-benchm
 
 | ID              | Requirement                  | Description                                                                                                     |
 | --------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **REQ-SET-101** | **Components Directory**     | Must provide `components_dir` setting (default: "components") for detector implementations directory            |
+| **REQ-SET-101** | **Components Directory**     | Must provide `components_dir` setting (default: "components") for detector variants directory                   |
 | **REQ-SET-102** | **Configurations Directory** | Must provide `configurations_dir` setting (default: "configurations") for benchmark configs directory           |
 | **REQ-SET-103** | **Datasets Directory**       | Must provide `datasets_dir` setting (default: "datasets") for datasets directory                                |
 | **REQ-SET-104** | **Results Directory**        | Must provide `results_dir` setting (default: "results") for results output directory                            |
@@ -243,13 +243,13 @@ This module defines custom exceptions for the drift-benchmark library and how er
 | --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-EXC-001** | **Base Exception**           | Must define `DriftBenchmarkError` as base exception class for all library-specific errors                                        |
 | **REQ-EXC-002** | **Detector Registry Errors** | Must define `DetectorNotFoundError`, `DuplicateDetectorError`, `InvalidDetectorError` for detector registry issues               |
-| **REQ-EXC-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `ImplementationNotFoundError` for methods.toml registry issues                                |
+| **REQ-EXC-003** | **Method Registry Errors**   | Must define `MethodNotFoundError`, `VariantNotFoundError` for methods.toml registry issues                                       |
 | **REQ-EXC-004** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError`, `DataPreprocessingError` for data-related issues                          |
 | **REQ-EXC-005** | **Configuration Errors**     | Must define `ConfigurationError`, `InvalidConfigError` for configuration validation failures                                     |
 | **REQ-EXC-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError`, `DetectorTimeoutError` for benchmark execution issues                                     |
 | **REQ-EXC-007** | **Error Context**            | All custom exceptions must include helpful context: error_type, invalid_value (if applicable), expected_format, suggested_action |
 
-> **Error Context Guidelines**: Each exception should provide sufficient information for users to understand what went wrong and how to fix it. Implementation teams should include relevant context based on the specific error scenario.
+> **Error Context Guidelines**: Each exception should provide sufficient information for users to understand what went wrong and how to fix it. Variant teams should include relevant context based on the specific error scenario.
 
 ### ⚠️ Error Propagation
 
@@ -262,7 +262,7 @@ This module defines custom exceptions for the drift-benchmark library and how er
 | **REQ-ERR-005** | **Configuration Error Context**    | Configuration loading errors must include file path, line number (if TOML), and specific validation failure details                |
 | **REQ-ERR-006** | **Data Loading Error Recovery**    | Data loading failures must include file path, expected format, and actual content type information for debugging                   |
 | **REQ-ERR-007** | **Detector Error Isolation**       | Detector failures must be isolated to prevent cascade failures, with clear detector ID and dataset name in error messages          |
-| **REQ-ERR-008** | **Registry Error Context**         | Registry lookup failures must provide available options and suggestions for similar method/implementation names                    |
+| **REQ-ERR-008** | **Registry Error Context**         | Registry lookup failures must provide available options and suggestions for similar method/variant names                           |
 | **REQ-ERR-009** | **Error Logging Consistency**      | All error handling must use settings.get_logger() for consistent error logging with appropriate log levels                         |
 | **REQ-ERR-010** | **Critical Error Termination**     | Critical errors (settings failure, registry corruption) must terminate execution immediately with clear error messages             |
 
@@ -272,7 +272,7 @@ This module defines custom exceptions for the drift-benchmark library and how er
 | ---------------------------- | ---------------------- | ----------------------- | -------------------------------------------------- | ---------------------- |
 | **Configuration Validation** | Models                 | Immediate termination   | Field name, value, validation rule, correction tip | User via CLI/exception |
 | **Data Loading Failure**     | Data                   | Skip dataset, continue  | File path, format, parsing error, line number      | BenchmarkRunner        |
-| **Detector Initialization**  | Adapters               | Skip detector, continue | method_id, implementation_id, parameter error      | BenchmarkRunner        |
+| **Detector Initialization**  | Adapters               | Skip detector, continue | method_id, variant_id, parameter error             | BenchmarkRunner        |
 | **Detector Runtime Error**   | BenchmarkRunner        | Isolate, log, continue  | detector_id, dataset, operation phase, stack trace | Results module         |
 | **Memory Limit Exceeded**    | Resource Management    | Graceful termination    | Current usage, limit, detector context             | User via CLI/logs      |
 | **Registry Lookup Failure**  | Registry               | Immediate termination   | Requested ID, available options, suggestions       | Configuration loading  |
@@ -322,10 +322,10 @@ This module contains the data models used throughout the drift-benchmark library
 
 #### 🔍 Detector Configuration Models
 
-| ID              | Requirement               | Description                                                                                                               |
-| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-DTM-201** | **DetectorsConfig Model** | Must define `DetectorsConfig` with fields: detectors, execution, timeout for detector execution configuration             |
-| **REQ-DTM-202** | **DetectorConfig Model**  | Must define `DetectorConfig` with fields: method_id, implementation_id, parameters, enabled for individual detector setup |
+| ID              | Requirement               | Description                                                                                                        |
+| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **REQ-DTM-201** | **DetectorsConfig Model** | Must define `DetectorsConfig` with fields: detectors, execution, timeout for detector execution configuration      |
+| **REQ-DTM-202** | **DetectorConfig Model**  | Must define `DetectorConfig` with fields: method_id, variant_id, parameters, enabled for individual detector setup |
 
 > Execution configuration (max_workers, timeout, etc.) is provided at Settings level.
 
@@ -348,7 +348,7 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-CMF-405** | **Config Default Values**  | Configuration models must provide sensible defaults following drift detection best practices to simplify user configuration |
 | **REQ-CMF-407** | **Config Templates**       | Configuration system must support template-based configuration generation for common benchmark scenarios                    |
 
-> **Default Value Guidelines**: Defaults should reflect best practices in drift benchmarking, ensure reproducibility, minimize user friction, and provide robust starting points for new users. Implementation teams should choose specific values that align with academic literature and common benchmarking practices.
+> **Default Value Guidelines**: Defaults should reflect best practices in drift benchmarking, ensure reproducibility, minimize user friction, and provide robust starting points for new users. Variant teams should choose specific values that align with academic literature and common benchmarking practices.
 
 ### 📊 Metadata Models
 
@@ -362,11 +362,11 @@ This module contains the data models used throughout the drift-benchmark library
 
 #### 🤖 Detection Metadata Models
 
-| ID              | Requirement                      | Description                                                                                                                      |
-| --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-MET-101** | **DetectorMetadata Model**       | Must define `DetectorMetadata` with fields: method_id, implementation_id, name, description, family, execution_mode              |
-| **REQ-MET-102** | **ImplementationMetadata Model** | Must define `ImplementationMetadata` with fields: name, version, library, parameters, references for implementation details      |
-| **REQ-MET-103** | **MethodMetadata Model**         | Must define `MethodMetadata` with fields: name, family, drift_types, data_dimension, data_types, requires_labels for method info |
+| ID              | Requirement                | Description                                                                                                                      |
+| --------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-MET-101** | **DetectorMetadata Model** | Must define `DetectorMetadata` with fields: method_id, variant_id, name, description, family, execution_mode                     |
+| **REQ-MET-102** | **VariantMetadata Model**  | Must define `VariantMetadata` with fields: name, version, library, parameters, references for variant details                    |
+| **REQ-MET-103** | **MethodMetadata Model**   | Must define `MethodMetadata` with fields: name, family, drift_types, data_dimension, data_types, requires_labels for method info |
 
 #### ⚡ Performance Metadata Models
 
@@ -386,7 +386,7 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-RES-002** | **DatasetResult Model**   | Must define `DatasetResult` with minimal fields: X_ref, X_test, y_ref, y_test, drift_info, metadata                                  |
 | **REQ-RES-003** | **DetectorResult Model**  | Must define `DetectorResult` with minimal fields: detector_metadata, dataset_name, drift_detected, scores, timing_info, memory_usage |
 
-> **Note**: Additional fields may be added by developers as needed for specific implementations. These represent the minimum required fields for basic functionality.
+> **Note**: Additional fields may be added by developers as needed for specific variants. These represent the minimum required fields for basic functionality.
 
 #### 📊 Evaluation Result Models
 
@@ -396,7 +396,7 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-RES-102** | **ScoreResult Model**      | Must define `ScoreResult` with minimal fields: drift_score, p_value, threshold, confidence                        |
 | **REQ-RES-103** | **MetricResult Model**     | Must define `MetricResult` with minimal fields: metric_name, value, confidence_interval, statistical_significance |
 
-> **Note**: Additional fields may be added by developers as needed for specific implementations. These represent the minimum required fields for basic functionality.
+> **Note**: Additional fields may be added by developers as needed for specific variants. These represent the minimum required fields for basic functionality.
 
 #### 📋 Aggregation Result Models
 
@@ -406,7 +406,7 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-RES-202** | **ComparisonResult Model** | Must define `ComparisonResult` with minimal fields: method_a, method_b, statistical_test, p_value, effect_size |
 | **REQ-RES-203** | **RankingResult Model**    | Must define `RankingResult` with minimal fields: method_rankings, confidence_intervals, critical_differences   |
 
-> **Note**: Additional fields may be added by developers as needed for specific implementations. These represent the minimum required fields for basic functionality.
+> **Note**: Additional fields may be added by developers as needed for specific variants. These represent the minimum required fields for basic functionality.
 
 #### 🛠️ Result Models Features
 
@@ -417,7 +417,7 @@ This module contains the data models used throughout the drift-benchmark library
 
 ## 🔍 Detectors Module
 
-This module provides a centralized registry for drift detection methods through the `methods.toml` configuration file. It standardizes method metadata, implementation details, and execution modes so users can map the adapter detector to the correct method and implementation for benchmarking.
+This module provides a centralized registry for drift detection methods through the `methods.toml` configuration file. It standardizes method metadata, variant details, and execution modes so users can map the adapter detector to the correct method and variant for benchmarking.
 
 ### 📋 Detectors Registry
 
@@ -425,11 +425,11 @@ This module provides a centralized registry for drift detection methods through 
 | --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **REQ-DET-001** | **Methods Registry Loading** | Must provide `load_methods() -> Dict[str, Dict[str, Any]]` that loads methods from methods.toml with LRU cache                             |
 | **REQ-DET-002** | **Method Schema Compliance** | Each method in methods.toml must have required fields: name, description, drift_types, family, data_dimension, data_types, requires_labels |
-| **REQ-DET-003** | **Implementation Schema**    | Each implementation must have required fields: name, execution_mode, hyperparameters, references                                           |
+| **REQ-DET-003** | **Variant Schema**           | Each variant must have required fields: name, execution_mode, hyperparameters, references                                                  |
 | **REQ-DET-004** | **Method Lookup**            | Must provide `get_method(method_id: str) -> Dict[str, Any]` that returns method info or raises MethodNotFoundError                         |
-| **REQ-DET-005** | **Implementation Lookup**    | Must provide `get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]` or raises ImplementationNotFoundError                    |
+| **REQ-DET-005** | **Variant Lookup**           | Must provide `get_variant(method_id: str, impl_id: str) -> Dict[str, Any]` or raises VariantNotFoundError                                  |
 | **REQ-DET-006** | **List Methods**             | Must provide `list_methods() -> List[str]` that returns all available method IDs                                                           |
-| **REQ-DET-007** | **List Implementations**     | Must provide `list_implementations(method_id: str) -> List[str]` that returns implementation IDs for a method                              |
+| **REQ-DET-007** | **List Variants**            | Must provide `list_variants(method_id: str) -> List[str]` that returns variant IDs for a method                                            |
 | **REQ-DET-008** | **TOML Schema Validation**   | methods.toml must be validated using Pydantic models with literal types for automatic constraint checking                                  |
 | **REQ-DET-009** | **Extensible Design**        | Registry must support dynamic addition of new methods without code changes, only TOML updates                                              |
 
@@ -450,19 +450,19 @@ This module provides a centralized registry for drift detection methods through 
 | **REQ-DET-111** | **Data Characteristics Support**       | Registry must support all DataDimension and DataType literal values for method compatibility           |
 | **REQ-DET-112** | **Requires Labels Field**              | Each method must specify requires_labels boolean indicating if method needs labeled data for operation |
 
-### ⚙️ Detectors Implementations
+### ⚙️ Detectors Variants
 
-| ID              | Requirement                        | Description                                                                                                                          |
-| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **REQ-DET-201** | **Hyperparameter Definition**      | Each implementation must define standardized hyperparameter names and types for easy detector configuration                          |
-| **REQ-DET-202** | **Hyperparameter Validation**      | Registry must validate that hyperparameters are defined as lists of strings in implementation configurations                         |
-| **REQ-DET-203** | **Default Parameter Values**       | Registry should support optional default values for hyperparameters in implementation metadata                                       |
-| **REQ-DET-204** | **Academic References**            | Each method must include academic references as URLs to original papers or documentation                                             |
-| **REQ-DET-205** | **Implementation References**      | Each implementation may include implementation-specific references for variant details                                               |
-| **REQ-DET-206** | **Reference Validation**           | Registry must validate that references are provided as lists of strings (URLs or citations)                                          |
-| **REQ-DET-207** | **Method Metadata Schema**         | Methods must follow TOML schema: name, description, drift_types, family, data_dimension, data_types, requires_labels, references     |
-| **REQ-DET-208** | **Implementation Metadata Schema** | Implementations must follow TOML schema: name, execution_mode, hyperparameters, references under [method_id.implementations.impl_id] |
-| **REQ-DET-209** | **Nested Structure Validation**    | Registry must validate nested TOML structure with method-level and implementation-level configurations                               |
+| ID              | Requirement                     | Description                                                                                                                      |
+| --------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-DET-201** | **Hyperparameter Definition**   | Each variant must define standardized hyperparameter names and types for easy detector configuration                             |
+| **REQ-DET-202** | **Hyperparameter Validation**   | Registry must validate that hyperparameters are defined as lists of strings in variant configurations                            |
+| **REQ-DET-203** | **Default Parameter Values**    | Registry should support optional default values for hyperparameters in variant metadata                                          |
+| **REQ-DET-204** | **Academic References**         | Each method must include academic references as URLs to original papers or documentation                                         |
+| **REQ-DET-205** | **Variant References**          | Each variant may include variant-specific references for variant details                                                         |
+| **REQ-DET-206** | **Reference Validation**        | Registry must validate that references are provided as lists of strings (URLs or citations)                                      |
+| **REQ-DET-207** | **Method Metadata Schema**      | Methods must follow TOML schema: name, description, drift_types, family, data_dimension, data_types, requires_labels, references |
+| **REQ-DET-208** | **Variant Metadata Schema**     | Variants must follow TOML schema: name, execution_mode, hyperparameters, references under [method_id.variants.impl_id]           |
+| **REQ-DET-209** | **Nested Structure Validation** | Registry must validate nested TOML structure with method-level and variant-level configurations                                  |
 
 ## 📋 Adapters Module
 
@@ -470,32 +470,32 @@ This module provides adapters for integrating various drift detection libraries 
 
 ### 🏗️ Base Module
 
-| ID              | Requirement                     | Description                                                                                                                                     |
-| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-ADP-001** | **BaseDetector Abstract Class** | `BaseDetector` must be an abstract class with abstract methods `fit()`, `detect()`, and concrete methods `preprocess()`, `score()`, `reset()`   |
-| **REQ-ADP-002** | **Method ID Property**          | `BaseDetector` must have read-only property `method_id: str` that returns the drift detection method identifier (e.g., "kolmogorov_smirnov")    |
-| **REQ-ADP-003** | **Implementation ID Property**  | `BaseDetector` must have read-only property `implementation_id: str` that returns the implementation variant (e.g., "ks_batch", "ks_streaming") |
-| **REQ-ADP-004** | **Metadata Class Method**       | `BaseDetector` must implement `@classmethod metadata() -> DetectorMetadata` returning structured metadata about the method and implementation   |
-| **REQ-ADP-005** | **Preprocess Method**           | `BaseDetector.preprocess(data: DatasetResult, **kwargs) -> Any` must handle data format conversion for the specific detector requirements       |
-| **REQ-ADP-006** | **Abstract Fit Method**         | `BaseDetector.fit(preprocessed_data: Any, **kwargs) -> Self` must be abstract and train the detector on reference data                          |
-| **REQ-ADP-007** | **Abstract Detect Method**      | `BaseDetector.detect(preprocessed_data: Any, **kwargs) -> bool` must be abstract and return True if drift is detected, False otherwise          |
-| **REQ-ADP-008** | **Score Method**                | `BaseDetector.score() -> ScoreResult` must return drift scores/statistics after detection in standardized format                                |
-| **REQ-ADP-009** | **Reset Method**                | `BaseDetector.reset() -> None` must clear internal state allowing detector reuse without reinitialization                                       |
-| **REQ-ADP-010** | **Basic Validation**            | `BaseDetector.__init__()` must validate that `method_id` and `implementation_id` exist in the methods registry                                  |
+| ID              | Requirement                     | Description                                                                                                                                   |
+| --------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-ADP-001** | **BaseDetector Abstract Class** | `BaseDetector` must be an abstract class with abstract methods `fit()`, `detect()`, and concrete methods `preprocess()`, `score()`, `reset()` |
+| **REQ-ADP-002** | **Method ID Property**          | `BaseDetector` must have read-only property `method_id: str` that returns the drift detection method identifier (e.g., "kolmogorov_smirnov")  |
+| **REQ-ADP-003** | **Variant ID Property**         | `BaseDetector` must have read-only property `variant_id: str` that returns the variant variant (e.g., "ks_batch", "ks_streaming")             |
+| **REQ-ADP-004** | **Metadata Class Method**       | `BaseDetector` must implement `@classmethod metadata() -> DetectorMetadata` returning structured metadata about the method and variant        |
+| **REQ-ADP-005** | **Preprocess Method**           | `BaseDetector.preprocess(data: DatasetResult, **kwargs) -> Any` must handle data format conversion for the specific detector requirements     |
+| **REQ-ADP-006** | **Abstract Fit Method**         | `BaseDetector.fit(preprocessed_data: Any, **kwargs) -> Self` must be abstract and train the detector on reference data                        |
+| **REQ-ADP-007** | **Abstract Detect Method**      | `BaseDetector.detect(preprocessed_data: Any, **kwargs) -> bool` must be abstract and return True if drift is detected, False otherwise        |
+| **REQ-ADP-008** | **Score Method**                | `BaseDetector.score() -> ScoreResult` must return drift scores/statistics after detection in standardized format                              |
+| **REQ-ADP-009** | **Reset Method**                | `BaseDetector.reset() -> None` must clear internal state allowing detector reuse without reinitialization                                     |
+| **REQ-ADP-010** | **Basic Validation**            | `BaseDetector.__init__()` must validate that `method_id` and `variant_id` exist in the methods registry                                       |
 
 ### 🗂️ Registry Module
 
-| ID              | Requirement                       | Description                                                                                                                           |
-| --------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-REG-001** | **Decorator Registration**        | Must provide `@register_detector(method_id: str, implementation_id: str)` decorator to register Detector classes                      |
-| **REQ-REG-002** | **Method-Implementation Mapping** | `AdapterRegistry` must maintain mapping from (method_id, implementation_id) tuples to Detector class types                            |
-| **REQ-REG-003** | **Detector Lookup**               | Must provide `get_detector_class(method_id: str, implementation_id: str) -> Type[BaseDetector]` for Detector class retrieval          |
-| **REQ-REG-004** | **Missing Detector Error**        | `get_detector_class()` must raise `DetectorNotFoundError` with available combinations when requested detector doesn't exist           |
-| **REQ-REG-005** | **List Available Detectors**      | Must provide `list_detectors() -> List[Tuple[str, str]]` returning all registered (method_id, implementation_id) combinations         |
-| **REQ-REG-006** | **Adapter Module Discovery**      | Must provide `discover_adapters(adapter_dir: Path)` to automatically import and register Detector classes from adapter modules        |
-| **REQ-REG-007** | **Duplicate Registration**        | Must raise `DuplicateDetectorError` when attempting to register same (method_id, implementation_id) combination twice                 |
-| **REQ-REG-008** | **Registry Validation**           | Must validate that registered Detector classes inherit from `BaseDetector` and have valid method_id/implementation_id in methods.toml |
-| **REQ-REG-009** | **Clear Registry**                | Must provide `clear_registry()` method to remove all registrations (primarily for testing)                                            |
+| ID              | Requirement                  | Description                                                                                                                    |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-REG-001** | **Decorator Registration**   | Must provide `@register_detector(method_id: str, variant_id: str)` decorator to register Detector classes                      |
+| **REQ-REG-002** | **Method-Variant Mapping**   | `AdapterRegistry` must maintain mapping from (method_id, variant_id) tuples to Detector class types                            |
+| **REQ-REG-003** | **Detector Lookup**          | Must provide `get_detector_class(method_id: str, variant_id: str) -> Type[BaseDetector]` for Detector class retrieval          |
+| **REQ-REG-004** | **Missing Detector Error**   | `get_detector_class()` must raise `DetectorNotFoundError` with available combinations when requested detector doesn't exist    |
+| **REQ-REG-005** | **List Available Detectors** | Must provide `list_detectors() -> List[Tuple[str, str]]` returning all registered (method_id, variant_id) combinations         |
+| **REQ-REG-006** | **Adapter Module Discovery** | Must provide `discover_adapters(adapter_dir: Path)` to automatically import and register Detector classes from adapter modules |
+| **REQ-REG-007** | **Duplicate Registration**   | Must raise `DuplicateDetectorError` when attempting to register same (method_id, variant_id) combination twice                 |
+| **REQ-REG-008** | **Registry Validation**      | Must validate that registered Detector classes inherit from `BaseDetector` and have valid method_id/variant_id in methods.toml |
+| **REQ-REG-009** | **Clear Registry**           | Must provide `clear_registry()` method to remove all registrations (primarily for testing)                                     |
 
 ## 📊 Data Module
 
@@ -588,9 +588,9 @@ This module provides comprehensive evaluation capabilities for benchmarking drif
 
 ### 📈 Statistical Tests
 
-| ID              | Requirement               | Description                                                                                                               |
-| --------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-EVL-041** | **T-Test Implementation** | Evaluation engine must implement t-test for comparing means between detector performance groups with normal distributions |
+| ID              | Requirement        | Description                                                                                                               |
+| --------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-EVL-041** | **T-Test Variant** | Evaluation engine must implement t-test for comparing means between detector performance groups with normal distributions |
 
 ### 📊 Performance Analysis
 

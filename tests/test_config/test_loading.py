@@ -51,7 +51,7 @@ def test_should_load_benchmark_config_from_toml_when_called(valid_benchmark_conf
     # Assert first detector configuration
     first_detector = config.detectors[0]
     assert first_detector.method_id == "ks_test"
-    assert first_detector.implementation_id == "scipy"
+    assert first_detector.variant_id == "scipy"
 
 
 def test_should_use_pydantic_v2_validation_when_loading():
@@ -75,7 +75,7 @@ def test_should_use_pydantic_v2_validation_when_loading():
     # Test validation functionality
     valid_data = {
         "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "test_method", "implementation_id": "test_impl"}],
+        "detectors": [{"method_id": "test_method", "variant_id": "test_impl"}],
     }
 
     try:
@@ -105,7 +105,7 @@ def test_should_resolve_relative_paths_when_loading(valid_benchmark_config_toml)
 
 
 def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_file, tmp_path):
-    """Test REQ-CFG-004: Configuration loading must validate that detector method_id/implementation_id exist in the methods registry"""
+    """Test REQ-CFG-004: Configuration loading must validate that detector method_id/variant_id exist in the methods registry"""
     # Create temporary test files for the configuration
     test_csv = tmp_path / "test.csv"
     test_csv.write_text("feature1,feature2\n1,2\n3,4\n")
@@ -114,15 +114,15 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
     valid_config_data = {
         "datasets": [{"path": str(test_csv), "format": "CSV", "reference_split": 0.5}],
         "detectors": [
-            {"method_id": "ks_test", "implementation_id": "scipy"},
-            {"method_id": "drift_detector", "implementation_id": "custom"},
+            {"method_id": "ks_test", "variant_id": "scipy"},
+            {"method_id": "drift_detector", "variant_id": "custom"},
         ],
     }
 
     # Create invalid config file
     invalid_config_data = {
         "datasets": [{"path": str(test_csv), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "non_existent_method", "implementation_id": "scipy"}],
+        "detectors": [{"method_id": "non_existent_method", "variant_id": "scipy"}],
     }
 
     # Create temporary TOML files
@@ -190,7 +190,7 @@ def test_should_validate_split_ratios_when_loaded():
         for split_ratio, should_be_valid in test_cases:
             config_data = {
                 "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": split_ratio}],
-                "detectors": [{"method_id": "test_method", "implementation_id": "test_impl"}],
+                "detectors": [{"method_id": "test_method", "variant_id": "test_impl"}],
             }
 
             if should_be_valid:
@@ -216,13 +216,13 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files, tmp_
     # Create valid config with existing file
     valid_config_data = {
         "datasets": [{"path": str(existing_file), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "kolmogorov_smirnov", "implementation_id": "ks_batch"}],
+        "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch"}],
     }
 
     # Create invalid config with non-existent file
     invalid_config_data = {
         "datasets": [{"path": str(non_existent_file), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "kolmogorov_smirnov", "implementation_id": "ks_batch"}],
+        "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch"}],
     }
 
     # Create temporary TOML files
@@ -331,11 +331,11 @@ def test_should_provide_clear_validation_errors_when_invalid():
     test_cases = [
         # Missing required field
         {
-            "detectors": [{"method_id": "test", "implementation_id": "test"}]
+            "detectors": [{"method_id": "test", "variant_id": "test"}]
             # Missing datasets field
         },
         # Invalid field type
-        {"datasets": "not_a_list", "detectors": [{"method_id": "test", "implementation_id": "test"}]},
+        {"datasets": "not_a_list", "detectors": [{"method_id": "test", "variant_id": "test"}]},
         # Empty required lists
         {"datasets": [], "detectors": []},
     ]
@@ -374,7 +374,7 @@ def test_should_maintain_separation_of_concerns():
         # Should be able to import BenchmarkConfig independently from config loading
         config_data = {
             "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-            "detectors": [{"method_id": "test_method", "implementation_id": "test_impl"}],
+            "detectors": [{"method_id": "test_method", "variant_id": "test_impl"}],
         }
 
         # This should work without any file I/O operations

@@ -72,11 +72,11 @@ reference_split = 0.5
 
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-implementation_id = "ks_batch"
+variants_id = "ks_batch"
 
 [[detectors]]
 method_id = "cramer_von_mises"
-implementation_id = "cvm_batch"
+variants_id = "cvm_batch"
 """
 
 # Save to file
@@ -117,9 +117,9 @@ config = BenchmarkConfig(
         )
     ],
     detectors=[
-        DetectorConfig(method_id="kolmogorov_smirnov", implementation_id="ks_batch"),
-        DetectorConfig(method_id="anderson_darling", implementation_id="ad_batch"),
-        DetectorConfig(method_id="maximum_mean_discrepancy", implementation_id="mmd_rbf")
+        DetectorConfig(method_id="kolmogorov_smirnov", variants_id="ks_batch"),
+        DetectorConfig(method_id="anderson_darling", variants_id="ad_batch"),
+        DetectorConfig(method_id="maximum_mean_discrepancy", variants_id="mmd_rbf")
     ]
 )
 
@@ -153,19 +153,19 @@ reference_split = 0.7
 # Detector configurations
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-implementation_id = "ks_batch"
+variants_id = "ks_batch"
 
 [[detectors]]
 method_id = "cramer_von_mises"
-implementation_id = "cvm_batch"
+variants_id = "cvm_batch"
 
 [[detectors]]
 method_id = "anderson_darling"
-implementation_id = "ad_batch"
+variants_id = "ad_batch"
 
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
-implementation_id = "mmd_rbf"
+variants_id = "mmd_rbf"
 ```
 
 ### Configuration Validation
@@ -211,12 +211,12 @@ from drift_benchmark.models import DetectorConfig
 # Basic detector configuration
 detector_config = DetectorConfig(
     method_id="kolmogorov_smirnov",      # Must exist in methods.toml
-    implementation_id="ks_batch"         # Must exist under method
+    variants_id="ks_batch"         # Must exist under method
 )
 
 # Validation rules:
 # - method_id: must exist in detector registry
-# - implementation_id: must exist under specified method
+# - variants_id: must exist under specified method
 # - Registry automatically validates during benchmark execution
 ```
 
@@ -494,9 +494,9 @@ class DetectorConfig(BaseModel):
     """Configuration for individual detector."""
 
     method_id: str = Field(..., description="Method identifier from registry")
-    implementation_id: str = Field(
+    variants_id: str = Field(
         ...,
-        description="Implementation variant identifier"
+        description="Variants variant identifier"
     )
 ```
 
@@ -685,15 +685,15 @@ reference_split = 0.7
 # Test all detectors on all datasets
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-implementation_id = "ks_batch"
+variants_id = "ks_batch"
 
 [[detectors]]
 method_id = "cramer_von_mises"
-implementation_id = "cvm_batch"
+variants_id = "cvm_batch"
 
 [[detectors]]
 method_id = "anderson_darling"
-implementation_id = "ad_batch"
+variants_id = "ad_batch"
 ```
 
 ### Performance Comparison Setup
@@ -713,24 +713,24 @@ reference_split = 0.5
 # Statistical tests
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-implementation_id = "ks_batch"
+variants_id = "ks_batch"
 
 [[detectors]]
 method_id = "cramer_von_mises"
-implementation_id = "cvm_batch"
+variants_id = "cvm_batch"
 
 [[detectors]]
 method_id = "anderson_darling"
-implementation_id = "ad_batch"
+variants_id = "ad_batch"
 
 # Distance-based methods
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
-implementation_id = "mmd_rbf"
+variants_id = "mmd_rbf"
 
 [[detectors]]
 method_id = "wasserstein_distance"
-implementation_id = "wasserstein_1d"
+variants_id = "wasserstein_1d"
 """
 
 # Run comparison
@@ -834,9 +834,9 @@ def run_comprehensive_benchmark():
             DatasetConfig(path="datasets/sudden_drift.csv", format="CSV", reference_split=0.5),
         ],
         detectors=[
-            DetectorConfig(method_id="kolmogorov_smirnov", implementation_id="ks_batch"),
-            DetectorConfig(method_id="cramer_von_mises", implementation_id="cvm_batch"),
-            DetectorConfig(method_id="anderson_darling", implementation_id="ad_batch"),
+            DetectorConfig(method_id="kolmogorov_smirnov", variants_id="ks_batch"),
+            DetectorConfig(method_id="cramer_von_mises", variants_id="cvm_batch"),
+            DetectorConfig(method_id="anderson_darling", variants_id="ad_batch"),
         ]
     )
 
@@ -948,7 +948,7 @@ class BenchmarkPipeline:
         detectors = [
             DetectorConfig(
                 method_id=method_id,
-                implementation_id=impl_id
+                variants_id=impl_id
             ) for method_id, impl_id in detector_pairs
         ]
 
@@ -1184,8 +1184,8 @@ def get_config_for_environment():
                 DatasetConfig(path="production/dataset2.csv", format="CSV", reference_split=0.5),
             ],
             detectors=[
-                DetectorConfig(method_id="kolmogorov_smirnov", implementation_id="ks_batch"),
-                DetectorConfig(method_id="cramer_von_mises", implementation_id="cvm_batch"),
+                DetectorConfig(method_id="kolmogorov_smirnov", variants_id="ks_batch"),
+                DetectorConfig(method_id="cramer_von_mises", variants_id="cvm_batch"),
             ]
         )
     else:  # development/testing
@@ -1194,7 +1194,7 @@ def get_config_for_environment():
                 DatasetConfig(path="test/small_dataset.csv", format="CSV", reference_split=0.5),
             ],
             detectors=[
-                DetectorConfig(method_id="kolmogorov_smirnov", implementation_id="ks_batch"),
+                DetectorConfig(method_id="kolmogorov_smirnov", variants_id="ks_batch"),
             ]
         )
 
@@ -1217,7 +1217,7 @@ def create_template_config(datasets_dir: str, detectors: List[str]):
     for detector_spec in detectors:
         method_id, impl_id = detector_spec.split('.')
         detector_configs.append(
-            DetectorConfig(method_id=method_id, implementation_id=impl_id)
+            DetectorConfig(method_id=method_id, variants_id=impl_id)
         )
 
     return BenchmarkConfig(datasets=dataset_configs, detectors=detector_configs)

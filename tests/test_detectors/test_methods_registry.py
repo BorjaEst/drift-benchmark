@@ -35,7 +35,7 @@ def test_should_provide_load_methods_function_when_imported(mock_methods_toml_fi
     ks_test_method = methods["ks_test"]
     assert isinstance(ks_test_method, dict), "each method must be a dictionary"
     assert "name" in ks_test_method, "method must have name field"
-    assert "implementations" in ks_test_method, "method must have implementations field"
+    assert "variants" in ks_test_method, "method must have variants field"
 
 
 def test_should_validate_method_schema_compliance_when_loaded(mock_methods_toml_file):
@@ -73,8 +73,8 @@ def test_should_validate_method_schema_compliance_when_loaded(mock_methods_toml_
         assert isinstance(method_data["references"], list), f"Method {method_id} references must be list"
 
 
-def test_should_validate_implementation_schema_when_loaded(mock_methods_toml_file):
-    """Test REQ-DET-003: Each implementation must have required fields: name, execution_mode, hyperparameters, references"""
+def test_should_validate_variant_schema_when_loaded(mock_methods_toml_file):
+    """Test REQ-DET-003: Each variant must have required fields: name, execution_mode, hyperparameters, references"""
     # Arrange & Act
     try:
         from drift_benchmark.detectors import load_methods
@@ -84,25 +84,25 @@ def test_should_validate_implementation_schema_when_loaded(mock_methods_toml_fil
             methods = load_methods()
 
     except ImportError as e:
-        pytest.fail(f"Failed to import load_methods for implementation schema test: {e}")
+        pytest.fail(f"Failed to import load_methods for variant schema test: {e}")
 
-    # Assert - check implementations for each method
+    # Assert - check variants for each method
     for method_id, method_data in methods.items():
-        assert "implementations" in method_data, f"Method {method_id} must have implementations"
-        implementations = method_data["implementations"]
-        assert isinstance(implementations, dict), f"Method {method_id} implementations must be dictionary"
+        assert "variants" in method_data, f"Method {method_id} must have variants"
+        variants = method_data["variants"]
+        assert isinstance(variants, dict), f"Method {method_id} variants must be dictionary"
 
-        for impl_id, impl_data in implementations.items():
-            assert "name" in impl_data, f"Implementation {method_id}.{impl_id} must have name field"
-            assert "execution_mode" in impl_data, f"Implementation {method_id}.{impl_id} must have execution_mode field"
-            assert "hyperparameters" in impl_data, f"Implementation {method_id}.{impl_id} must have hyperparameters field"
-            assert "references" in impl_data, f"Implementation {method_id}.{impl_id} must have references field"
+        for impl_id, impl_data in variants.items():
+            assert "name" in impl_data, f"Variant {method_id}.{impl_id} must have name field"
+            assert "execution_mode" in impl_data, f"Variant {method_id}.{impl_id} must have execution_mode field"
+            assert "hyperparameters" in impl_data, f"Variant {method_id}.{impl_id} must have hyperparameters field"
+            assert "references" in impl_data, f"Variant {method_id}.{impl_id} must have references field"
 
             # Assert field types
-            assert isinstance(impl_data["name"], str), f"Implementation {method_id}.{impl_id} name must be string"
-            assert isinstance(impl_data["execution_mode"], str), f"Implementation {method_id}.{impl_id} execution_mode must be string"
-            assert isinstance(impl_data["hyperparameters"], list), f"Implementation {method_id}.{impl_id} hyperparameters must be list"
-            assert isinstance(impl_data["references"], list), f"Implementation {method_id}.{impl_id} references must be list"
+            assert isinstance(impl_data["name"], str), f"Variant {method_id}.{impl_id} name must be string"
+            assert isinstance(impl_data["execution_mode"], str), f"Variant {method_id}.{impl_id} execution_mode must be string"
+            assert isinstance(impl_data["hyperparameters"], list), f"Variant {method_id}.{impl_id} hyperparameters must be list"
+            assert isinstance(impl_data["references"], list), f"Variant {method_id}.{impl_id} references must be list"
 
 
 def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
@@ -124,7 +124,7 @@ def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
     assert isinstance(ks_test_method, dict), "get_method() must return dictionary"
     assert ks_test_method["name"] == "Kolmogorov-Smirnov Test"
     assert ks_test_method["family"] == "STATISTICAL_TEST"
-    assert "implementations" in ks_test_method
+    assert "variants" in ks_test_method
 
     # Assert - raises error for non-existent method
     try:
@@ -141,42 +141,42 @@ def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
         pytest.fail(f"Failed to import required modules for error test: {e}")
 
 
-def test_should_provide_get_implementation_function_when_called(mock_methods_toml_file):
-    """Test REQ-DET-005: Must provide get_implementation(method_id: str, impl_id: str) -> Dict[str, Any] or raises ImplementationNotFoundError"""
+def test_should_provide_get_variant_function_when_called(mock_methods_toml_file):
+    """Test REQ-DET-005: Must provide get_variant(method_id: str, impl_id: str) -> Dict[str, Any] or raises VariantNotFoundError"""
     # Arrange & Act
     try:
-        from drift_benchmark.detectors import get_implementation
+        from drift_benchmark.detectors import get_variant
 
         with patch("drift_benchmark.detectors.settings") as mock_settings:
             mock_settings.methods_registry_path = mock_methods_toml_file
 
-            # Test existing implementation
-            scipy_impl = get_implementation("ks_test", "scipy")
+            # Test existing variant
+            scipy_impl = get_variant("ks_test", "scipy")
 
     except ImportError as e:
-        pytest.fail(f"Failed to import get_implementation from detectors module: {e}")
+        pytest.fail(f"Failed to import get_variant from detectors module: {e}")
 
-    # Assert - returns correct implementation info
-    assert isinstance(scipy_impl, dict), "get_implementation() must return dictionary"
-    assert scipy_impl["name"] == "SciPy Implementation"
+    # Assert - returns correct variant info
+    assert isinstance(scipy_impl, dict), "get_variant() must return dictionary"
+    assert scipy_impl["name"] == "SciPy Variant"
     assert scipy_impl["execution_mode"] == "BATCH"
 
-    # Assert - raises error for non-existent implementation
+    # Assert - raises error for non-existent variant
     try:
-        from drift_benchmark.detectors import get_implementation
-        from drift_benchmark.exceptions import ImplementationNotFoundError
+        from drift_benchmark.detectors import get_variant
+        from drift_benchmark.exceptions import VariantNotFoundError
 
         with patch("drift_benchmark.detectors.settings") as mock_settings:
             mock_settings.methods_registry_path = mock_methods_toml_file
 
-            with pytest.raises(ImplementationNotFoundError):
-                get_implementation("ks_test", "non_existent_impl")
+            with pytest.raises(VariantNotFoundError):
+                get_variant("ks_test", "non_existent_impl")
 
-            with pytest.raises(ImplementationNotFoundError):
-                get_implementation("non_existent_method", "scipy")
+            with pytest.raises(VariantNotFoundError):
+                get_variant("non_existent_method", "scipy")
 
     except ImportError as e:
-        pytest.fail(f"Failed to import required modules for implementation error test: {e}")
+        pytest.fail(f"Failed to import required modules for variant error test: {e}")
 
 
 def test_should_provide_list_methods_function_when_called(mock_methods_toml_file):
@@ -263,20 +263,20 @@ def test_should_follow_methods_toml_schema_when_loaded(mock_methods_toml_file):
         for field in required_fields:
             assert field in method_data, f"Method {method_id} must have {field} field"
 
-    # Assert REQ-DET-010: Implementation structure
+    # Assert REQ-DET-010: Variant structure
     for method_id, method_data in methods.items():
-        assert "implementations" in method_data, f"Method {method_id} must have implementations"
-        implementations = method_data["implementations"]
-        assert len(implementations) > 0, f"Method {method_id} must have at least one implementation"
+        assert "variants" in method_data, f"Method {method_id} must have variants"
+        variants = method_data["variants"]
+        assert len(variants) > 0, f"Method {method_id} must have at least one variant"
 
-    # Assert REQ-DET-011: Implementation required fields
+    # Assert REQ-DET-011: Variant required fields
     for method_id, method_data in methods.items():
-        implementations = method_data["implementations"]
-        for impl_id, impl_data in implementations.items():
-            assert "name" in impl_data, f"Implementation {method_id}.{impl_id} must have name"
-            assert "execution_mode" in impl_data, f"Implementation {method_id}.{impl_id} must have execution_mode"
-            assert "hyperparameters" in impl_data, f"Implementation {method_id}.{impl_id} must have hyperparameters"
-            assert "references" in impl_data, f"Implementation {method_id}.{impl_id} must have references"
+        variants = method_data["variants"]
+        for impl_id, impl_data in variants.items():
+            assert "name" in impl_data, f"Variant {method_id}.{impl_id} must have name"
+            assert "execution_mode" in impl_data, f"Variant {method_id}.{impl_id} must have execution_mode"
+            assert "hyperparameters" in impl_data, f"Variant {method_id}.{impl_id} must have hyperparameters"
+            assert "references" in impl_data, f"Variant {method_id}.{impl_id} must have references"
 
     # Assert REQ-DET-012: Schema example validation
     # Check that ks_test method follows expected schema
@@ -285,9 +285,9 @@ def test_should_follow_methods_toml_schema_when_loaded(mock_methods_toml_file):
     assert ks_test["drift_types"] == ["COVARIATE"]
     assert ks_test["family"] == "STATISTICAL_TEST"
     assert ks_test["data_dimension"] == "UNIVARIATE"
-    assert "scipy" in ks_test["implementations"]
-    scipy_impl = ks_test["implementations"]["scipy"]
-    assert scipy_impl["name"] == "SciPy Implementation"
+    assert "scipy" in ks_test["variants"]
+    scipy_impl = ks_test["variants"]["scipy"]
+    assert scipy_impl["name"] == "SciPy Variant"
     assert scipy_impl["execution_mode"] == "BATCH"
     assert scipy_impl["hyperparameters"] == ["threshold"]
 
@@ -315,7 +315,7 @@ def test_should_handle_empty_methods_file_when_loaded(empty_methods_toml_file):
 
 
 def test_should_cache_methods_registry_when_loaded_multiple_times(mock_methods_toml_file):
-    """Test that methods registry is efficiently loaded (implementation may cache for performance)"""
+    """Test that methods registry is efficiently loaded (variant may cache for performance)"""
     # Arrange & Act
     try:
         from drift_benchmark.detectors import load_methods

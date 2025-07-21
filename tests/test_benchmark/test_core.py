@@ -153,11 +153,11 @@ def test_should_handle_detector_errors_when_run(mock_benchmark_config, mock_dete
         mock_load_dataset.return_value = mock_dataset_result
 
         # Setup mixed detectors - some succeed, some fail
-        def detector_factory(method_id, implementation_id, **kwargs):
+        def detector_factory(method_id, variant_id, **kwargs):
             if method_id == "ks_test":
-                return mock_detector(method_id, implementation_id, **kwargs)
+                return mock_detector(method_id, variant_id, **kwargs)
             else:
-                return mock_failing_detector(method_id, implementation_id, **kwargs)
+                return mock_failing_detector(method_id, variant_id, **kwargs)
 
         mock_get_detector.side_effect = lambda method_id, impl_id: lambda *args, **kwargs: detector_factory(method_id, impl_id)
 
@@ -311,7 +311,7 @@ def test_should_maintain_detector_isolation_when_run(mock_benchmark_config, mock
             detector.detect = failing_detect
             return detector
 
-        def detector_factory(method_id, implementation_id):
+        def detector_factory(method_id, variant_id):
             if method_id == "ks_test":
                 return lambda *args, **kwargs: successful_detector
             else:

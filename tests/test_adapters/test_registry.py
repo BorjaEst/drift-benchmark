@@ -11,13 +11,13 @@ import pytest
 
 
 def test_should_provide_register_detector_decorator_when_imported():
-    """Test REQ-REG-001: Must provide @register_detector(method_id: str, implementation_id: str) decorator to register Detector classes"""
+    """Test REQ-REG-001: Must provide @register_detector(method_id: str, variant_id: str) decorator to register Detector classes"""
     # Arrange & Act
     try:
         from drift_benchmark.adapters import BaseDetector, register_detector
 
         # Create a test detector class
-        @register_detector(method_id="test_method", implementation_id="test_impl")
+        @register_detector(method_id="test_method", variant_id="test_impl")
         class TestDetector(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -34,14 +34,14 @@ def test_should_provide_register_detector_decorator_when_imported():
     assert issubclass(TestDetector, BaseDetector), "decorated class must inherit from BaseDetector"
 
 
-def test_should_maintain_method_implementation_mapping_when_registered(mock_detector_class):
-    """Test REQ-REG-002: AdapterRegistry must maintain mapping from (method_id, implementation_id) tuples to Detector class types"""
+def test_should_maintain_method_variant_mapping_when_registered(mock_detector_class):
+    """Test REQ-REG-002: AdapterRegistry must maintain mapping from (method_id, variant_id) tuples to Detector class types"""
     # Arrange & Act
     try:
         from drift_benchmark.adapters import BaseDetector, register_detector
 
         # Register multiple detectors
-        @register_detector(method_id="method1", implementation_id="impl1")
+        @register_detector(method_id="method1", variant_id="impl1")
         class Detector1(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -49,7 +49,7 @@ def test_should_maintain_method_implementation_mapping_when_registered(mock_dete
             def detect(self, preprocessed_data, **kwargs) -> bool:
                 return True
 
-        @register_detector(method_id="method1", implementation_id="impl2")
+        @register_detector(method_id="method1", variant_id="impl2")
         class Detector2(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -57,7 +57,7 @@ def test_should_maintain_method_implementation_mapping_when_registered(mock_dete
             def detect(self, preprocessed_data, **kwargs) -> bool:
                 return False
 
-        @register_detector(method_id="method2", implementation_id="impl1")
+        @register_detector(method_id="method2", variant_id="impl1")
         class Detector3(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -74,13 +74,13 @@ def test_should_maintain_method_implementation_mapping_when_registered(mock_dete
 
 
 def test_should_provide_detector_lookup_when_called():
-    """Test REQ-REG-003: Must provide get_detector_class(method_id: str, implementation_id: str) -> Type[BaseDetector] for class retrieval"""
+    """Test REQ-REG-003: Must provide get_detector_class(method_id: str, variant_id: str) -> Type[BaseDetector] for class retrieval"""
     # Arrange
     try:
         from drift_benchmark.adapters import BaseDetector, get_detector_class, register_detector
 
         # Register a test detector
-        @register_detector(method_id="lookup_method", implementation_id="lookup_impl")
+        @register_detector(method_id="lookup_method", variant_id="lookup_impl")
         class LookupDetector(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -101,7 +101,7 @@ def test_should_provide_detector_lookup_when_called():
     # Test instantiation of retrieved class
     detector_instance = retrieved_class("lookup_method", "lookup_impl")
     assert detector_instance.method_id == "lookup_method"
-    assert detector_instance.implementation_id == "lookup_impl"
+    assert detector_instance.variant_id == "lookup_impl"
 
 
 def test_should_raise_error_for_missing_detector_when_requested():
@@ -118,11 +118,11 @@ def test_should_raise_error_for_missing_detector_when_requested():
         error_message = str(exc_info.value).lower()
         assert "non_existent_method" in error_message, "Error should mention the missing method_id"
 
-        # Test non-existent implementation for existing method (if any exists)
-        # First register a method to test missing implementation
+        # Test non-existent variant for existing method (if any exists)
+        # First register a method to test missing variant
         from drift_benchmark.adapters import BaseDetector, register_detector
 
-        @register_detector(method_id="existing_method", implementation_id="existing_impl")
+        @register_detector(method_id="existing_method", variant_id="existing_impl")
         class ExistingDetector(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -134,9 +134,7 @@ def test_should_raise_error_for_missing_detector_when_requested():
             get_detector_class("existing_method", "non_existent_impl")
 
         error_message = str(exc_info.value).lower()
-        assert (
-            "existing_method" in error_message or "non_existent_impl" in error_message
-        ), "Error should mention the missing implementation_id"
+        assert "existing_method" in error_message or "non_existent_impl" in error_message, "Error should mention the missing variant_id"
 
     except ImportError as e:
         pytest.fail(f"Failed to import components for error test: {e}")
@@ -152,7 +150,7 @@ def test_should_provide_list_detectors_function_when_called():
         initial_detectors = list_detectors()
 
         # Register test detectors
-        @register_detector(method_id="list_method1", implementation_id="list_impl1")
+        @register_detector(method_id="list_method1", variant_id="list_impl1")
         class ListDetector1(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -160,7 +158,7 @@ def test_should_provide_list_detectors_function_when_called():
             def detect(self, preprocessed_data, **kwargs) -> bool:
                 return True
 
-        @register_detector(method_id="list_method1", implementation_id="list_impl2")
+        @register_detector(method_id="list_method1", variant_id="list_impl2")
         class ListDetector2(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -168,7 +166,7 @@ def test_should_provide_list_detectors_function_when_called():
             def detect(self, preprocessed_data, **kwargs) -> bool:
                 return True
 
-        @register_detector(method_id="list_method2", implementation_id="list_impl1")
+        @register_detector(method_id="list_method2", variant_id="list_impl1")
         class ListDetector3(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -196,7 +194,7 @@ def test_should_provide_list_detectors_function_when_called():
         assert isinstance(item, tuple), "each item in list must be tuple"
         assert len(item) == 2, "each tuple must have exactly 2 elements"
         assert isinstance(item[0], str), "method_id must be string"
-        assert isinstance(item[1], str), "implementation_id must be string"
+        assert isinstance(item[1], str), "variant_id must be string"
 
 
 def test_should_prevent_duplicate_registrations_when_detected():
@@ -207,7 +205,7 @@ def test_should_prevent_duplicate_registrations_when_detected():
         from drift_benchmark.exceptions import DuplicateDetectorError
 
         # Register first detector
-        @register_detector(method_id="duplicate_method", implementation_id="duplicate_impl")
+        @register_detector(method_id="duplicate_method", variant_id="duplicate_impl")
         class FirstDetector(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self
@@ -215,10 +213,10 @@ def test_should_prevent_duplicate_registrations_when_detected():
             def detect(self, preprocessed_data, **kwargs) -> bool:
                 return True
 
-        # Try to register second detector with same method_id and implementation_id
+        # Try to register second detector with same method_id and variant_id
         with pytest.raises(DuplicateDetectorError) as exc_info:
 
-            @register_detector(method_id="duplicate_method", implementation_id="duplicate_impl")
+            @register_detector(method_id="duplicate_method", variant_id="duplicate_impl")
             class SecondDetector(BaseDetector):
                 def fit(self, preprocessed_data, **kwargs):
                     return self
@@ -228,13 +226,13 @@ def test_should_prevent_duplicate_registrations_when_detected():
 
         error_message = str(exc_info.value).lower()
         assert "duplicate_method" in error_message, "Error should mention the duplicate method_id"
-        assert "duplicate_impl" in error_message, "Error should mention the duplicate implementation_id"
+        assert "duplicate_impl" in error_message, "Error should mention the duplicate variant_id"
 
     except ImportError as e:
         pytest.fail(f"Failed to import components for duplicate test: {e}")
     except Exception as e:
         # If DuplicateDetectorError is not implemented yet, that's OK for TDD
-        # The implementation might choose to allow overwrites instead
+        # The variant might choose to allow overwrites instead
         if "DuplicateDetectorError" not in str(e):
             pytest.fail(f"Unexpected error in duplicate registration test: {e}")
 
@@ -246,10 +244,10 @@ def test_should_maintain_class_references_when_registered():
         from drift_benchmark.adapters import BaseDetector, get_detector_class, register_detector
 
         # Register detector with custom behavior
-        @register_detector(method_id="reference_method", implementation_id="reference_impl")
+        @register_detector(method_id="reference_method", variant_id="reference_impl")
         class ReferenceDetector(BaseDetector):
-            def __init__(self, method_id: str, implementation_id: str, **kwargs):
-                super().__init__(method_id, implementation_id, **kwargs)
+            def __init__(self, method_id: str, variant_id: str, **kwargs):
+                super().__init__(method_id, variant_id, **kwargs)
                 self.custom_param = kwargs.get("custom_param", "default_value")
                 self._fitted = False
 
@@ -270,7 +268,7 @@ def test_should_maintain_class_references_when_registered():
 
     # Assert
     assert instance.method_id == "reference_method"
-    assert instance.implementation_id == "reference_impl"
+    assert instance.variant_id == "reference_impl"
     assert instance.custom_param == "test_value", "custom parameters should be preserved"
 
     # Test that the instance works correctly
@@ -287,7 +285,7 @@ def test_should_support_registry_introspection_when_requested():
         from drift_benchmark.adapters import BaseDetector, get_detector_class, list_detectors, register_detector
 
         # Register a detector for introspection
-        @register_detector(method_id="introspect_method", implementation_id="introspect_impl")
+        @register_detector(method_id="introspect_method", variant_id="introspect_impl")
         class IntrospectDetector(BaseDetector):
             def fit(self, preprocessed_data, **kwargs):
                 return self

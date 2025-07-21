@@ -21,8 +21,8 @@ def mock_methods_toml_file():
                 "data_types": ["CONTINUOUS"],
                 "requires_labels": False,
                 "references": ["https://doi.org/10.2307/2280095"],
-                "implementations": {
-                    "scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH", "hyperparameters": ["threshold"], "references": []}
+                "variants": {
+                    "scipy": {"name": "SciPy Variant", "execution_mode": "BATCH", "hyperparameters": ["threshold"], "references": []}
                 },
             },
             "drift_detector": {
@@ -34,10 +34,10 @@ def mock_methods_toml_file():
                 "data_types": ["CONTINUOUS", "CATEGORICAL"],
                 "requires_labels": True,
                 "references": [],
-                "implementations": {
-                    "custom": {"name": "Custom Implementation", "execution_mode": "BATCH", "hyperparameters": [], "references": []},
+                "variants": {
+                    "custom": {"name": "Custom Variant", "execution_mode": "BATCH", "hyperparameters": [], "references": []},
                     "river": {
-                        "name": "River Implementation",
+                        "name": "River Variant",
                         "execution_mode": "STREAMING",
                         "hyperparameters": ["window_size"],
                         "references": [],
@@ -67,8 +67,8 @@ def valid_benchmark_config_toml():
             {"path": "datasets/validation_data.csv", "format": "CSV", "reference_split": 0.7},
         ],
         "detectors": [
-            {"method_id": "ks_test", "implementation_id": "scipy"},
-            {"method_id": "drift_detector", "implementation_id": "custom"},
+            {"method_id": "ks_test", "variant_id": "scipy"},
+            {"method_id": "drift_detector", "variant_id": "custom"},
         ],
     }
 
@@ -87,7 +87,7 @@ def invalid_benchmark_config_toml():
     """Create an invalid benchmark configuration TOML file"""
     config_data = {
         "datasets": [{"path": "datasets/test_data.csv", "format": "CSV", "reference_split": 1.5}],  # Invalid: > 1.0
-        "detectors": [{"method_id": "non_existent_method", "implementation_id": "non_existent_impl"}],
+        "detectors": [{"method_id": "non_existent_method", "variant_id": "non_existent_impl"}],
     }
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:

@@ -1,5 +1,5 @@
 # Methods definitions for drift detection
-# Each method can have multiple implementations
+# Each method can have multiple variants
 
 [methods.kolmogorov_smirnov]
     name            = "Kolmogorov-Smirnov Test"
@@ -11,13 +11,13 @@
     requires_labels = false
     references      = ["https://doi.org/10.2307/2280095", "Massey Jr (1951)"]
 
-    [methods.kolmogorov_smirnov.implementations.ks_batch]
+    [methods.kolmogorov_smirnov.variants.ks_batch]
         name            = "Batch Kolmogorov-Smirnov"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
         references      = []
 
-    [methods.kolmogorov_smirnov.implementations.ks_incremental]
+    [methods.kolmogorov_smirnov.variants.ks_incremental]
         name            = "Incremental Kolmogorov-Smirnov"
         execution_mode  = "STREAMING"
         hyperparameters = ["threshold", "window_size"]
@@ -33,13 +33,13 @@
     requires_labels = false
     references      = ["https://doi.org/10.1080/03461238.1928.10416862", "Cramér (1902)"]
 
-    [methods.cramer_von_mises.implementations.cvm_batch]
+    [methods.cramer_von_mises.variants.cvm_batch]
         name            = "Batch Cramér-von Mises"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
         references      = []
 
-    [methods.cramer_von_mises.implementations.cvm_online]
+    [methods.cramer_von_mises.variants.cvm_online]
         name            = "Online Cramér-von Mises"
         execution_mode  = "STREAMING"
         hyperparameters = ["threshold", "window_size"]
@@ -55,7 +55,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.2307/2288805", "Scholz and Stephens (1987)"]
 
-    [methods.anderson_darling.implementations.ad_batch]
+    [methods.anderson_darling.variants.ad_batch]
         name            = "Anderson-Darling Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -71,7 +71,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.1214/aoms/1177730491", "Mann and Whitney (1947)"]
 
-    [methods.mann_whitney.implementations.mw_batch]
+    [methods.mann_whitney.variants.mw_batch]
         name            = "Mann-Whitney U-Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -87,7 +87,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.1016/S1385-7258(60)50006-0", "Kuiper (1960)"]
 
-    [methods.kuiper.implementations.kuiper_batch]
+    [methods.kuiper.variants.kuiper_batch]
         name            = "Batch Kuiper Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -103,7 +103,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.2307/2533862", "Baumgartner et al. (1998)"]
 
-    [methods.baumgartner_weiss_schindler.implementations.bws_batch]
+    [methods.baumgartner_weiss_schindler.variants.bws_batch]
         name            = "Batch Baumgartner Weiss Schindler Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -119,7 +119,7 @@
     requires_labels = false
     references      = ["https://en.wikipedia.org/wiki/Student%27s_t-test"]
 
-    [methods.t_test.implementations.ttest_batch]
+    [methods.t_test.variants.ttest_batch]
         name            = "Batch T-Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -135,7 +135,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.2307/2332510", "Welch (1947)"]
 
-    [methods.welch_t_test.implementations.welch_batch]
+    [methods.welch_t_test.variants.welch_batch]
         name            = "Batch Welch's T-Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -151,7 +151,7 @@
     requires_labels = false
     references      = ["https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.epps_singleton_2samp.html"]
 
-    [methods.epps_singleton.implementations.epps_batch]
+    [methods.epps_singleton.variants.epps_batch]
         name            = "Batch EPPS-Singleton Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -167,13 +167,13 @@
     requires_labels = false
     references      = ["https://doi.org/10.1080/01621459.1900.10477909", "Pearson (1900)"]
 
-    [methods.chi_square.implementations.chi_batch]
+    [methods.chi_square.variants.chi_batch]
         name            = "Batch Chi-square Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
         references      = []
 
-    [methods.chi_square.implementations.chi_evidently]
+    [methods.chi_square.variants.chi_evidently]
         name            = "Evidently Chi-square Test"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -189,13 +189,13 @@
     requires_labels = false
     references      = ["https://doi.org/10.1109/18.61115", "Lin (1991)"]
 
-    [methods.jensen_shannon_divergence.implementations.js_batch]
+    [methods.jensen_shannon_divergence.variants.js_batch]
         name            = "Batch Jensen-Shannon Divergence"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
         references      = []
 
-    [methods.jensen_shannon_divergence.implementations.js_evidently]
+    [methods.jensen_shannon_divergence.variants.js_evidently]
         name            = "Evidently Jensen-Shannon Divergence"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -211,13 +211,13 @@
     requires_labels = false
     references      = ["https://doi.org/10.1214/aoms/1177729694", "Kullback and Leibler (1951)"]
 
-    [methods.kullback_leibler_divergence.implementations.kl_batch]
+    [methods.kullback_leibler_divergence.variants.kl_batch]
         name            = "Batch Kullback-Leibler Divergence"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
         references      = []
 
-    [methods.kullback_leibler_divergence.implementations.kl_evidently]
+    [methods.kullback_leibler_divergence.variants.kl_evidently]
         name            = "Evidently Kullback-Leibler Divergence"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -233,13 +233,13 @@
     requires_labels = false
     references      = []
 
-    [methods.all_features_drift.implementations.all_features_batch]
+    [methods.all_features_drift.variants.all_features_batch]
         name            = "Batch All Features Drift"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold", "stattest"]
         references      = []
 
-    [methods.all_features_drift.implementations.all_features_evidently]
+    [methods.all_features_drift.variants.all_features_evidently]
         name            = "Evidently All Features Drift"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold", "stattest"]
@@ -255,7 +255,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.1007/978-3-540-28645-5_29", "Gama et al. (2004)"]
 
-    [methods.drift_detection_method.implementations.ddm_standard]
+    [methods.drift_detection_method.variants.ddm_standard]
         name            = "Standard DDM"
         execution_mode  = "STREAMING"
         hyperparameters = ["warning_level", "drift_level"]
@@ -274,7 +274,7 @@
         "Baena-Garcıa et al. (2006)",
     ]
 
-    [methods.early_drift_detection_method.implementations.eddm_standard]
+    [methods.early_drift_detection_method.variants.eddm_standard]
         name            = "Standard EDDM"
         execution_mode  = "STREAMING"
         hyperparameters = ["warning_level", "drift_level"]
@@ -290,7 +290,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.2307/2333009", "Page (1954)"]
 
-    [methods.page_hinkley.implementations.ph_standard]
+    [methods.page_hinkley.variants.ph_standard]
         name            = "Standard Page-Hinkley"
         execution_mode  = "STREAMING"
         hyperparameters = ["delta", "lambda", "alpha"]
@@ -306,7 +306,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.1137/1.9781611972771.42", "Bifet and Gavalda (2007)"]
 
-    [methods.adaptive_windowing.implementations.adwin_standard]
+    [methods.adaptive_windowing.variants.adwin_standard]
         name            = "Standard ADWIN"
         execution_mode  = "STREAMING"
         hyperparameters = ["delta"]
@@ -322,7 +322,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.2307/2333009", "Page (1954)"]
 
-    [methods.cusum.implementations.cusum_standard]
+    [methods.cusum.variants.cusum_standard]
         name            = "Standard CUSUM"
         execution_mode  = "STREAMING"
         hyperparameters = ["threshold", "drift_threshold"]
@@ -338,7 +338,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.2307/1266443", "Roberts (1959)"]
 
-    [methods.geometric_moving_average.implementations.gma_standard]
+    [methods.geometric_moving_average.variants.gma_standard]
         name            = "Standard Geometric Moving Average"
         execution_mode  = "STREAMING"
         hyperparameters = ["lambda", "threshold"]
@@ -354,7 +354,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.1016/j.patrec.2011.08.019", "Ross et al. (2012)"]
 
-    [methods.exponential_cumulative_drift.implementations.ecdd_standard]
+    [methods.exponential_cumulative_drift.variants.ecdd_standard]
         name            = "Standard Exponential Cumulative Drift Detection"
         execution_mode  = "STREAMING"
         hyperparameters = ["lambda", "threshold"]
@@ -370,7 +370,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.1016/j.patrec.2011.08.019", "Ross et al. (2012)"]
 
-    [methods.ewma_CONCEPT.implementations.ewma_standard]
+    [methods.ewma_CONCEPT.variants.ewma_standard]
         name            = "Standard EWMA Concept Drift Detection"
         execution_mode  = "STREAMING"
         hyperparameters = ["lambda", "warning_threshold", "drift_threshold"]
@@ -386,7 +386,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.1109/TKDE.2014.2345382", "Frias-Blanco et al. (2014)"]
 
-    [methods.hoeffding_drift_detection_test_a.implementations.hddm_a_standard]
+    [methods.hoeffding_drift_detection_test_a.variants.hddm_a_standard]
         name            = "Standard Hoeffding's Drift Detection Method Test-A"
         execution_mode  = "STREAMING"
         hyperparameters = ["delta"]
@@ -402,7 +402,7 @@
     requires_labels = true
     references      = ["https://doi.org/10.1109/TKDE.2014.2345382", "Frias-Blanco et al. (2014)"]
 
-    [methods.hoeffding_drift_detection_test_w.implementations.hddm_w_standard]
+    [methods.hoeffding_drift_detection_test_w.variants.hddm_w_standard]
         name            = "Standard Hoeffding's Drift Detection Method Test-W"
         execution_mode  = "STREAMING"
         hyperparameters = ["delta"]
@@ -418,7 +418,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.1016/j.neucom.2019.11.111", "Raab et al. (2020)"]
 
-    [methods.kswin.implementations.kswin_standard]
+    [methods.kswin.variants.kswin_standard]
         name            = "Standard KSWIN"
         execution_mode  = "STREAMING"
         hyperparameters = ["alpha", "window_size"]
@@ -435,7 +435,7 @@
     requires_labels = false
     references      = ["https://doi.org/10.1007/s10208-011-9093-5", "Wasserstein (1969)"]
 
-    [methods.wasserstein_distance.implementations.wasserstein_batch]
+    [methods.wasserstein_distance.variants.wasserstein_batch]
         name            = "Batch Wasserstein Distance"
         execution_mode  = "BATCH"
         hyperparameters = ["threshold"]
@@ -452,7 +452,7 @@
     requires_labels = false
     references      = []
 
-    [methods.periodic_trigger.implementations.periodic_trigger_standard]
+    [methods.periodic_trigger.variants.periodic_trigger_standard]
         name            = "Standard Periodic Trigger Detector"
         execution_mode  = "STREAMING"
         hyperparameters = ["interval"]

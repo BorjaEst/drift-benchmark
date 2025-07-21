@@ -28,8 +28,8 @@ def sample_benchmark_config():
     return {
         "datasets": [{"path": "datasets/test_dataset.csv", "format": "CSV", "reference_split": 0.5}],
         "detectors": [
-            {"method_id": "ks_test", "implementation_id": "scipy"},
-            {"method_id": "cramer_von_mises", "implementation_id": "cvm_batch"},
+            {"method_id": "ks_test", "variant_id": "scipy"},
+            {"method_id": "cramer_von_mises", "variant_id": "cvm_batch"},
         ],
     }
 
@@ -81,15 +81,15 @@ def mock_benchmark_result():
         "dataset2": Mock(path="data/dataset2.csv", drift_column="drift_flag"),
     }
     result.config.detectors = [
-        Mock(method_id="ks_test", implementation_id="scipy", parameters={"alpha": 0.05}),
-        Mock(method_id="drift_detector", implementation_id="custom", parameters={}),
+        Mock(method_id="ks_test", variant_id="scipy", parameters={"alpha": 0.05}),
+        Mock(method_id="drift_detector", variant_id="custom", parameters={}),
     ]
 
     # Mock detector results
     result.detector_results = [
         Mock(
             method_id="ks_test",
-            implementation_id="scipy",
+            variant_id="scipy",
             detector_id="ks_test.scipy",
             dataset_name="dataset1",
             execution_time=0.123,
@@ -102,7 +102,7 @@ def mock_benchmark_result():
         ),
         Mock(
             method_id="ks_test",
-            implementation_id="scipy",
+            variant_id="scipy",
             detector_id="ks_test.scipy",
             dataset_name="dataset2",
             execution_time=0.156,
@@ -115,7 +115,7 @@ def mock_benchmark_result():
         ),
         Mock(
             method_id="drift_detector",
-            implementation_id="custom",
+            variant_id="custom",
             detector_id="drift_detector.custom",
             dataset_name="dataset1",
             execution_time=0.234,
@@ -150,14 +150,14 @@ def mock_benchmark_result():
                     "dataset2": {"path": "data/dataset2.csv", "drift_column": "drift_flag"},
                 },
                 "detectors": [
-                    {"method_id": "ks_test", "implementation_id": "scipy", "parameters": {"alpha": 0.05}},
-                    {"method_id": "drift_detector", "implementation_id": "custom", "parameters": {}},
+                    {"method_id": "ks_test", "variant_id": "scipy", "parameters": {"alpha": 0.05}},
+                    {"method_id": "drift_detector", "variant_id": "custom", "parameters": {}},
                 ],
             },
             "detector_results": [
                 {
                     "method_id": "ks_test",
-                    "implementation_id": "scipy",
+                    "variant_id": "scipy",
                     "detector_id": "ks_test.scipy",
                     "dataset_name": "dataset1",
                     "execution_time": 0.123,
@@ -166,7 +166,7 @@ def mock_benchmark_result():
                 },
                 {
                     "method_id": "ks_test",
-                    "implementation_id": "scipy",
+                    "variant_id": "scipy",
                     "detector_id": "ks_test.scipy",
                     "dataset_name": "dataset2",
                     "execution_time": 0.156,
@@ -175,7 +175,7 @@ def mock_benchmark_result():
                 },
                 {
                     "method_id": "drift_detector",
-                    "implementation_id": "custom",
+                    "variant_id": "custom",
                     "detector_id": "drift_detector.custom",
                     "dataset_name": "dataset1",
                     "execution_time": 0.234,

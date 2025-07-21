@@ -1,5 +1,5 @@
 """
-Benchmark runner implementation - REQ-RUN-XXX
+Benchmark runner variant - REQ-RUN-XXX
 
 High-level interface for running benchmarks from configuration files.
 """
