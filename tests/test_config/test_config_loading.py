@@ -48,8 +48,9 @@ def test_should_use_pydantic_v2_validation_when_loading():
     """Test REQ-CFG-002: BenchmarkConfig must use Pydantic v2 BaseModel with automatic field validation"""
     # Arrange & Act
     try:
-        from drift_benchmark.config import BenchmarkConfig
         from pydantic import BaseModel
+
+        from drift_benchmark.config import BenchmarkConfig
 
         # Test that BenchmarkConfig uses Pydantic v2
         assert issubclass(BenchmarkConfig, BaseModel), "BenchmarkConfig must inherit from Pydantic BaseModel"
@@ -98,7 +99,7 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
     # Create temporary test files for the configuration
     test_csv = tmp_path / "test.csv"
     test_csv.write_text("feature1,feature2\n1,2\n3,4\n")
-    
+
     # Arrange - create config with valid detector references
     valid_config_data = {
         "datasets": [{"path": str(test_csv), "format": "CSV", "reference_split": 0.5}],
@@ -115,18 +116,19 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
 
     # Act & Assert
     try:
-        from drift_benchmark.config import BenchmarkConfig
-        from drift_benchmark.exceptions import ConfigurationError
-
         # Valid configuration should work when validation is enabled
         # Turn off skip validation temporarily to test validation
         import os
+
+        from drift_benchmark.config import BenchmarkConfig
+        from drift_benchmark.exceptions import ConfigurationError
+
         original_skip = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION")
         try:
             # Enable validation for this test
             if original_skip:
                 del os.environ["DRIFT_BENCHMARK_SKIP_VALIDATION"]
-            
+
             # Mock the methods registry to contain our test methods
             with patch("drift_benchmark.detectors.settings.methods_registry_path", mock_methods_toml_file):
 
@@ -140,7 +142,7 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
                 # Invalid configuration should raise error
                 with pytest.raises(ConfigurationError) as exc_info:
                     invalid_config = BenchmarkConfig(**invalid_config_data)
-                
+
                 # Check that error message is informative
                 error_msg = str(exc_info.value).lower()
                 assert "non_existent_method" in error_msg or "invalid detector" in error_msg
@@ -210,11 +212,12 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files):
 
     # Act & Assert
     try:
+        # Turn off skip validation temporarily to test file validation
+        import os
+
         from drift_benchmark.config import BenchmarkConfig
         from drift_benchmark.exceptions import ConfigurationError
 
-        # Turn off skip validation temporarily to test file validation
-        import os
         original_skip = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION")
         try:
             # Enable validation for this test
@@ -231,7 +234,7 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files):
             # Invalid configuration with non-existent file should fail
             with pytest.raises(ConfigurationError) as exc_info:
                 invalid_config = BenchmarkConfig(**invalid_config_data)
-            
+
             # Check that error message mentions file not found
             error_msg = str(exc_info.value).lower()
             assert "file not found" in error_msg or "not found" in error_msg
