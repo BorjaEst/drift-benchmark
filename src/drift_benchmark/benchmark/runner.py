@@ -9,7 +9,7 @@ from pathlib import Path
 from ..config import BenchmarkConfig
 from ..results import save_results
 from ..settings import get_logger, setup_logging
-from .benchmark_core import Benchmark
+from .core import Benchmark
 
 logger = get_logger(__name__)
 

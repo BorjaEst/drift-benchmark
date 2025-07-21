@@ -6,8 +6,8 @@ This module contains the benchmark runner to benchmark adapters against each oth
 
 # Export logger for test mocking
 from ..settings import get_logger
-from .benchmark_core import Benchmark
-from .benchmark_runner import BenchmarkRunner
+from .core import Benchmark
+from .runner import BenchmarkRunner
 
 logger = get_logger(__name__)
 
