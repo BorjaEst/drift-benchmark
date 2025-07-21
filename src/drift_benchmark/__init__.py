@@ -1,74 +1,171 @@
 """
-drift-benchmark: A framework for benchmarking drift detection algorithms.
+drift-benchmark: A comprehensive benchmarking framework for drift detection methods
 
-This package provides tools and utilities for benchmarking and comparing
-different drift detection algorithms across various datasets and scenarios.
+This package provides a unified interface for evaluating and comparing
+drift detection algorithms across different datasets and scenarios.
 """
 
-import logging
-import os
-from typing import Dict, Optional
+"""
+drift-benchmark: A comprehensive benchmarking framework for drift detection methods
 
-from rich.console import Console
-from rich.logging import RichHandler
+This package provides a unified interface for evaluating and comparing
+drift detection algorithms across different datasets and scenarios.
+"""
 
-from drift_benchmark.benchmark import BenchmarkRunner, load_config
-from drift_benchmark.detectors import (
-    BaseDetector,
-    discover_and_register_detectors,
-    get_detector,
-    list_available_detectors,
-    register_detector,
-)
-from drift_benchmark.settings import settings
+from typing import TYPE_CHECKING
 
-# Load version from file
+# Import order following REQ-INI-001: Core modules independently importable
 try:
-    with open("VERSION", "r") as f:
-        __version__ = f.read().strip()
-except FileNotFoundError:
-    __version__ = "0.1.0"  # Default version if VERSION file not found
+    # REQ-INI-001: Core modules (exceptions, literals, settings) - independently importable
+    from .exceptions import (
+        BenchmarkExecutionError,
+        ConfigurationError,
+        DataLoadingError,
+        DataValidationError,
+        DetectorNotFoundError,
+        DriftBenchmarkError,
+        DuplicateDetectorError,
+        ImplementationNotFoundError,
+        MethodNotFoundError,
+    )
+
+    from .literals import DataDimension, DataLabeling, DatasetSource, DataType, DriftType, ExecutionMode, FileFormat, LogLevel, MethodFamily
+
+    from .settings import Settings, get_logger, settings, setup_logging
+
+    # REQ-INI-002: Data layer depends only on core modules
+    from .models import (
+        BenchmarkConfig,
+        BenchmarkResult,
+        BenchmarkSummary,
+        DatasetConfig,
+        DatasetMetadata,
+        DatasetResult,
+        DetectorConfig,
+        DetectorMetadata,
+        DetectorResult,
+    )
+
+    # REQ-INI-004: Business logic modules with lazy loading for heavy components
+    from .detectors import get_implementation, get_method, list_methods, load_methods
+
+    # REQ-INI-005: TYPE_CHECKING imports for type-only dependencies to avoid circular imports
+    if TYPE_CHECKING:
+        from .benchmark import Benchmark, BenchmarkRunner
+
+except ImportError as e:
+    # REQ-INI-003: Provide clear error messages for missing dependencies
+    import sys
+
+    print(f"Error importing drift-benchmark modules: {e}", file=sys.stderr)
+    print("Please ensure all dependencies are installed correctly.", file=sys.stderr)
+    raise
 
 
-console = Console()
-logger = logging.getLogger("drift_benchmark")
-
-# Create logs directory if it doesn't exist
-os.makedirs(settings.logs_dir, exist_ok=True)
-
-# Configure root logger with Rich handler
-logging.basicConfig(
-    level=getattr(logging, settings.log_level),
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[
-        RichHandler(console=console, rich_tracebacks=True, markup=True),
-        logging.FileHandler(f"{settings.logs_dir}/drift_benchmark.log"),
-    ],
-)
-logger.info(
-    "Logging configured with level [bold green]{%s}[/bold green]",
-    settings.log_level,
-)
-
-# Log the settings used for configuration
-logger.debug("Using settings: {%s}", settings.model_dump())
-
-# Discover and register detectors
-detector_count = discover_and_register_detectors()
-logger.info(
-    "drift-benchmark setup complete. Found [bold blue]{%s}[/bold blue] detectors.",
-    detector_count,
-)
+# REQ-INI-004: Lazy imports for heavy modules to avoid circular dependencies
+def get_benchmark_runner():
+    """Get BenchmarkRunner class - lazy import to avoid heavy dependencies"""
+    from .benchmark import BenchmarkRunner
+    return BenchmarkRunner
 
 
-# Export important classes and functions
+def get_benchmark():
+    """Get Benchmark class - lazy import to avoid heavy dependencies"""
+    from .benchmark import Benchmark
+    return Benchmark
+
+
+def get_detector_class(method_id: str, implementation_id: str):
+    """Get detector class - lazy import for registry"""
+    from .adapters import get_detector_class as _get_detector_class
+    return _get_detector_class(method_id, implementation_id)
+
+
+def register_detector(method_id: str, implementation_id: str):
+    """Register detector decorator - lazy import for registry"""
+    from .adapters import register_detector as _register_detector
+    return _register_detector(method_id, implementation_id)
+
+
+def list_detectors():
+    """List available detectors - lazy import for registry"""
+    from .adapters import list_detectors as _list_detectors
+    return _list_detectors()
+
+
+def load_config(path: str):
+    """Load configuration - lazy import to avoid heavy dependencies"""
+    from .config import load_config as _load_config
+    return _load_config(path)
+
+
+def load_dataset(config):
+    """Load dataset - lazy import to avoid heavy dependencies"""
+    from .data import load_dataset as _load_dataset
+    return _load_dataset(config)
+
+
+def save_results(results):
+    """Save results - lazy import to avoid heavy dependencies"""
+    from .results import save_results as _save_results
+    return _save_results(results)
+
+
+# Convenience access to lazy-loaded classes
+BenchmarkRunner = property(get_benchmark_runner)
+Benchmark = property(get_benchmark)
+
+__version__ = "0.1.0"
 __all__ = [
-    "BenchmarkRunner",
-    "BaseDetector",
-    "get_detector",
-    "list_available_detectors",
-    "register_detector",
+    # Core settings and configuration
+    "Settings",
+    "get_logger",
+    "setup_logging",
     "settings",
-    "setup",
+    # Exception classes
+    "DriftBenchmarkError",
+    "DetectorNotFoundError",
+    "DuplicateDetectorError",
+    "MethodNotFoundError",
+    "ImplementationNotFoundError",
+    "DataLoadingError",
+    "DataValidationError",
+    "ConfigurationError",
+    "BenchmarkExecutionError",
+    # Literal types
+    "DriftType",
+    "DataType",
+    "DataDimension",
+    "DataLabeling",
+    "ExecutionMode",
+    "MethodFamily",
+    "DatasetSource",
+    "FileFormat",
+    "LogLevel",
+    # Data models
+    "BenchmarkConfig",
+    "DatasetConfig",
+    "DetectorConfig",
+    "DatasetResult",
+    "DetectorResult",
+    "BenchmarkResult",
+    "DatasetMetadata",
+    "DetectorMetadata",
+    "BenchmarkSummary",
+    # Detector registry
+    "load_methods",
+    "get_method",
+    "get_implementation",
+    "list_methods",
+    # Adapter framework
+    "BaseDetector",
+    "register_detector",
+    "get_detector_class",
+    "list_detectors",
+    # High-level components
+    "load_dataset",
+    "load_config",
+    "Benchmark",
+    "BenchmarkRunner",
+    "save_results",
 ]

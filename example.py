@@ -1,11 +1,8 @@
-# Example usage
-import drift_benchmark
-from drift_benchmark import BenchmarkRunner
+from pathlib import Path
 
-# List all available detectors
-detectors = drift_benchmark.list_available_detectors()
-print(f"Available detectors: {detectors}")
+from drift_benchmark import get_benchmark_runner
 
-# Or create a benchmark runner that will use detectors from the configuration
-runner = BenchmarkRunner(config_file="example.toml")
+config_path = Path("configurations/example.toml")
+BenchmarkRunner = get_benchmark_runner()
+runner = BenchmarkRunner.from_config_file(config_path)
 results = runner.run()

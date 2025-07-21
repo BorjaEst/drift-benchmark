@@ -1,100 +1,16 @@
-# Example Drift Detection Benchmark Configuration
-# This file demonstrates the configuration structure for running drift detection benchmarks
-# with synthetic datasets and various detection algorithms.
+# Minimal Test Configuration  
+# Using only existing detectors to test the framework
 
-[metadata]
-    name        = "Example Drift Detection Benchmark"
-    description = "Comprehensive example benchmark comparing statistical and distance-based drift detection methods on synthetic datasets with different drift patterns"
-    author      = "Drift Benchmark Team"
-    version     = "1.0.0"
+[[datasets]]
+    path            = "datasets/example.csv"
+    format          = "CSV"
+    reference_split = 0.5
 
-[settings]
-    seed                 = 42
-    n_runs               = 5
-    cross_validation     = true
-    cv_folds             = 3
-    timeout_per_detector = 300
+# Built-in detectors only
+[[detectors]]
+    method_id         = "kolmogorov_smirnov"
+    implementation_id = "ks_batch"
 
-[data]
-    # Sudden drift with mean shift in Gaussian data
-    [[data.datasets]]
-        name           = "gaussian_sudden_drift"
-        type           = "synthetic"
-        n_samples      = 1000
-        n_features     = 4
-        drift_pattern  = "sudden"
-        drift_position = 0.5
-        noise          = 0.1
-
-    # Gradual drift with variance change in mixed data
-    [[data.datasets]]
-        name           = "mixed_gradual_drift"
-        type           = "synthetic"
-        n_samples      = 1500
-        n_features     = 3
-        drift_pattern  = "gradual"
-        drift_position = 0.4
-        noise          = 0.05
-
-[detectors]
-    # Statistical test methods
-    [[detectors.algorithms]]
-        name              = "Kolmogorov-Smirnov Test"
-        adapter           = "scipy_adapter"
-        method_id         = "kolmogorov_smirnov"
-        implementation_id = "ks_batch"
-        parameters        = { threshold = 0.05 }
-
-    [[detectors.algorithms]]
-        name              = "Anderson-Darling Test"
-        adapter           = "scipy_adapter"
-        method_id         = "anderson_darling"
-        implementation_id = "ad_batch"
-        parameters        = { threshold = 0.05 }
-
-    # Distance-based methods
-    [[detectors.algorithms]]
-        name              = "Maximum Mean Discrepancy"
-        adapter           = "alibi_detect_adapter"
-        method_id         = "maximum_mean_discrepancy"
-        implementation_id = "mmd_batch"
-        parameters        = { kernel = "rbf", gamma = "scale", threshold = 0.1 }
-
-    [[detectors.algorithms]]
-        name              = "Wasserstein Distance"
-        adapter           = "scipy_adapter"
-        method_id         = "wasserstein_distance"
-        implementation_id = "wasserstein_batch"
-        parameters        = { threshold = 0.05 }
-
-[evaluation]
-    cross_validation   = true
-    cv_folds           = 5
-    significance_tests = true
-    confidence_level   = 0.95
-
-    [[evaluation.metrics]]
-        name    = "accuracy"
-        enabled = true
-        weight  = 1.0
-
-    [[evaluation.metrics]]
-        name    = "precision"
-        enabled = true
-        weight  = 1.0
-
-    [[evaluation.metrics]]
-        name    = "recall"
-        enabled = true
-        weight  = 1.0
-
-    [[evaluation.metrics]]
-        name    = "f1_score"
-        enabled = true
-        weight  = 2.0
-
-[output]
-    save_results  = true
-    visualization = true
-    export_format = ["csv", "json", "excel"]
-    log_level     = "INFO"
+[[detectors]]
+    method_id         = "cramer_von_mises"
+    implementation_id = "cvm_batch"
