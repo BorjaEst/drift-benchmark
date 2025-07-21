@@ -233,16 +233,18 @@ This module provides basic data loading utilities for the drift-benchmark librar
 
 ## ⚙️ Configuration Loading Module
 
-This module defines how BenchmarkConfig is loaded, validated, and processed using Pydantic v2 validation. Located at `src/drift_benchmark/config/`.
+This module provides configuration loading utilities that return validated BenchmarkConfig instances from TOML files. Located at `src/drift_benchmark/config/`.
 
-| ID              | Requirement                        | Description                                                                                           |
-| --------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **REQ-CFG-001** | **TOML File Loading**              | Must load BenchmarkConfig from .toml files using `BenchmarkConfig.from_toml(path: str)` class method  |
-| **REQ-CFG-002** | **Pydantic V2 Validation**         | BenchmarkConfig must use Pydantic v2 BaseModel with automatic field validation                        |
-| **REQ-CFG-003** | **Basic Path Resolution**          | Configuration loading must resolve relative file paths to absolute paths using pathlib                |
-| **REQ-CFG-004** | **Basic Configuration Validation** | BenchmarkConfig must validate that detector method_id/implementation_id exist in the methods registry |
-| **REQ-CFG-005** | **Split Ratio Validation**         | Must validate reference_split is between 0.0 and 1.0 (exclusive) for DatasetConfig                    |
-| **REQ-CFG-006** | **File Existence Validation**      | Must validate dataset file paths exist during configuration loading, not during runtime               |
+| ID              | Requirement                        | Description                                                                                                                               |
+| --------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-CFG-001** | **TOML File Loading Function**     | Must provide `load_config(path: str) -> BenchmarkConfig` function that loads and validates TOML files, returning BenchmarkConfig instance |
+| **REQ-CFG-002** | **Pydantic V2 Validation**         | Configuration loading must use BenchmarkConfig Pydantic v2 BaseModel with automatic field validation                                      |
+| **REQ-CFG-003** | **Basic Path Resolution**          | Configuration loading must resolve relative file paths to absolute paths using pathlib                                                    |
+| **REQ-CFG-004** | **Basic Configuration Validation** | Configuration loading must validate that detector method_id/implementation_id exist in the methods registry                               |
+| **REQ-CFG-005** | **Split Ratio Validation**         | Configuration loading must validate reference_split is between 0.0 and 1.0 (exclusive) for DatasetConfig                                  |
+| **REQ-CFG-006** | **File Existence Validation**      | Configuration loading must validate dataset file paths exist during configuration loading, not during runtime                             |
+| **REQ-CFG-007** | **Separation of Concerns**         | Configuration loading logic must be separate from BenchmarkConfig model definition to maintain clean architecture                         |
+| **REQ-CFG-008** | **Error Handling**                 | Configuration loading must raise ConfigurationError with descriptive messages for invalid TOML files or validation failures               |
 
 ---
 
