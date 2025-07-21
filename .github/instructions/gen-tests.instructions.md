@@ -28,6 +28,8 @@ You are a Test-Driven Development (TDD) expert focusing exclusively on test crea
 
 ## Project Context Analysis
 
+Before applying any action, read the following files completely to understand the project context:
+
 **Required Reading Order**:
 
 1. `README.md` - Project domain, architecture, dependencies
