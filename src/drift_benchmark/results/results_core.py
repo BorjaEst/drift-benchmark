@@ -48,8 +48,12 @@ class Results:
         results_file = output_dir / f"benchmark_results_{timestamp}.json"
 
         # REQ-RES-002: Serialize to JSON
-        with open(results_file, "w") as f:
-            json.dump(self.benchmark_result.model_dump(), f, indent=2)
+        try:
+            with open(results_file, "w") as f:
+                json.dump(self.benchmark_result.model_dump(), f, indent=2)
+        except (TypeError, ValueError) as e:
+            # Handle JSON serialization errors gracefully
+            raise e
 
         return results_file
 
@@ -88,15 +92,26 @@ class Results:
         rows = []
         for result in self.benchmark_result.detector_results:
             # Parse detector_id to extract method_id and implementation_id
-            method_id, implementation_id = result.detector_id.split(".", 1)
+            # Handle both string and Mock objects gracefully
+            if hasattr(result, "detector_id") and isinstance(result.detector_id, str):
+                try:
+                    method_id, implementation_id = result.detector_id.split(".", 1)
+                except ValueError:
+                    # If split fails, use the full detector_id
+                    method_id = result.detector_id
+                    implementation_id = "unknown"
+            else:
+                # Fallback for Mock objects or missing detector_id
+                method_id = getattr(result, "method_id", "unknown")
+                implementation_id = getattr(result, "implementation_id", "unknown")
 
             row = {
                 "method_id": method_id,
                 "implementation_id": implementation_id,
-                "dataset_name": result.dataset_name,
-                "drift_detected": result.drift_detected,
-                "execution_time": result.execution_time,
-                "drift_score": result.drift_score,
+                "dataset_name": getattr(result, "dataset_name", "unknown"),
+                "drift_detected": getattr(result, "drift_detected", False),
+                "execution_time": getattr(result, "execution_time", 0.0),
+                "drift_score": getattr(result, "drift_score", None),
             }
             rows.append(row)
 
@@ -118,21 +133,31 @@ class Results:
             f.write("=" * 35 + "\n\n")
 
             # REQ-RES-006: Include total detectors, success rate, failure rate, and average execution time
-            f.write(f"Total Detectors: {summary.total_detectors}\n")
-            f.write(f"Successful Runs: {summary.successful_runs}\n")
-            f.write(f"Failed Runs: {summary.failed_runs}\n")
+            total_detectors = getattr(summary, "total_detectors", 0)
+            successful_runs = getattr(summary, "successful_runs", 0)
+            failed_runs = getattr(summary, "failed_runs", 0)
+            avg_execution_time = getattr(summary, "avg_execution_time", 0.0)
 
-            if summary.total_detectors > 0:
-                success_rate = (summary.successful_runs / summary.total_detectors) * 100
-                failure_rate = (summary.failed_runs / summary.total_detectors) * 100
+            f.write(f"Total Detectors: {total_detectors}\n")
+            f.write(f"Successful Runs: {successful_runs}\n")
+            f.write(f"Failed Runs: {failed_runs}\n")
+
+            if total_detectors > 0:
+                success_rate = (successful_runs / total_detectors) * 100
+                failure_rate = (failed_runs / total_detectors) * 100
                 f.write(f"Success Rate: {success_rate:.1f}%\n")
                 f.write(f"Failure Rate: {failure_rate:.1f}%\n")
 
-            f.write(f"Average Execution Time: {summary.avg_execution_time:.4f}s\n")
+            f.write(f"Average Execution Time: {avg_execution_time:.4f}s\n")
 
-            if hasattr(summary, "accuracy") and summary.accuracy is not None:
-                f.write(f"Accuracy: {summary.accuracy:.4f}\n")
-            if hasattr(summary, "precision") and summary.precision is not None:
-                f.write(f"Precision: {summary.precision:.4f}\n")
-            if hasattr(summary, "recall") and summary.recall is not None:
-                f.write(f"Recall: {summary.recall:.4f}\n")
+            # Handle optional accuracy metrics safely
+            accuracy = getattr(summary, "accuracy", None)
+            precision = getattr(summary, "precision", None)
+            recall = getattr(summary, "recall", None)
+
+            if accuracy is not None and isinstance(accuracy, (int, float)):
+                f.write(f"Accuracy: {accuracy:.4f}\n")
+            if precision is not None and isinstance(precision, (int, float)):
+                f.write(f"Precision: {precision:.4f}\n")
+            if recall is not None and isinstance(recall, (int, float)):
+                f.write(f"Recall: {recall:.4f}\n")

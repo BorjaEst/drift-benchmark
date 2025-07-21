@@ -43,12 +43,10 @@ def test_should_save_results_to_json_when_save(mock_benchmark_result, temp_works
     # Arrange
     results_dir = temp_workspace / "results"
 
-    with patch("drift_benchmark.settings.get_settings") as mock_get_settings, patch("builtins.open", mock_open()) as mock_file:
+    with patch("drift_benchmark.results.results_core.settings") as mock_settings, patch("builtins.open", mock_open()) as mock_file:
 
         # Mock settings
-        mock_settings = Mock()
         mock_settings.results_dir = results_dir
-        mock_get_settings.return_value = mock_settings
 
         # Act
         try:
@@ -74,14 +72,12 @@ def test_should_create_results_directory_when_save(mock_benchmark_result, temp_w
     results_dir = temp_workspace / "results" / "subdir"
 
     with (
-        patch("drift_benchmark.settings.get_settings") as mock_get_settings,
+        patch("drift_benchmark.results.results_core.settings") as mock_settings,
         patch("pathlib.Path.mkdir") as mock_mkdir,
         patch("builtins.open", mock_open()) as mock_file,
     ):
 
-        mock_settings = Mock()
         mock_settings.results_dir = results_dir
-        mock_get_settings.return_value = mock_settings
 
         # Act
         try:
@@ -103,14 +99,12 @@ def test_should_generate_unique_filename_when_save(mock_benchmark_result, temp_w
     results_dir = temp_workspace / "results"
 
     with (
-        patch("drift_benchmark.settings.get_settings") as mock_get_settings,
-        patch("datetime.datetime") as mock_datetime,
+        patch("drift_benchmark.results.results_core.settings") as mock_settings,
+        patch("drift_benchmark.results.results_core.datetime") as mock_datetime,
         patch("builtins.open", mock_open()) as mock_file,
     ):
 
-        mock_settings = Mock()
         mock_settings.results_dir = results_dir
-        mock_get_settings.return_value = mock_settings
 
         # Mock timestamp
         mock_now = Mock()
@@ -137,16 +131,28 @@ def test_should_load_results_from_json_when_load(mock_benchmark_result, temp_wor
     # Arrange
     results_file = temp_workspace / "test_results.json"
 
-    # Mock JSON content
+    # Mock JSON content with proper structure
     json_content = {
         "config": {"datasets": {"test": {}}, "detectors": []},
         "detector_results": [],
-        "summary": {"total_detectors": 0, "successful_runs": 0, "failed_runs": 0},
+        "summary": {
+            "total_detectors": 0,
+            "successful_runs": 0,
+            "failed_runs": 0,
+            "avg_execution_time": 0.0,  # This field was missing
+        },
     }
 
-    with patch("builtins.open", mock_open(read_data=json.dumps(json_content))), patch("json.load") as mock_json_load:
+    with (
+        patch("builtins.open", mock_open(read_data=json.dumps(json_content))),
+        patch("json.load") as mock_json_load,
+        patch("pathlib.Path.exists") as mock_exists,
+        patch("pathlib.Path.is_file") as mock_is_file,
+    ):
 
         mock_json_load.return_value = json_content
+        mock_exists.return_value = True
+        mock_is_file.return_value = True
 
         # Act
         try:
@@ -294,6 +300,21 @@ def test_should_handle_empty_results_when_methods_called(temp_workspace):
     empty_result.summary.failed_runs = 0
     empty_result.summary.avg_execution_time = 0.0
 
+    # Mock the model_dump method to return serializable data
+    def mock_model_dump():
+        return {
+            "config": {"datasets": {}, "detectors": []},
+            "detector_results": [],
+            "summary": {
+                "total_detectors": 0,
+                "successful_runs": 0,
+                "failed_runs": 0,
+                "avg_execution_time": 0.0,
+            },
+        }
+
+    empty_result.model_dump = mock_model_dump
+
     # Act & Assert
     try:
         from drift_benchmark.results import Results
@@ -362,10 +383,8 @@ def test_should_handle_serialization_errors_when_save(mock_benchmark_result, tem
     # Add non-serializable object
     problematic_result.config.non_serializable = object()
 
-    with patch("drift_benchmark.settings.get_settings") as mock_get_settings:
-        mock_settings = Mock()
+    with patch("drift_benchmark.results.results_core.settings") as mock_settings:
         mock_settings.results_dir = temp_workspace / "results"
-        mock_get_settings.return_value = mock_settings
 
         # Act & Assert
         try:
