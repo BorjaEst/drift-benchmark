@@ -75,7 +75,7 @@ def test_should_use_pydantic_v2_validation_when_loading():
     # Test validation functionality
     valid_data = {
         "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "test_method", "variant_id": "test_impl"}],
+        "detectors": [{"method_id": "test_method", "variant_id": "test_impl", "library_id": "CUSTOM"}],
     }
 
     try:
@@ -114,15 +114,15 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
     valid_config_data = {
         "datasets": [{"path": str(test_csv), "format": "CSV", "reference_split": 0.5}],
         "detectors": [
-            {"method_id": "ks_test", "variant_id": "scipy"},
-            {"method_id": "drift_detector", "variant_id": "custom"},
+            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"},
+            {"method_id": "drift_detector", "variant_id": "custom", "library_id": "CUSTOM"},
         ],
     }
 
     # Create invalid config file
     invalid_config_data = {
         "datasets": [{"path": str(test_csv), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "non_existent_method", "variant_id": "scipy"}],
+        "detectors": [{"method_id": "non_existent_method", "variant_id": "scipy", "library_id": "SCIPY"}],
     }
 
     # Create temporary TOML files
@@ -190,7 +190,7 @@ def test_should_validate_split_ratios_when_loaded():
         for split_ratio, should_be_valid in test_cases:
             config_data = {
                 "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": split_ratio}],
-                "detectors": [{"method_id": "test_method", "variant_id": "test_impl"}],
+                "detectors": [{"method_id": "test_method", "variant_id": "test_impl", "library_id": "CUSTOM"}],
             }
 
             if should_be_valid:
@@ -216,13 +216,13 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files, tmp_
     # Create valid config with existing file
     valid_config_data = {
         "datasets": [{"path": str(existing_file), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch"}],
+        "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch", "library_id": "SCIPY"}],
     }
 
     # Create invalid config with non-existent file
     invalid_config_data = {
         "datasets": [{"path": str(non_existent_file), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch"}],
+        "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch", "library_id": "SCIPY"}],
     }
 
     # Create temporary TOML files
@@ -331,11 +331,11 @@ def test_should_provide_clear_validation_errors_when_invalid():
     test_cases = [
         # Missing required field
         {
-            "detectors": [{"method_id": "test", "variant_id": "test"}]
+            "detectors": [{"method_id": "test", "variant_id": "test", "library_id": "CUSTOM"}]
             # Missing datasets field
         },
         # Invalid field type
-        {"datasets": "not_a_list", "detectors": [{"method_id": "test", "variant_id": "test"}]},
+        {"datasets": "not_a_list", "detectors": [{"method_id": "test", "variant_id": "test", "library_id": "CUSTOM"}]},
         # Empty required lists
         {"datasets": [], "detectors": []},
     ]
@@ -374,7 +374,7 @@ def test_should_maintain_separation_of_concerns():
         # Should be able to import BenchmarkConfig independently from config loading
         config_data = {
             "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-            "detectors": [{"method_id": "test_method", "variant_id": "test_impl"}],
+            "detectors": [{"method_id": "test_method", "variant_id": "test_impl", "library_id": "CUSTOM"}],
         }
 
         # This should work without any file I/O operations

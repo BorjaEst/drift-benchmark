@@ -87,7 +87,7 @@ def invalid_benchmark_config_toml():
     """Create an invalid benchmark configuration TOML file"""
     config_data = {
         "datasets": [{"path": "datasets/test_data.csv", "format": "CSV", "reference_split": 1.5}],  # Invalid: > 1.0
-        "detectors": [{"method_id": "non_existent_method", "variant_id": "non_existent_impl"}],
+        "detectors": [{"method_id": "non_existent_method", "variant_id": "non_existent_impl", "library_id": "CUSTOM"}],
     }
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
