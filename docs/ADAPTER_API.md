@@ -27,7 +27,7 @@ The drift-benchmark framework provides a unified interface for integrating vario
 ### Key Concepts
 
 - **Adapter Pattern**: Wraps external drift detection libraries with a consistent interface
-- **Registration System**: Automatic discovery and registration of detector variantss
+- **Registration System**: Automatic discovery and registration of detector variants
 - **Data Format Agnostic**: Supports conversion between pandas DataFrames and library-specific formats
 - **Lifecycle Management**: Standardized flow: preprocess → fit → detect → score
 
@@ -42,8 +42,8 @@ src/drift_benchmark/adapters/
 ├── __init__.py           # Public API exports
 ├── base_detector.py      # BaseDetector abstract class
 ├── registry.py           # Registration and lookup system
-├── test_detectors.py     # Test detector variantss
-└── statistical_detectors.py  # Real detector variantss
+├── test_detectors.py     # Test detector variants
+└── statistical_detectors.py  # Real detector variants
 ```
 
 ### Architectural Layers
@@ -78,7 +78,7 @@ from ..models.results import DatasetResult
 class BaseDetector(ABC):
     """Abstract base class for all drift detectors."""
 
-    def __init__(self, method_id: str, variants_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
         """Initialize base detector with identifiers and parameters."""
 
     @property
@@ -86,7 +86,7 @@ class BaseDetector(ABC):
         """Get the drift detection method identifier."""
 
     @property
-    def variants_id(self) -> str:
+    def variant_id(self) -> str:
         """Get the variants variant identifier."""
 
     def preprocess(self, data: DatasetResult, **kwargs) -> Any:
@@ -106,14 +106,14 @@ class BaseDetector(ABC):
 
 ### Method Specifications
 
-#### Constructor: `__init__(self, method_id: str, variants_id: str, **kwargs)`
+#### Constructor: `__init__(self, method_id: str, variant_id: str, **kwargs)`
 
 **Purpose**: Initialize detector with identifiers and optional parameters.
 
 **Parameters**:
 
 - `method_id` (str): Method identifier from `methods.toml` registry
-- `variants_id` (str): Variants variant identifier
+- `variant_id` (str): Variants variant identifier
 - `**kwargs`: Additional parameters (hyperparameters, configuration options)
 
 **Requirements**:
@@ -125,14 +125,14 @@ class BaseDetector(ABC):
 **Example**:
 
 ```python
-def __init__(self, method_id: str, variants_id: str, **kwargs):
-    super().__init__(method_id, variants_id)
+def __init__(self, method_id: str, variant_id: str, **kwargs):
+    super().__init__(method_id, variant_id)
     self.threshold = kwargs.get('threshold', 0.05)
     self.alpha = kwargs.get('alpha', 0.01)
     self._fitted = False
 ```
 
-#### Properties: `method_id` and `variants_id`
+#### Properties: `method_id` and `variant_id`
 
 **Purpose**: Provide read-only access to detector identifiers.
 
@@ -162,7 +162,7 @@ def preprocess(self, data: DatasetResult, **kwargs) -> Any:
     return {"X_ref": data.X_ref, "X_test": data.X_test, "metadata": data.metadata}
 ```
 
-**Common Variantss**:
+**Common variants**:
 
 ```python
 # For numpy-based libraries
@@ -282,12 +282,12 @@ from drift_benchmark.adapters import BaseDetector, register_detector
 import numpy as np
 from scipy import stats
 
-@register_detector(method_id="kolmogorov_smirnov", variants_id="ks_batch")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch")
 class KolmogorovSmirnovDetector(BaseDetector):
     """Kolmogorov-Smirnov drift detector variants."""
 
-    def __init__(self, method_id: str, variants_id: str, **kwargs):
-        super().__init__(method_id, variants_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get('threshold', 0.05)
         self._reference_data = None
         self._last_score = None
@@ -412,7 +412,7 @@ The framework uses decorator-based registration for automatic discovery:
 ```python
 from drift_benchmark.adapters import register_detector
 
-@register_detector(method_id="my_method", variants_id="my_impl")
+@register_detector(method_id="my_method", variant_id="my_impl")
 class MyDetector(BaseDetector):
     # Variants here
     pass
@@ -442,7 +442,7 @@ detector = DetectorClass("kolmogorov_smirnov", "ks_batch", threshold=0.01)
 
 ### Method Registry Schema
 
-The `methods.toml` file defines available methods and variantss:
+The `methods.toml` file defines available methods and variants:
 
 ```toml
 [methods.my_method]
@@ -455,7 +455,7 @@ data_types = ["CONTINUOUS"]  # CONTINUOUS, CATEGORICAL, MIXED
 requires_labels = false
 references = ["https://doi.org/example", "Author (Year)"]
 
-[methods.my_method.variantss.my_impl]
+[methods.my_method.variants.my_impl]
 name = "My Variants"
 execution_mode = "BATCH"  # BATCH, STREAMING
 hyperparameters = ["threshold", "alpha"]
@@ -475,7 +475,7 @@ references = ["Variants reference"]
    └── Load dataset files
 
 2. Detector Instantiation
-   ├── Registry lookup by (method_id, variants_id)
+   ├── Registry lookup by (method_id, variant_id)
    ├── Class instantiation with parameters
    └── Validation of required methods
 
@@ -597,7 +597,7 @@ def detect(self, preprocessed_data: Any, **kwargs) -> bool:
         return result > self.threshold
     except Exception as e:
         # Log error and re-raise with context
-        logger.error(f"Detection failed in {self.method_id}.{self.variants_id}: {e}")
+        logger.error(f"Detection failed in {self.method_id}.{self.variant_id}: {e}")
         raise BenchmarkExecutionError(f"Detection failed: {e}") from e
 ```
 
@@ -628,7 +628,7 @@ import numpy as np
 from scipy import stats
 from typing import Optional
 
-@register_detector(method_id="kolmogorov_smirnov", variants_id="ks_batch")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch")
 class KolmogorovSmirnovDetector(BaseDetector):
     """
     Kolmogorov-Smirnov test for drift detection.
@@ -636,8 +636,8 @@ class KolmogorovSmirnovDetector(BaseDetector):
     Tests whether two samples come from the same distribution.
     """
 
-    def __init__(self, method_id: str, variants_id: str, **kwargs):
-        super().__init__(method_id, variants_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get('threshold', 0.05)
         self._reference_data: Optional[np.ndarray] = None
         self._last_score: Optional[float] = None
@@ -694,14 +694,14 @@ import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
 from typing import Optional
 
-@register_detector(method_id="maximum_mean_discrepancy", variants_id="mmd_rbf")
+@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf")
 class MaximumMeanDiscrepancyDetector(BaseDetector):
     """
     Maximum Mean Discrepancy with RBF kernel for drift detection.
     """
 
-    def __init__(self, method_id: str, variants_id: str, **kwargs):
-        super().__init__(method_id, variants_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get('threshold', 0.1)
         self.gamma = kwargs.get('gamma', 1.0)
         self._reference_data: Optional[np.ndarray] = None
@@ -786,14 +786,14 @@ from sklearn.ensemble import IsolationForest
 from sklearn.metrics import roc_auc_score
 from typing import Optional
 
-@register_detector(method_id="isolation_forest", variants_id="sklearn")
+@register_detector(method_id="isolation_forest", variant_id="sklearn")
 class IsolationForestDetector(BaseDetector):
     """
     Isolation Forest-based drift detector using scikit-learn.
     """
 
-    def __init__(self, method_id: str, variants_id: str, **kwargs):
-        super().__init__(method_id, variants_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.contamination = kwargs.get('contamination', 0.1)
         self.n_estimators = kwargs.get('n_estimators', 100)
         self.random_state = kwargs.get('random_state', 42)
@@ -900,7 +900,7 @@ class TestMyDetector:
     def test_initialization(self, detector):
         """Test proper initialization."""
         assert detector.method_id == "my_method"
-        assert detector.variants_id == "my_impl"
+        assert detector.variant_id == "my_impl"
         assert detector.threshold == 0.05
 
     def test_preprocess(self, detector, sample_data):
@@ -1025,7 +1025,7 @@ def test_full_integration():
 
     [[detectors]]
     method_id = "my_method"
-    variants_id = "my_impl"
+    variant_id = "my_impl"
     """
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -1069,7 +1069,7 @@ class MyDetector(BaseDetector):
     def detect(self, preprocessed_data: Any, **kwargs) -> bool:
         try:
             # Detection logic
-            logger.info(f"Starting detection with {self.method_id}.{self.variants_id}")
+            logger.info(f"Starting detection with {self.method_id}.{self.variant_id}")
             result = self._perform_detection(preprocessed_data)
             logger.info(f"Detection completed: drift_detected={result}")
             return result
@@ -1082,8 +1082,8 @@ class MyDetector(BaseDetector):
 ### 2. Parameter Validation
 
 ```python
-def __init__(self, method_id: str, variants_id: str, **kwargs):
-    super().__init__(method_id, variants_id)
+def __init__(self, method_id: str, variant_id: str, **kwargs):
+    super().__init__(method_id, variant_id)
 
     # Validate parameters
     self.threshold = kwargs.get('threshold', 0.05)
@@ -1099,8 +1099,8 @@ def __init__(self, method_id: str, variants_id: str, **kwargs):
 
 ```python
 class ResourceAwareDetector(BaseDetector):
-    def __init__(self, method_id: str, variants_id: str, **kwargs):
-        super().__init__(method_id, variants_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self._model = None
         self._fitted = False
 
@@ -1124,8 +1124,8 @@ class ResourceAwareDetector(BaseDetector):
 ### 4. Reproducibility
 
 ```python
-def __init__(self, method_id: str, variants_id: str, **kwargs):
-    super().__init__(method_id, variants_id)
+def __init__(self, method_id: str, variant_id: str, **kwargs):
+    super().__init__(method_id, variant_id)
 
     # Use consistent random seed
     self.random_state = kwargs.get('random_state', 42)
@@ -1182,9 +1182,9 @@ class WellDocumentedDetector(BaseDetector):
         - https://doi.org/example
     """
 
-    def __init__(self, method_id: str, variants_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
         """Initialize detector with parameters."""
-        super().__init__(method_id, variants_id)
+        super().__init__(method_id, variant_id)
         self.threshold: float = kwargs.get('threshold', 0.05)
         self.window_size: int = kwargs.get('window_size', 100)
 
