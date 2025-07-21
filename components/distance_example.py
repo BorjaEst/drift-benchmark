@@ -6,9 +6,10 @@ drift-benchmark adapter framework with custom implementations.
 from typing import Optional
 
 import numpy as np
-from scipy import stats
 from scipy.spatial.distance import jensenshannon
+from scipy.stats import wasserstein_distance
 from scipy.stats import wasserstein_distance as scipy_wasserstein_distance
+from sklearn.metrics.pairwise import euclidean_distances
 
 from drift_benchmark.adapters import BaseDetector, register_detector
 from drift_benchmark.models.results import DatasetResult
@@ -227,16 +228,6 @@ class CustomWassersteinDetector(BaseDetector):
     def score(self) -> Optional[float]:
         """Return average Wasserstein distance from last detection."""
         return self._last_score
-
-
-from typing import Optional
-
-import numpy as np
-from scipy.stats import wasserstein_distance
-from sklearn.metrics.pairwise import euclidean_distances
-
-from drift_benchmark.adapters import BaseDetector, register_detector
-from drift_benchmark.models.results import DatasetResult
 
 
 @register_detector(method_id="maximum_mean_discrepancy", implementation_id="mmd_rbf")
