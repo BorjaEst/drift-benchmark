@@ -33,27 +33,28 @@ def test_should_define_benchmark_runner_class_when_imported():
 
 
 def test_should_load_configuration_from_toml_when_from_config(temp_workspace):
-    """Test REQ-RUN-002: BenchmarkRunner.from_config(config_path) must load TOML file using BenchmarkConfig.from_toml()"""
+    """Test REQ-RUN-002: BenchmarkRunner.from_config(config_path) must load TOML file using load_config()"""
     # Arrange
     config_path = temp_workspace / "test_benchmark.toml"
     config_content = """
-[datasets]
-example = { path = "data/example.csv", drift_column = "is_drift" }
+[[datasets]]
+path = "data/example.csv"
+format = "CSV"
+reference_split = 0.5
 
 [[detectors]]
 method_id = "ks_test"
 implementation_id = "scipy"
-parameters = { alpha = 0.05 }
 """
     config_path.write_text(config_content)
 
     with (
-        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
-        patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
+        patch("drift_benchmark.benchmark.runner.load_config") as mock_load_config,
+        patch("drift_benchmark.benchmark.runner.Benchmark") as mock_benchmark_class,
     ):
 
         mock_config = Mock()
-        mock_from_toml.return_value = mock_config
+        mock_load_config.return_value = mock_config
         mock_benchmark_class.return_value = Mock()
 
         # Act
@@ -65,8 +66,8 @@ parameters = { alpha = 0.05 }
         except ImportError as e:
             pytest.fail(f"Failed to import BenchmarkRunner for config loading test: {e}")
 
-        # Assert - from_toml was called with correct path
-        mock_from_toml.assert_called_once_with(config_path)
+        # Assert - load_config was called with correct path
+        mock_load_config.assert_called_once_with(str(config_path))
 
         # Assert - Benchmark was initialized with loaded config
         mock_benchmark_class.assert_called_once_with(mock_config)
@@ -92,30 +93,33 @@ def test_should_validate_config_path_when_from_config(temp_workspace):
 
 
 def test_should_store_results_when_run(temp_workspace, mock_benchmark_config):
-    """Test REQ-RUN-003: BenchmarkRunner.run() must save benchmark results to storage using Results.save() method"""
+    """Test REQ-RUN-003: BenchmarkRunner.run() must save benchmark results to storage using save_results() function"""
     # Arrange
+    config_path = temp_workspace / "test.toml"
+    config_path.write_text("# Test config")  # Create dummy file
+
     with (
-        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
-        patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
-        patch("drift_benchmark.results.Results") as mock_results_class,
+        patch("drift_benchmark.benchmark.runner.load_config") as mock_load_config,
+        patch("drift_benchmark.benchmark.runner.Benchmark") as mock_benchmark_class,
+        patch("drift_benchmark.benchmark.runner.save_results") as mock_save_results,
     ):
 
         # Setup mocks
-        mock_from_toml.return_value = mock_benchmark_config
+        mock_load_config.return_value = mock_benchmark_config
         mock_benchmark_result = Mock()
         mock_benchmark_instance = Mock()
         mock_benchmark_instance.run.return_value = mock_benchmark_result
         mock_benchmark_class.return_value = mock_benchmark_instance
 
-        mock_results_instance = Mock()
-        mock_results_class.return_value = mock_results_instance
+        mock_output_dir = temp_workspace / "results" / "20250720_143022"
+        mock_save_results.return_value = mock_output_dir
 
         # Create runner and run
         try:
             from drift_benchmark.benchmark import BenchmarkRunner
 
-            runner = BenchmarkRunner.from_config(temp_workspace / "test.toml")
-            runner.run()
+            runner = BenchmarkRunner.from_config(config_path)
+            result = runner.run()
 
         except ImportError as e:
             pytest.fail(f"Failed to import BenchmarkRunner for results storage test: {e}")
@@ -124,34 +128,39 @@ def test_should_store_results_when_run(temp_workspace, mock_benchmark_config):
         mock_benchmark_instance.run.assert_called_once()
 
         # Assert - results were stored
-        mock_results_class.assert_called_once_with(mock_benchmark_result)
-        mock_results_instance.save.assert_called_once()
+        mock_save_results.assert_called_once_with(mock_benchmark_result)
+
+        # Assert - output directory was set
+        assert result.output_directory == mock_output_dir
 
 
 def test_should_integrate_logging_when_run(temp_workspace, mock_benchmark_config):
     """Test REQ-RUN-004: BenchmarkRunner.run() must log execution start, progress updates, and completion using configured logger"""
     # Arrange
+    config_path = temp_workspace / "test.toml"
+    config_path.write_text("# Test config")  # Create dummy file
+
     with (
-        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
-        patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
-        patch("drift_benchmark.results.Results") as mock_results_class,
-        patch("drift_benchmark.benchmark.logger") as mock_logger,
+        patch("drift_benchmark.benchmark.runner.load_config") as mock_load_config,
+        patch("drift_benchmark.benchmark.runner.Benchmark") as mock_benchmark_class,
+        patch("drift_benchmark.benchmark.runner.save_results") as mock_save_results,
+        patch("drift_benchmark.benchmark.runner.logger") as mock_logger,
     ):
 
         # Setup mocks
-        mock_from_toml.return_value = mock_benchmark_config
+        mock_load_config.return_value = mock_benchmark_config
         mock_benchmark_result = Mock()
         mock_benchmark_instance = Mock()
         mock_benchmark_instance.run.return_value = mock_benchmark_result
         mock_benchmark_class.return_value = mock_benchmark_instance
 
-        mock_results_class.return_value = Mock()
+        mock_save_results.return_value = temp_workspace / "results"
 
         # Act
         try:
             from drift_benchmark.benchmark import BenchmarkRunner
 
-            runner = BenchmarkRunner.from_config(temp_workspace / "test.toml")
+            runner = BenchmarkRunner.from_config(config_path)
             runner.run()
 
         except ImportError as e:
@@ -162,11 +171,12 @@ def test_should_integrate_logging_when_run(temp_workspace, mock_benchmark_config
 
         # Check for expected log messages
         log_calls = [call[0][0] for call in mock_logger.info.call_args_list]
-        log_messages = " ".join(log_calls).lower()
 
         # Should log start and completion
-        assert any("start" in msg or "begin" in msg for msg in log_calls), "should log execution start"
-        assert any("complete" in msg or "finish" in msg for msg in log_calls), "should log execution completion"
+        assert any("start" in msg.lower() or "begin" in msg.lower() for msg in log_calls), f"should log execution start. Got: {log_calls}"
+        assert any(
+            "complete" in msg.lower() or "finish" in msg.lower() for msg in log_calls
+        ), f"should log execution completion. Got: {log_calls}"
 
 
 def test_should_handle_config_errors_when_from_config(temp_workspace):
@@ -191,8 +201,10 @@ def test_should_support_path_objects_when_from_config(temp_workspace):
     # Arrange
     config_path = temp_workspace / "path_test.toml"
     config_content = """
-[datasets]
-example = { path = "data/example.csv", drift_column = "is_drift" }
+[[datasets]]
+path = "data/example.csv"
+format = "CSV"
+reference_split = 0.5
 
 [[detectors]]
 method_id = "ks_test"
@@ -201,11 +213,11 @@ implementation_id = "scipy"
     config_path.write_text(config_content)
 
     with (
-        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
-        patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
+        patch("drift_benchmark.benchmark.runner.load_config") as mock_load_config,
+        patch("drift_benchmark.benchmark.runner.Benchmark") as mock_benchmark_class,
     ):
 
-        mock_from_toml.return_value = Mock()
+        mock_load_config.return_value = Mock()
         mock_benchmark_class.return_value = Mock()
 
         # Act - test both string and Path
@@ -227,13 +239,16 @@ implementation_id = "scipy"
 def test_should_propagate_benchmark_errors_when_run(temp_workspace, mock_benchmark_config):
     """Test that BenchmarkRunner.run() properly handles and propagates benchmark execution errors"""
     # Arrange
+    config_path = temp_workspace / "test.toml"
+    config_path.write_text("# Test config")  # Create dummy file
+
     with (
-        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
-        patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
-        patch("drift_benchmark.benchmark.logger") as mock_logger,
+        patch("drift_benchmark.benchmark.runner.load_config") as mock_load_config,
+        patch("drift_benchmark.benchmark.runner.Benchmark") as mock_benchmark_class,
+        patch("drift_benchmark.benchmark.runner.logger") as mock_logger,
     ):
 
-        mock_from_toml.return_value = mock_benchmark_config
+        mock_load_config.return_value = mock_benchmark_config
 
         # Setup failing benchmark
         mock_benchmark_instance = Mock()
@@ -244,7 +259,7 @@ def test_should_propagate_benchmark_errors_when_run(temp_workspace, mock_benchma
         try:
             from drift_benchmark.benchmark import BenchmarkRunner
 
-            runner = BenchmarkRunner.from_config(temp_workspace / "test.toml")
+            runner = BenchmarkRunner.from_config(config_path)
 
             with pytest.raises(RuntimeError, match="Benchmark execution failed"):
                 runner.run()
@@ -259,27 +274,29 @@ def test_should_propagate_benchmark_errors_when_run(temp_workspace, mock_benchma
 def test_should_return_results_when_run(temp_workspace, mock_benchmark_config):
     """Test that BenchmarkRunner.run() returns the benchmark results"""
     # Arrange
+    config_path = temp_workspace / "test.toml"
+    config_path.write_text("# Test config")  # Create dummy file
+
     with (
-        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
-        patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
-        patch("drift_benchmark.results.Results") as mock_results_class,
+        patch("drift_benchmark.benchmark.runner.load_config") as mock_load_config,
+        patch("drift_benchmark.benchmark.runner.Benchmark") as mock_benchmark_class,
+        patch("drift_benchmark.benchmark.runner.save_results") as mock_save_results,
     ):
 
-        mock_from_toml.return_value = mock_benchmark_config
+        mock_load_config.return_value = mock_benchmark_config
 
         mock_benchmark_result = Mock()
         mock_benchmark_instance = Mock()
         mock_benchmark_instance.run.return_value = mock_benchmark_result
         mock_benchmark_class.return_value = mock_benchmark_instance
 
-        mock_results_instance = Mock()
-        mock_results_class.return_value = mock_results_instance
+        mock_save_results.return_value = temp_workspace / "results"
 
         # Act
         try:
             from drift_benchmark.benchmark import BenchmarkRunner
 
-            runner = BenchmarkRunner.from_config(temp_workspace / "test.toml")
+            runner = BenchmarkRunner.from_config(config_path)
             result = runner.run()
 
         except ImportError as e:
