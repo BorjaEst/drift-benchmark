@@ -125,7 +125,7 @@ src/drift_benchmark/
 │   └── registry.py         # Detector registration system
 ├── data/                   # Data loading utilities
 │   ├── __init__.py
-│   └── loaders.py          # Dataset loading functions
+│   └── file_loader.py      # File loading utilities
 ├── config/                 # Configuration loading
 │   ├── __init__.py
 │   └── loader.py           # TOML configuration parsing
