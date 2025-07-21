@@ -8,15 +8,62 @@
 
 **drift-benchmark** is a unified framework for evaluating and comparing drift detection methods across different datasets and scenarios. It provides a standardized interface for benchmarking various drift detection algorithms, enabling researchers and practitioners to objectively assess performance and choose the most suitable methods for their specific use cases.
 
-## 🎯 Features
+**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same mathematical methods to identify which library provides better performance, accuracy, or resource efficiency for your specific use case.
+
+## 🏗️ Framework Architecture
+
+**drift-benchmark** acts as a **standardization layer** that enables fair comparison of drift detection implementations across different libraries. Our framework provides:
+
+- **📋 Standardized Method+Variant Definitions**: We define consistent algorithmic approaches (variants) for each mathematical method
+- **⚙️ Library-Agnostic Interface**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same method+variant
+- **📊 Performance Benchmarking**: Evaluate speed, accuracy, and resource usage across implementations
+- **🔄 Fair Comparisons**: Ensure all libraries are tested under identical conditions and data preprocessing
+
+### 📚 Core Concepts
+
+- **🔬 Method**: Mathematical methodology for drift detection (e.g., Kolmogorov-Smirnov Test, Maximum Mean Discrepancy)
+- **⚙️ Variant**: Standardized algorithmic approach defined by drift-benchmark (e.g., batch processing, incremental processing, sliding window)
+- **🔌 Detector**: How a specific library implements a method+variant combination (e.g., Evidently's KS batch vs. Alibi-Detect's KS batch)
+- **🔄 Adapter**: Your custom class that maps a library's implementation to our standardized method+variant interface
+
+### 🎯 Framework Roles
+
+#### **For drift-benchmark developers (us):**
+
+- Design and maintain the `methods.toml` registry that standardizes drift detection methods across libraries
+- Provide the `BaseDetector` abstract interface for consistent detector integration
+- Implement core benchmarking infrastructure (data loading, execution, results)
+
+#### **For end users (researchers/practitioners):**
+
+- Create **adapter classes** by extending `BaseDetector` to integrate their preferred drift detection libraries
+- Configure benchmarks using our standardized method+variant identifiers
+- Run comparative evaluations across different detectors and datasets
+
+### 🔄 Integration Flow
+
+```mermaid
+graph TD
+    A[methods.toml Registry] --> B[Method + Variant Definition]
+    B --> C[User Creates Adapter Class]
+    C --> D[Extends BaseDetector Interface]
+    D --> E[Registers with @register_detector]
+    E --> F[Available for Benchmarking]
+
+    G[User's Detection Library] --> C
+    H[Evidently/scikit-learn/River] --> C
+```
+
+**Key Insight**: Libraries like Evidently or Alibi-Detect don't define variants themselves. Instead, **drift-benchmark defines standardized variants** (like "batch" or "incremental"), and users create adapters that map their library's specific implementation to match our variant specifications.## 🎯 Features
 
 ### Core Capabilities
 
-- **Unified Interface**: Consistent API for different drift detection libraries (scikit-learn, River, Evidently, etc.)
-- **Flexible Data Handling**: Support for both pandas DataFrames and numpy arrays
-- **Comprehensive Evaluation**: Performance metrics including accuracy, precision, recall, and execution time
-- **Multiple Data Types**: Support for continuous, categorical, and mixed data types
-- **Configurable Benchmarks**: TOML-based configuration for reproducible experiments
+- **📋 Standardized Registry**: Curated `methods.toml` defining mathematical methods and their algorithmic variants
+- **🔌 Unified Interface**: Consistent `BaseDetector` API for integrating any drift detection library
+- **📊 Flexible Data Handling**: Support for pandas DataFrames and automatic conversion to library-specific formats
+- **📈 Comprehensive Evaluation**: Performance metrics including accuracy, precision, recall, and execution time
+- **🗂️ Multiple Data Types**: Support for continuous, categorical, and mixed data types
+- **⚙️ Configurable Benchmarks**: TOML-based configuration for reproducible experiments
 
 ### Supported Drift Types
 
@@ -58,13 +105,22 @@ path = "datasets/example.csv"
 format = "CSV"
 reference_split = 0.5
 
+# Compare different library implementations of the same method+variant
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-implementation_id = "ks_batch"
+variant_id = "batch"
+library_id = "evidently"
 
 [[detectors]]
+method_id = "kolmogorov_smirnov"
+variant_id = "batch"
+library_id = "alibi_detect"
+
+# Also compare different methods
+[[detectors]]
 method_id = "cramer_von_mises"
-implementation_id = "cvm_batch"
+variant_id = "batch"
+library_id = "scipy"
 ```
 
 #### 2. Run Benchmark
@@ -80,17 +136,28 @@ results = runner.run()
 print(f"Results saved to: {results.output_directory}")
 ```
 
-#### 3. View Results
+#### 3. Compare Library Performance
 
 ```python
-# Access individual detector results
+# Access individual detector results to compare implementations
 for result in results.detector_results:
-    print(f"Detector: {result.detector_id}")
+    print(f"Library: {result.library_id}")
+    print(f"Method+Variant: {result.method_id}_{result.variant_id}")
     print(f"Dataset: {result.dataset_name}")
     print(f"Drift Detected: {result.drift_detected}")
     print(f"Execution Time: {result.execution_time:.4f}s")
     print(f"Drift Score: {result.drift_score}")
     print("---")
+
+# Example output:
+# Library: evidently
+# Method+Variant: kolmogorov_smirnov_batch
+# Execution Time: 0.0234s
+# ---
+# Library: alibi_detect
+# Method+Variant: kolmogorov_smirnov_batch
+# Execution Time: 0.0156s  <- Alibi-Detect is faster!
+# ---
 
 # View summary statistics
 summary = results.summary
@@ -117,7 +184,7 @@ src/drift_benchmark/
 │   └── metadata.py         # Metadata models (DatasetMetadata, DetectorMetadata)
 ├── detectors/              # Method registry and metadata
 │   ├── __init__.py
-│   ├── methods.toml        # Available detection methods
+│   ├── methods.toml        # Standardized method+variant definitions
 │   └── registry.py         # Method loading and lookup
 ├── adapters/               # Detector interface framework
 │   ├── __init__.py
@@ -150,6 +217,118 @@ src/drift_benchmark/
    - **Scoring**: Collect performance metrics
 5. **Result Storage**: Export results to timestamped directories
 
+## 🧪 Adding New Detectors
+
+The power of drift-benchmark comes from comparing how different libraries implement the same method+variant. Here's how to create adapters for comparison:
+
+### 1. Create Multiple Adapters for the Same Method+Variant
+
+```python
+from drift_benchmark.adapters import BaseDetector, register_detector
+import numpy as np
+from evidently.metrics import DataDriftPreset
+from alibi_detect.cd import KSDrift
+
+# Evidently's implementation of KS batch variant
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="evidently")
+class EvidentlyKSDetector(BaseDetector):
+    """Evidently's implementation of Kolmogorov-Smirnov batch processing."""
+
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
+        self.threshold = kwargs.get('threshold', 0.05)
+        self._detector = None
+
+    def preprocess(self, data, **kwargs):
+        """Convert to Evidently's expected format"""
+        return data.X_ref.values if 'X_ref' in str(data) else data.X_test.values
+
+    def fit(self, preprocessed_data, **kwargs):
+        # Evidently's setup for KS test
+        self._reference_data = preprocessed_data
+        return self
+
+    def detect(self, preprocessed_data, **kwargs):
+        # Evidently's KS implementation
+        # Implementation details here...
+        return drift_detected
+
+# Alibi-Detect's implementation of the same KS batch variant
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi_detect")
+class AlibiDetectKSDetector(BaseDetector):
+    """Alibi-Detect's implementation of Kolmogorov-Smirnov batch processing."""
+
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
+        self.threshold = kwargs.get('threshold', 0.05)
+
+    def preprocess(self, data, **kwargs):
+        """Convert to Alibi-Detect's expected format"""
+        return data.X_ref.values if 'X_ref' in str(data) else data.X_test.values
+
+    def fit(self, preprocessed_data, **kwargs):
+        # Alibi-Detect's KS detector setup
+        self._detector = KSDrift(preprocessed_data, p_val=self.threshold)
+        return self
+
+    def detect(self, preprocessed_data, **kwargs):
+        # Alibi-Detect's KS implementation
+        result = self._detector.predict(preprocessed_data)
+        return result['data']['is_drift']
+```
+
+**Result**: Now you can benchmark **Evidently vs. Alibi-Detect** on the exact same KS batch variant to see which is faster/more accurate!
+
+### 2. Verify Method Definition in methods.toml
+
+Check that the method and variant are already defined in our standardized registry:
+
+```toml
+[methods.kolmogorov_smirnov]
+name = "Kolmogorov-Smirnov Test"
+description = "Two-sample test for equality of continuous distributions"
+drift_types = ["COVARIATE"]
+family = "STATISTICAL_TEST"
+data_dimension = "UNIVARIATE"
+data_types = ["CONTINUOUS"]
+requires_labels = false
+references = ["https://doi.org/10.2307/2281868", "Massey Jr. (1951)"]
+
+[methods.kolmogorov_smirnov.variants.custom]
+name = "Custom Implementation Variant"
+execution_mode = "BATCH"
+hyperparameters = ["threshold"]
+references = ["Your implementation reference"]
+```
+
+## 📈 Results and Metrics
+
+### Output Structure
+
+Each benchmark run creates a timestamped directory with:
+
+```text
+results/20250720_143022/
+├── benchmark_results.json   # Complete results in JSON format
+├── config_info.toml        # Configuration used for reproducibility
+└── benchmark.log           # Execution log
+```
+
+### Performance Metrics
+
+- **Execution Time**: Measured using `time.perf_counter()` with second precision
+- **Success Rate**: Ratio of successful detector runs
+- **Drift Detection**: Binary drift detection results
+- **Drift Scores**: Continuous scores when available (detector-dependent)
+
+### Summary Statistics
+
+When ground truth is available:
+
+- **Accuracy**: Correct drift detection rate
+- **Precision**: True positive rate among positive predictions
+- **Recall**: True positive rate among actual positives
+
 ## 🔧 Configuration
 
 ### Environment Variables
@@ -173,92 +352,6 @@ export DRIFT_BENCHMARK_RANDOM_SEED=42
 | `log_level`             | `"INFO"`                                       | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
 | `random_seed`           | `42`                                           | Random seed for reproducibility                       |
 | `methods_registry_path` | `"src/drift_benchmark/detectors/methods.toml"` | Path to methods configuration                         |
-
-## 🧪 Adding New Detectors
-
-### 1. Implement Detector Class
-
-```python
-from drift_benchmark.adapters import BaseDetector, register_detector
-import numpy as np
-
-@register_detector(method_id="my_method", implementation_id="custom")
-class MyCustomDetector(BaseDetector):
-
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id)
-        # Initialize detector-specific parameters
-        self.threshold = kwargs.get('threshold', 0.05)
-
-    def preprocess(self, data, **kwargs):
-        """Convert pandas DataFrame to detector-specific format"""
-        # For numpy-based detectors
-        return data.X_ref.values  # or data.X_test.values
-
-    def fit(self, preprocessed_data, **kwargs):
-        """Train the detector on reference data"""
-        # Implement training logic
-        self.reference_data = preprocessed_data
-        return self
-
-    def detect(self, preprocessed_data, **kwargs):
-        """Detect drift in test data"""
-        # Implement drift detection logic
-        # Return True if drift is detected, False otherwise
-        return self._calculate_drift_score(preprocessed_data) > self.threshold
-
-    def score(self):
-        """Return drift score if available"""
-        return self._last_score if hasattr(self, '_last_score') else None
-```
-
-### 2. Register in methods.toml
-
-```toml
-[methods.my_method]
-name = "My Custom Method"
-description = "Description of the custom drift detection method"
-drift_types = ["COVARIATE"]  # or CONCEPT, PRIOR
-family = "STATISTICAL_TEST"  # or DISTANCE_BASED, CHANGE_DETECTION, WINDOW_BASED, STATISTICAL_PROCESS_CONTROL
-data_dimension = "UNIVARIATE"  # or MULTIVARIATE
-data_types = ["CONTINUOUS", "CATEGORICAL"]
-requires_labels = false  # Set to true if method requires labels for training
-references = ["https://doi.org/<doi-reference>", "Example (XXXX)"]
-
-[methods.my_method.implementations.custom]
-name = "Custom Implementation"
-execution_mode = "BATCH"  # or STREAMING
-hyperparameters = ["threshold"]  # List of hyperparameter names
-references = ["https://doi.org/<doi-reference>", "Example (XXXX)"]
-```
-
-## 📈 Results and Metrics
-
-### Output Structure
-
-Each benchmark run creates a timestamped directory with:
-
-```
-results/20250720_143022/
-├── benchmark_results.json   # Complete results in JSON format
-├── config_info.toml        # Configuration used for reproducibility
-└── benchmark.log           # Execution log
-```
-
-### Performance Metrics
-
-- **Execution Time**: Measured using `time.perf_counter()` with second precision
-- **Success Rate**: Ratio of successful detector runs
-- **Drift Detection**: Binary drift detection results
-- **Drift Scores**: Continuous scores when available (detector-dependent)
-
-### Summary Statistics
-
-When ground truth is available:
-
-- **Accuracy**: Correct drift detection rate
-- **Precision**: True positive rate among positive predictions
-- **Recall**: True positive rate among actual positives
 
 ## 🤝 Contributing
 

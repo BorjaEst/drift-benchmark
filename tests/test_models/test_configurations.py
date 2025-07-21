@@ -69,7 +69,7 @@ def test_should_define_dataset_config_model_when_imported(sample_dataset_config_
 
 
 def test_should_define_detector_config_model_when_imported(sample_detector_config_data):
-    """Test REQ-CFM-003: Must define DetectorConfig with fields: method_id, variant_id for individual detector setup"""
+    """Test REQ-CFM-003: Must define DetectorConfig with fields: method_id, variant_id, library_id for individual detector setup"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorConfig
@@ -89,10 +89,12 @@ def test_should_define_detector_config_model_when_imported(sample_detector_confi
     # Assert - has required fields
     assert hasattr(config, "method_id"), "DetectorConfig must have method_id field"
     assert hasattr(config, "variant_id"), "DetectorConfig must have variant_id field"
+    assert hasattr(config, "library_id"), "DetectorConfig must have library_id field"
 
     # Assert - field values are correct
     assert config.method_id == "ks_test"
     assert config.variant_id == "scipy"
+    assert config.library_id == "SCIPY"
 
 
 def test_should_use_pydantic_v2_validation_when_created():

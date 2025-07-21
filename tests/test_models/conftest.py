@@ -12,8 +12,8 @@ def sample_benchmark_config_data():
     return {
         "datasets": [{"path": "datasets/test_data.csv", "format": "CSV", "reference_split": 0.6}],
         "detectors": [
-            {"method_id": "ks_test", "variant_id": "scipy"},
-            {"method_id": "drift_detector", "variant_id": "custom"},
+            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"},
+            {"method_id": "drift_detector", "variant_id": "custom", "library_id": "CUSTOM"},
         ],
     }
 
@@ -27,7 +27,7 @@ def sample_dataset_config_data():
 @pytest.fixture
 def sample_detector_config_data():
     """Provide sample data for DetectorConfig testing"""
-    return {"method_id": "ks_test", "variant_id": "scipy"}
+    return {"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"}
 
 
 @pytest.fixture
@@ -46,6 +46,7 @@ def sample_detector_result_data():
     """Provide sample data for DetectorResult testing"""
     return {
         "detector_id": "ks_test_scipy",
+        "library_id": "SCIPY",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.0123,
@@ -62,7 +63,13 @@ def sample_dataset_metadata_data():
 @pytest.fixture
 def sample_detector_metadata_data():
     """Provide sample data for DetectorMetadata testing"""
-    return {"method_id": "ks_test", "variant_id": "scipy", "name": "Kolmogorov-Smirnov Test", "family": "STATISTICAL_TEST"}
+    return {
+        "method_id": "ks_test",
+        "variant_id": "scipy",
+        "library_id": "SCIPY",
+        "name": "Kolmogorov-Smirnov Test",
+        "family": "STATISTICAL_TEST",
+    }
 
 
 @pytest.fixture

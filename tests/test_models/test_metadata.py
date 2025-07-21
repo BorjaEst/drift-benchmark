@@ -49,7 +49,7 @@ def test_should_define_dataset_metadata_model_when_imported(sample_dataset_metad
 
 
 def test_should_define_detector_metadata_model_when_imported(sample_detector_metadata_data):
-    """Test REQ-MET-002: Must define DetectorMetadata with fields: method_id (str), variant_id (str), name (str), family (MethodFamily) for basic detector information"""
+    """Test REQ-MET-002: Must define DetectorMetadata with fields: method_id (str), variant_id (str), library_id (str), name (str), family (MethodFamily) for basic detector information"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorMetadata
@@ -69,17 +69,20 @@ def test_should_define_detector_metadata_model_when_imported(sample_detector_met
     # Assert - has required fields
     assert hasattr(metadata, "method_id"), "DetectorMetadata must have method_id field"
     assert hasattr(metadata, "variant_id"), "DetectorMetadata must have variant_id field"
+    assert hasattr(metadata, "library_id"), "DetectorMetadata must have library_id field"
     assert hasattr(metadata, "name"), "DetectorMetadata must have name field"
     assert hasattr(metadata, "family"), "DetectorMetadata must have family field"
 
     # Assert - field types and values are correct
     assert isinstance(metadata.method_id, str), "method_id must be string"
     assert isinstance(metadata.variant_id, str), "variant_id must be string"
+    assert isinstance(metadata.library_id, str), "library_id must be string"
     assert isinstance(metadata.name, str), "name must be string"
 
     # Assert - specific values from test data
     assert metadata.method_id == "ks_test"
     assert metadata.variant_id == "scipy"
+    assert metadata.library_id == "SCIPY"
     assert metadata.name == "Kolmogorov-Smirnov Test"
     assert metadata.family == "STATISTICAL_TEST"
 

@@ -53,7 +53,7 @@ def test_should_have_method_id_property_when_created():
             def detect(self, preprocessed_data: Any, **kwargs) -> bool:
                 return True
 
-        detector = TestDetector("test_method", "test_impl")
+        detector = TestDetector("test_method", "test_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for property test: {e}")
@@ -88,7 +88,7 @@ def test_should_have_variant_id_property_when_created():
             def detect(self, preprocessed_data: Any, **kwargs) -> bool:
                 return True
 
-        detector = TestDetector("test_method", "test_impl")
+        detector = TestDetector("test_method", "test_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for variant_id test: {e}")
@@ -109,6 +109,41 @@ def test_should_have_variant_id_property_when_created():
         pass
 
 
+def test_should_have_library_id_property_when_created():
+    """Test REQ-ADP-004: BaseDetector must have read-only property library_id: str that returns the library implementation identifier"""
+    # Arrange
+    try:
+        from drift_benchmark.adapters import BaseDetector
+
+        # Create concrete variant for testing
+        class TestDetector(BaseDetector):
+            def fit(self, preprocessed_data: Any, **kwargs):
+                return self
+
+            def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+                return True
+
+        detector = TestDetector("test_method", "test_impl", "TEST_LIB")
+
+    except ImportError as e:
+        pytest.fail(f"Failed to import BaseDetector for library_id test: {e}")
+
+    # Assert
+    assert hasattr(detector, "library_id"), "BaseDetector must have library_id property"
+    assert detector.library_id == "TEST_LIB", "library_id property must return correct value"
+    assert isinstance(detector.library_id, str), "library_id must be string type"
+
+    # Test read-only property (should not be settable directly)
+    try:
+        detector.library_id = "new_lib"
+        # If we get here and the value changed, it's not properly read-only
+        if detector.library_id == "new_lib":
+            pytest.fail("library_id should be read-only property")
+    except AttributeError:
+        # This is expected for a properly implemented read-only property
+        pass
+
+
 def test_should_have_preprocess_method_when_created(sample_dataset_result):
     """Test REQ-ADP-004: BaseDetector.preprocess(data: DatasetResult, **kwargs) -> Any must handle data format conversion from pandas DataFrames to detector-specific format"""
     # Arrange
@@ -123,7 +158,7 @@ def test_should_have_preprocess_method_when_created(sample_dataset_result):
             def detect(self, preprocessed_data: Any, **kwargs) -> bool:
                 return True
 
-        detector = TestDetector("test_method", "test_impl")
+        detector = TestDetector("test_method", "test_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for preprocess test: {e}")
@@ -156,7 +191,7 @@ def test_should_have_abstract_fit_method_when_subclassed():
             def detect(self, preprocessed_data: Any, **kwargs) -> bool:
                 return self._fitted
 
-        detector = TestDetector("test_method", "test_impl")
+        detector = TestDetector("test_method", "test_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for fit test: {e}")
@@ -191,7 +226,7 @@ def test_should_have_abstract_detect_method_when_subclassed():
                     raise RuntimeError("Must fit before detect")
                 return True  # Mock drift detection
 
-        detector = TestDetector("test_method", "test_impl")
+        detector = TestDetector("test_method", "test_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for detect test: {e}")
@@ -216,8 +251,8 @@ def test_should_have_score_method_when_created():
 
         # Create concrete variant
         class TestDetector(BaseDetector):
-            def __init__(self, method_id: str, variant_id: str, **kwargs):
-                super().__init__(method_id, variant_id, **kwargs)
+            def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+                super().__init__(method_id, variant_id, library_id, **kwargs)
                 self._last_score = None
 
             def fit(self, preprocessed_data: Any, **kwargs):
@@ -227,7 +262,7 @@ def test_should_have_score_method_when_created():
                 self._last_score = 0.85
                 return True
 
-        detector = TestDetector("test_method", "test_impl")
+        detector = TestDetector("test_method", "test_impl", "TEST_LIB")
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for score test: {e}")
@@ -248,7 +283,7 @@ def test_should_have_score_method_when_created():
 
 
 def test_should_accept_initialization_parameters_when_created():
-    """Test REQ-ADP-008: BaseDetector.__init__(method_id: str, variant_id: str, **kwargs) must accept method and variant identifiers"""
+    """Test REQ-ADP-009: BaseDetector.__init__(method_id: str, variant_id: str, library_id: str, **kwargs) must accept method, variant, and library identifiers"""
     # Arrange & Act
     try:
         from drift_benchmark.adapters import BaseDetector
@@ -262,10 +297,10 @@ def test_should_accept_initialization_parameters_when_created():
                 return True
 
         # Test initialization with required parameters
-        detector1 = TestDetector("ks_test", "scipy")
+        detector1 = TestDetector("ks_test", "scipy", "SCIPY")
 
         # Test initialization with additional kwargs
-        detector2 = TestDetector("drift_detector", "custom", threshold=0.05, window_size=100)
+        detector2 = TestDetector("drift_detector", "custom", "CUSTOM", threshold=0.05, window_size=100)
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for initialization test: {e}")
@@ -273,8 +308,10 @@ def test_should_accept_initialization_parameters_when_created():
     # Assert - required parameters stored correctly
     assert detector1.method_id == "ks_test"
     assert detector1.variant_id == "scipy"
+    assert detector1.library_id == "SCIPY"
     assert detector2.method_id == "drift_detector"
     assert detector2.variant_id == "custom"
+    assert detector2.library_id == "CUSTOM"
 
 
 def test_should_handle_data_flow_in_preprocess_when_called(sample_dataset_result):

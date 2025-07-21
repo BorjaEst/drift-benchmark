@@ -43,16 +43,18 @@ def test_should_define_detector_registry_errors_when_imported():
     # Assert - DetectorNotFoundError
     assert issubclass(DetectorNotFoundError, DriftBenchmarkError), "DetectorNotFoundError must inherit from DriftBenchmarkError"
 
-    detector_error = DetectorNotFoundError("method_id", "variant_id")
+    detector_error = DetectorNotFoundError("method_id", "variant_id", "library_id")
     assert "method_id" in str(detector_error)
     assert "variant_id" in str(detector_error)
+    assert "library_id" in str(detector_error)
 
     # Assert - DuplicateDetectorError
     assert issubclass(DuplicateDetectorError, DriftBenchmarkError), "DuplicateDetectorError must inherit from DriftBenchmarkError"
 
-    duplicate_error = DuplicateDetectorError("method_id", "variant_id")
+    duplicate_error = DuplicateDetectorError("method_id", "variant_id", "library_id")
     assert "method_id" in str(duplicate_error)
     assert "variant_id" in str(duplicate_error)
+    assert "library_id" in str(duplicate_error)
 
 
 def test_should_define_method_registry_errors_when_imported():

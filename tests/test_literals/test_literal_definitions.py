@@ -177,6 +177,23 @@ def test_should_use_literal_from_typing_extensions_when_imported():
         pytest.fail(f"DriftType is not a proper Literal type: {e}")
 
 
+def test_should_define_library_id_literals_when_imported():
+    """Test REQ-LIT-010: Must define LibraryId literal with values: "EVIDENTLY", "ALIBI_DETECT", "SCIKIT_LEARN", "RIVER", "SCIPY", "CUSTOM" """
+    # Arrange & Act
+    try:
+        from drift_benchmark.literals import LibraryId
+
+        library_id_values = get_args(LibraryId)
+    except ImportError as e:
+        pytest.fail(f"Failed to import LibraryId from literals module: {e}")
+
+    # Assert
+    expected_values = {"EVIDENTLY", "ALIBI_DETECT", "SCIKIT_LEARN", "RIVER", "SCIPY", "CUSTOM"}
+    actual_values = set(library_id_values)
+
+    assert actual_values == expected_values, f"LibraryId literal must have exactly {expected_values}, " f"but found {actual_values}"
+
+
 def test_should_provide_all_literals_in_module_when_imported():
     """Test that all required literal types are importable from the module"""
     # Arrange
@@ -190,6 +207,7 @@ def test_should_provide_all_literals_in_module_when_imported():
         "DatasetSource",
         "FileFormat",
         "LogLevel",
+        "LibraryId",
     ]
 
     # Act & Assert

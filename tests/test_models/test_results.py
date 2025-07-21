@@ -46,7 +46,7 @@ def test_should_define_dataset_result_model_when_imported(sample_dataset_result_
 
 
 def test_should_define_detector_result_model_when_imported(sample_detector_result_data):
-    """Test REQ-MDL-002: Must define DetectorResult with fields: detector_id, dataset_name, drift_detected, execution_time (float, seconds), drift_score (Optional[float])"""
+    """Test REQ-MDL-002: Must define DetectorResult with fields: detector_id, library_id, dataset_name, drift_detected, execution_time (float, seconds), drift_score (Optional[float])"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorResult
@@ -65,6 +65,7 @@ def test_should_define_detector_result_model_when_imported(sample_detector_resul
 
     # Assert - has required fields
     assert hasattr(result, "detector_id"), "DetectorResult must have detector_id field"
+    assert hasattr(result, "library_id"), "DetectorResult must have library_id field"
     assert hasattr(result, "dataset_name"), "DetectorResult must have dataset_name field"
     assert hasattr(result, "drift_detected"), "DetectorResult must have drift_detected field"
     assert hasattr(result, "execution_time"), "DetectorResult must have execution_time field"
@@ -72,6 +73,7 @@ def test_should_define_detector_result_model_when_imported(sample_detector_resul
 
     # Assert - field types and values are correct
     assert isinstance(result.detector_id, str), "detector_id must be string"
+    assert isinstance(result.library_id, str), "library_id must be string"
     assert isinstance(result.dataset_name, str), "dataset_name must be string"
     assert isinstance(result.drift_detected, bool), "drift_detected must be boolean"
     assert isinstance(result.execution_time, float), "execution_time must be float (seconds)"
@@ -79,6 +81,7 @@ def test_should_define_detector_result_model_when_imported(sample_detector_resul
 
     # Assert - specific values from test data
     assert result.detector_id == "ks_test_scipy"
+    assert result.library_id == "SCIPY"
     assert result.dataset_name == "test_dataset"
     assert result.drift_detected == True
     assert result.execution_time == 0.0123
@@ -90,12 +93,13 @@ def test_should_define_benchmark_result_model_when_imported():
     # Arrange
     sample_config = {
         "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "ks_test", "variant_id": "scipy"}],
+        "detectors": [{"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"}],
     }
 
     sample_detector_results = [
         {
             "detector_id": "ks_test_scipy",
+            "library_id": "SCIPY",
             "dataset_name": "test_dataset",
             "drift_detected": True,
             "execution_time": 0.0123,
