@@ -244,14 +244,20 @@ def test_should_coordinate_error_handling_flow_when_benchmark_runs(mock_benchmar
         mock_load_dataset.return_value = mock_dataset_result
 
         # Mix of failing and successful detectors
-        def detector_factory(method_id, implementation_id, **kwargs):
+        def detector_class_factory(method_id, impl_id):
             if method_id == "ks_test":
-                return mock_failing_detector(method_id, implementation_id, **kwargs)
+                return mock_failing_detector
             else:
-                # Return a basic mock for successful case
-                return Mock()
+                # Return a basic mock class for successful case
+                def MockSuccessfulDetector(method_id, implementation_id, **kwargs):
+                    mock_instance = Mock()
+                    mock_instance.method_id = method_id
+                    mock_instance.implementation_id = implementation_id
+                    return mock_instance
 
-        mock_get_detector.side_effect = lambda method_id, impl_id: lambda *args, **kwargs: detector_factory(method_id, impl_id, **kwargs)
+                return MockSuccessfulDetector
+
+        mock_get_detector.side_effect = detector_class_factory
 
         # Act
         try:
