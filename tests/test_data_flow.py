@@ -18,15 +18,10 @@ def test_should_coordinate_data_loading_flow_when_benchmark_runs(mock_benchmark_
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         mock_load_dataset.return_value = mock_dataset_result
         mock_get_detector.return_value = Mock
-
-        # Mock the Benchmark class
-        mock_benchmark_instance = Mock()
-        MockBenchmark.return_value = mock_benchmark_instance
 
         # Act
         try:
@@ -35,19 +30,17 @@ def test_should_coordinate_data_loading_flow_when_benchmark_runs(mock_benchmark_
             benchmark = Benchmark(mock_benchmark_config)
 
         except ImportError:
-            # Use mock directly if import fails (TDD)
-            benchmark = MockBenchmark(mock_benchmark_config)
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - data loading coordination
-        mock_load_dataset.assert_called()
+        assert mock_load_dataset.call_count == len(mock_benchmark_config.datasets), (
+            f"load_dataset should be called for each dataset configuration. "
+            f"Expected {len(mock_benchmark_config.datasets)} calls, got {mock_load_dataset.call_count}"
+        )
 
-        # Verify each dataset in config was loaded
-        expected_calls = []
-        for dataset_name, dataset_config in mock_benchmark_config.datasets.items():
-            expected_calls.append(call(dataset_config.path, dataset_config.drift_column))
-
-        actual_calls = mock_load_dataset.call_args_list
-        assert len(actual_calls) >= len(expected_calls), "load_dataset should be called for each configured dataset"
+        # Verify all dataset configs were passed to load_dataset
+        for i, dataset_config in enumerate(mock_benchmark_config.datasets):
+            mock_load_dataset.assert_any_call(dataset_config)
 
 
 def test_should_coordinate_detector_setup_flow_when_benchmark_runs(mock_benchmark_config, mock_detector):
@@ -56,14 +49,10 @@ def test_should_coordinate_detector_setup_flow_when_benchmark_runs(mock_benchmar
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         mock_load_dataset.return_value = Mock()
         mock_get_detector.return_value = mock_detector
-
-        mock_benchmark_instance = Mock()
-        MockBenchmark.return_value = mock_benchmark_instance
 
         # Act
         try:
@@ -72,20 +61,17 @@ def test_should_coordinate_detector_setup_flow_when_benchmark_runs(mock_benchmar
             benchmark = Benchmark(mock_benchmark_config)
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - detector setup coordination
-        mock_get_detector.assert_called()
+        assert mock_get_detector.call_count >= len(mock_benchmark_config.detectors), (
+            f"get_detector_class should be called for each detector configuration. "
+            f"Expected at least {len(mock_benchmark_config.detectors)} calls, got {mock_get_detector.call_count}"
+        )
 
         # Verify each detector in config was looked up
-        expected_detector_calls = []
         for detector_config in mock_benchmark_config.detectors:
-            expected_detector_calls.append(call(detector_config.method_id, detector_config.implementation_id))
-
-        actual_detector_calls = mock_get_detector.call_args_list
-        assert len(actual_detector_calls) >= len(
-            expected_detector_calls
-        ), "get_detector_class should be called for each configured detector"
+            mock_get_detector.assert_any_call(detector_config.method_id, detector_config.implementation_id)
 
 
 def test_should_coordinate_preprocessing_flow_when_benchmark_runs(mock_benchmark_config, mock_detector, mock_dataset_result):
@@ -94,7 +80,6 @@ def test_should_coordinate_preprocessing_flow_when_benchmark_runs(mock_benchmark
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         mock_load_dataset.return_value = mock_dataset_result
@@ -102,10 +87,6 @@ def test_should_coordinate_preprocessing_flow_when_benchmark_runs(mock_benchmark
         # Create detector with trackable preprocess
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
-
-        mock_benchmark_instance = Mock()
-        mock_benchmark_instance.run.return_value = Mock()
-        MockBenchmark.return_value = mock_benchmark_instance
 
         # Act
         try:
@@ -115,8 +96,7 @@ def test_should_coordinate_preprocessing_flow_when_benchmark_runs(mock_benchmark
             benchmark.run()
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
-            benchmark.run()
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - preprocessing coordination
         # In real implementation, preprocess should be called before fit
@@ -129,18 +109,12 @@ def test_should_coordinate_training_flow_when_benchmark_runs(mock_benchmark_conf
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         mock_load_dataset.return_value = mock_dataset_result
 
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
-
-        mock_benchmark_instance = Mock()
-        mock_result = Mock()
-        mock_benchmark_instance.run.return_value = mock_result
-        MockBenchmark.return_value = mock_benchmark_instance
 
         # Act
         try:
@@ -150,15 +124,14 @@ def test_should_coordinate_training_flow_when_benchmark_runs(mock_benchmark_conf
             result = benchmark.run()
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
-            result = benchmark.run()
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - training coordination
         # Verify detector was fitted (reference data training)
         assert mock_detector_instance._fitted, "detector should be fitted during training phase"
 
         # Verify fit was called with reference data
-        assert mock_detector_instance._fit_data is not None, "detector fit should receive reference data"
+        assert hasattr(mock_detector_instance, "_reference_data"), "detector fit should receive reference data"
 
 
 def test_should_coordinate_detection_flow_when_benchmark_runs(mock_benchmark_config, mock_detector, mock_dataset_result):
@@ -167,18 +140,12 @@ def test_should_coordinate_detection_flow_when_benchmark_runs(mock_benchmark_con
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         mock_load_dataset.return_value = mock_dataset_result
 
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
-
-        mock_benchmark_instance = Mock()
-        mock_result = Mock()
-        mock_benchmark_instance.run.return_value = mock_result
-        MockBenchmark.return_value = mock_benchmark_instance
 
         # Act
         try:
@@ -188,8 +155,7 @@ def test_should_coordinate_detection_flow_when_benchmark_runs(mock_benchmark_con
             result = benchmark.run()
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
-            result = benchmark.run()
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - detection coordination
         # Verify detector performed detection
@@ -205,7 +171,6 @@ def test_should_coordinate_scoring_flow_when_benchmark_runs(mock_benchmark_confi
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         # Setup dataset with ground truth
@@ -215,12 +180,6 @@ def test_should_coordinate_scoring_flow_when_benchmark_runs(mock_benchmark_confi
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
 
-        mock_benchmark_instance = Mock()
-        mock_result = Mock()
-        mock_result.detector_results = []
-        mock_benchmark_instance.run.return_value = mock_result
-        MockBenchmark.return_value = mock_benchmark_instance
-
         # Act
         try:
             from drift_benchmark.benchmark import Benchmark
@@ -229,16 +188,14 @@ def test_should_coordinate_scoring_flow_when_benchmark_runs(mock_benchmark_confi
             result = benchmark.run()
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
-            result = benchmark.run()
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - scoring coordination
         # Result should include detector results for scoring
         assert hasattr(result, "detector_results"), "benchmark result must include detector results for scoring"
 
         # Detector results should contain predictions and metadata for scoring
-        if hasattr(mock_detector_instance, "_predictions"):
-            assert mock_detector_instance._predictions is not None, "detector should generate predictions for scoring"
+        assert len(result.detector_results) > 0, "should have detector results for scoring"
 
 
 def test_should_coordinate_result_storage_flow_when_benchmark_runs(mock_benchmark_config, mock_detector, mock_dataset_result):
@@ -247,28 +204,12 @@ def test_should_coordinate_result_storage_flow_when_benchmark_runs(mock_benchmar
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         mock_load_dataset.return_value = mock_dataset_result
 
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
-
-        mock_benchmark_instance = Mock()
-        mock_result = Mock()
-        # Mock structured detector results
-        mock_detector_result = Mock()
-        mock_detector_result.method_id = "test_method"
-        mock_detector_result.implementation_id = "test_impl"
-        mock_detector_result.dataset_name = "test_dataset"
-        mock_detector_result.execution_time = 0.123
-        mock_detector_result.predictions = [0, 1, 0, 1]
-        mock_detector_result.scores = {"accuracy": 0.85, "precision": 0.80}
-
-        mock_result.detector_results = [mock_detector_result]
-        mock_benchmark_instance.run.return_value = mock_result
-        MockBenchmark.return_value = mock_benchmark_instance
 
         # Act
         try:
@@ -278,8 +219,7 @@ def test_should_coordinate_result_storage_flow_when_benchmark_runs(mock_benchmar
             result = benchmark.run()
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
-            result = benchmark.run()
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - result storage coordination
         assert hasattr(result, "detector_results"), "benchmark result must have structured detector_results"
@@ -288,7 +228,7 @@ def test_should_coordinate_result_storage_flow_when_benchmark_runs(mock_benchmar
 
         # Verify detector result structure
         detector_result = result.detector_results[0]
-        expected_fields = ["method_id", "implementation_id", "dataset_name", "execution_time"]
+        expected_fields = ["detector_id", "dataset_name", "drift_detected", "execution_time"]
         for field in expected_fields:
             assert hasattr(detector_result, field), f"DetectorResult must have {field} field for proper storage"
 
@@ -299,8 +239,6 @@ def test_should_coordinate_error_handling_flow_when_benchmark_runs(mock_benchmar
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
-        patch("drift_benchmark.benchmark.logger") as mock_logger,
     ):
 
         mock_load_dataset.return_value = mock_dataset_result
@@ -315,15 +253,6 @@ def test_should_coordinate_error_handling_flow_when_benchmark_runs(mock_benchmar
 
         mock_get_detector.side_effect = lambda method_id, impl_id: lambda *args, **kwargs: detector_factory(method_id, impl_id, **kwargs)
 
-        mock_benchmark_instance = Mock()
-        mock_result = Mock()
-        mock_result.summary = Mock()
-        mock_result.summary.total_detectors = 2
-        mock_result.summary.successful_runs = 1
-        mock_result.summary.failed_runs = 1
-        mock_benchmark_instance.run.return_value = mock_result
-        MockBenchmark.return_value = mock_benchmark_instance
-
         # Act
         try:
             from drift_benchmark.benchmark import Benchmark
@@ -332,8 +261,7 @@ def test_should_coordinate_error_handling_flow_when_benchmark_runs(mock_benchmar
             result = benchmark.run()
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
-            result = benchmark.run()
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - error handling coordination
         assert result is not None, "benchmark should complete despite individual detector failures"
@@ -347,24 +275,25 @@ def test_should_coordinate_error_handling_flow_when_benchmark_runs(mock_benchmar
 def test_should_maintain_data_flow_isolation_when_benchmark_runs(mock_benchmark_config, mock_detector, mock_dataset_result):
     """Test that data flow phases are properly isolated - failures in one phase don't corrupt others"""
     # Arrange - multiple datasets to test isolation
-    dataset_configs = {"dataset1": Mock(path="data1.csv", drift_column="drift"), "dataset2": Mock(path="data2.csv", drift_column="drift")}
+    dataset_configs = [Mock(path="data1.csv"), Mock(path="data2.csv")]
     mock_benchmark_config.datasets = dataset_configs
 
     # Create different dataset results
     dataset1_result = Mock()
-    dataset1_result.data = pd.DataFrame({"feature": [1, 2, 3], "drift": [0, 1, 0]})
-    dataset1_result.target = pd.Series([0, 1, 0])
+    dataset1_result.X_ref = pd.DataFrame({"feature": [1, 2, 3]})
+    dataset1_result.X_test = pd.DataFrame({"feature": [4, 5, 6]})
+    dataset1_result.metadata = Mock()
     dataset1_result.metadata.name = "dataset1"
 
     dataset2_result = Mock()
-    dataset2_result.data = pd.DataFrame({"feature": [4, 5, 6], "drift": [1, 0, 1]})
-    dataset2_result.target = pd.Series([1, 0, 1])
+    dataset2_result.X_ref = pd.DataFrame({"feature": [4, 5, 6]})
+    dataset2_result.X_test = pd.DataFrame({"feature": [7, 8, 9]})
+    dataset2_result.metadata = Mock()
     dataset2_result.metadata.name = "dataset2"
 
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.Benchmark") as MockBenchmark,
     ):
 
         # Return different datasets for different calls
@@ -372,12 +301,6 @@ def test_should_maintain_data_flow_isolation_when_benchmark_runs(mock_benchmark_
 
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
-
-        mock_benchmark_instance = Mock()
-        mock_result = Mock()
-        mock_result.detector_results = []
-        mock_benchmark_instance.run.return_value = mock_result
-        MockBenchmark.return_value = mock_benchmark_instance
 
         # Act
         try:
@@ -387,8 +310,7 @@ def test_should_maintain_data_flow_isolation_when_benchmark_runs(mock_benchmark_
             result = benchmark.run()
 
         except ImportError:
-            benchmark = MockBenchmark(mock_benchmark_config)
-            result = benchmark.run()
+            pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - data flow isolation
         # Each dataset should be loaded independently
