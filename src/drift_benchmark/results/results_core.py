@@ -11,7 +11,7 @@ from typing import Union
 
 import pandas as pd
 
-from ..models.result_models import BenchmarkResult
+from ..models.results import BenchmarkResult
 from ..settings import settings
 
 

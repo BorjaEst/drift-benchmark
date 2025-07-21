@@ -11,9 +11,9 @@ import pandas as pd
 
 from ..exceptions import DataLoadingError, DataValidationError
 from ..literals import DataDimension, DataType
-from ..models.configuration_models import DatasetConfig
-from ..models.metadata_models import DatasetMetadata
-from ..models.result_models import DatasetResult
+from ..models.configurations import DatasetConfig
+from ..models.metadata import DatasetMetadata
+from ..models.results import DatasetResult
 
 
 def load_dataset(config: DatasetConfig) -> DatasetResult:

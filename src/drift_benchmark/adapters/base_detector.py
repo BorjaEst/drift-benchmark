@@ -7,7 +7,7 @@ Provides the base adapter framework for integrating drift detection libraries.
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from ..models.result_models import DatasetResult
+from ..models.results import DatasetResult
 
 
 class BaseDetector(ABC):

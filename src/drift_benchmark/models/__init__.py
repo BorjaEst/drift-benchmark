@@ -5,9 +5,9 @@ This module contains data models used throughout the drift-benchmark library
 for type safety and validation.
 """
 
-from .configuration_models import BenchmarkConfig, DatasetConfig, DetectorConfig
-from .metadata_models import BenchmarkSummary, DatasetMetadata, DetectorMetadata
-from .result_models import BenchmarkResult, DatasetResult, DetectorResult
+from .configurations import BenchmarkConfig, DatasetConfig, DetectorConfig
+from .metadata import BenchmarkSummary, DatasetMetadata, DetectorMetadata
+from .results import BenchmarkResult, DatasetResult, DetectorResult
 
 __all__ = [
     # Configuration models

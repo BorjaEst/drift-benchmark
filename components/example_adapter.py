@@ -17,7 +17,7 @@ import pandas as pd
 from scipy import stats
 
 from drift_benchmark.adapters import BaseDetector, register_detector
-from drift_benchmark.models.result_models import DatasetResult
+from drift_benchmark.models.results import DatasetResult
 from drift_benchmark.settings import get_logger
 
 logger = get_logger(__name__)

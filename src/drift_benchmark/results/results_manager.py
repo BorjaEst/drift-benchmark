@@ -11,7 +11,7 @@ from pathlib import Path
 
 import toml
 
-from ..models.result_models import BenchmarkResult
+from ..models.results import BenchmarkResult
 from ..settings import get_logger, settings
 
 logger = get_logger(__name__)

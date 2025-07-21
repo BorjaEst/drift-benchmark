@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from ..models.result_models import DatasetResult
+from ..models.results import DatasetResult
 from ..settings import get_logger
 from .base_detector import BaseDetector
 from .registry import register_detector

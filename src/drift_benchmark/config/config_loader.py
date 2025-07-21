@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import List
 
 from ..exceptions import ConfigurationError
-from ..models.configuration_models import BenchmarkConfig as BaseBenchmarkConfig
-from ..models.configuration_models import DatasetConfig, DetectorConfig
+from ..models.configurations import BenchmarkConfig as BaseBenchmarkConfig
+from ..models.configurations import DatasetConfig, DetectorConfig
 
 
 class BenchmarkConfig(BaseBenchmarkConfig):

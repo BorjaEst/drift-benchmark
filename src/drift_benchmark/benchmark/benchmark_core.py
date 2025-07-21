@@ -10,9 +10,9 @@ from typing import List
 from ..adapters import BaseDetector
 from ..detectors import get_method
 from ..exceptions import BenchmarkExecutionError
-from ..models.configuration_models import BenchmarkConfig
-from ..models.metadata_models import BenchmarkSummary, DetectorMetadata
-from ..models.result_models import BenchmarkResult, DatasetResult, DetectorResult
+from ..models.configurations import BenchmarkConfig
+from ..models.metadata import BenchmarkSummary, DetectorMetadata
+from ..models.results import BenchmarkResult, DatasetResult, DetectorResult
 from ..settings import get_logger
 
 logger = get_logger(__name__)
