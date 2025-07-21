@@ -8,50 +8,49 @@ These are the core requirements needed to implement a working drift detection be
 
 ---
 
-## 🚀 Module Initialization Order
+## 🏗️ Package Architecture & Imports
 
-This module defines the initialization order and dependency resolution for the drift-benchmark library to ensure proper startup and configuration loading.
+This module defines architectural principles and dependency management for the drift-benchmark library following Python best practices.
 
-| ID              | Requirement                  | Description                                                                                                            |
-| --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **REQ-INI-001** | **Package Initialization**   | Package `__init__.py` must load in order: settings → exceptions → literals → models → detectors → adapters             |
-| **REQ-INI-002** | **Settings First**           | Settings module must be imported first to ensure configuration is available before other modules initialize            |
-| **REQ-INI-003** | **Exceptions Early**         | Exceptions module must be imported early so all modules can use custom exceptions for error handling                   |
-| **REQ-INI-004** | **Literals Before Models**   | Literals module must be imported before models module since models use literal types for validation                    |
-| **REQ-INI-005** | **Models Before Components** | Models module must be imported before adapters and detectors since they depend on model definitions                    |
-| **REQ-INI-006** | **Registry Last**            | Adapters and detectors modules must be imported last to allow proper registration after all dependencies are available |
-| **REQ-INI-007** | **Import Error Handling**    | Package initialization must catch import errors and provide clear error messages for missing dependencies              |
-| **REQ-INI-008** | **Lazy Loading Strategy**    | Use importlib for delayed imports where circular dependencies might occur, especially for detector registry            |
+| ID              | Requirement                        | Description                                                                                                         |
+| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **REQ-INI-001** | **Module Independence**            | Core modules (exceptions, literals, settings) must be independently importable without circular dependencies        |
+| **REQ-INI-002** | **Architectural Layering**         | Modules should follow clear architectural layers: core → models → business logic → orchestration                    |
+| **REQ-INI-003** | **Import Error Handling**          | Package initialization must catch import errors and provide clear error messages for missing dependencies           |
+| **REQ-INI-004** | **Lazy Loading for Heavy Modules** | Use lazy imports (importlib or function-level imports) for heavy modules or circular dependency scenarios           |
+| **REQ-INI-005** | **TYPE_CHECKING Imports**          | Use `typing.TYPE_CHECKING` blocks for type-only imports to avoid runtime circular dependencies                      |
+| **REQ-INI-006** | **Minimal Import Side Effects**    | Module imports should not create files, directories, or perform heavy initialization operations                     |
+| **REQ-INI-007** | **Graceful Degradation**           | Package should import successfully even if optional dependencies are missing, with clear error messages when needed |
 
-### 🔄 Module Interface Design
+### 🔄 Module Architecture Design
 
-| Module         | Location                            | Exports                                       | Imports From                         | Interface Contracts                                             |
-| -------------- | ----------------------------------- | --------------------------------------------- | ------------------------------------ | --------------------------------------------------------------- |
-| **Settings**   | `src/drift_benchmark/settings.py`   | `Settings`, `get_logger()`, `setup_logging()` | `pydantic`, `logging`, `pathlib`     | Provides configuration singleton, no imports from other modules |
-| **Exceptions** | `src/drift_benchmark/exceptions.py` | All custom exception classes                  | None (built-in exceptions only)      | Defines error hierarchy, imported by all other modules          |
-| **Literals**   | `src/drift_benchmark/literals.py`   | All literal type definitions                  | `typing_extensions`                  | Type definitions only, no runtime dependencies                  |
-| **Models**     | `src/drift_benchmark/models/`       | Pydantic models for data structures           | `literals`, `exceptions`, `pydantic` | Data validation, no business logic or external calls            |
-| **Detectors**  | `src/drift_benchmark/detectors/`    | Registry, method metadata loading             | `models`, `literals`, `exceptions`   | Read-only registry operations, no detector instantiation        |
-| **Adapters**   | `src/drift_benchmark/adapters/`     | `BaseDetector`, registry functions            | `detectors`, `models`, `abc`         | Factory patterns, no direct detector imports                    |
-| **Data**       | `src/drift_benchmark/data/`         | Dataset loading utilities                     | `models`, `literals`, `exceptions`   | Data loading and preprocessing, no business logic               |
-| **Config**     | `src/drift_benchmark/config/`       | Configuration loading and validation          | `models`, `literals`, `exceptions`   | Configuration parsing and validation                            |
-| **Benchmark**  | `src/drift_benchmark/benchmark/`    | Benchmark execution classes                   | All above modules                    | High-level orchestration and execution                          |
+| Module         | Location                            | Exports                                       | Dependencies                          | Architecture Role                                         |
+| -------------- | ----------------------------------- | --------------------------------------------- | ------------------------------------- | --------------------------------------------------------- |
+| **Settings**   | `src/drift_benchmark/settings.py`   | `Settings`, `get_logger()`, `setup_logging()` | `pydantic`, `logging`, `pathlib`      | Core configuration layer - no internal dependencies       |
+| **Exceptions** | `src/drift_benchmark/exceptions.py` | All custom exception classes                  | None (built-in exceptions only)       | Core error definitions - no dependencies                  |
+| **Literals**   | `src/drift_benchmark/literals.py`   | All literal type definitions                  | `typing_extensions`                   | Core type definitions - no runtime dependencies           |
+| **Models**     | `src/drift_benchmark/models/`       | Pydantic models for data structures           | `literals`, `exceptions`, `pydantic`  | Data layer - depends only on core modules                 |
+| **Detectors**  | `src/drift_benchmark/detectors/`    | Registry, method metadata loading             | `models`, `literals`, `exceptions`    | Business logic - registry operations only                 |
+| **Adapters**   | `src/drift_benchmark/adapters/`     | `BaseDetector`, registry functions            | `detectors`, `models`, `abc`          | Business logic - factory patterns and interfaces          |
+| **Data**       | `src/drift_benchmark/data/`         | Dataset loading utilities                     | `models`, `literals`, `exceptions`    | Business logic - data processing without heavy operations |
+| **Config**     | `src/drift_benchmark/config/`       | Configuration loading and validation          | `models`, `literals`, `exceptions`    | Business logic - configuration parsing                    |
+| **Benchmark**  | `src/drift_benchmark/benchmark/`    | Benchmark execution classes                   | All above modules (with lazy imports) | Orchestration layer - coordinates all components          |
 
 ---
 
 ## 🔧 Literals Module
 
-| ID              | Requirement                 | Description                                                                                                              |
-| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **REQ-LIT-001** | **Drift Type Literals**     | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                             |
-| **REQ-LIT-002** | **Data Type Literals**      | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                         |
-| **REQ-LIT-003** | **Dimension Literals**      | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                            |
-| **REQ-LIT-004** | **Labeling Literals**       | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                          |
-| **REQ-LIT-005** | **Execution Mode Literals** | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                    |
-| **REQ-LIT-006** | **Method Family Literals**  | Must define `MethodFamily` literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED" |
-| **REQ-LIT-007** | **Dataset Source Literals** | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC"                                                     |
-| **REQ-LIT-008** | **File Format Literals**    | Must define `FileFormat` literal with values: "CSV"                                                                      |
-| **REQ-LIT-009** | **Log Level Literals**      | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                              |
+| ID              | Requirement                 | Description                                                                                                                                             |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-LIT-001** | **Drift Type Literals**     | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                                                            |
+| **REQ-LIT-002** | **Data Type Literals**      | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                                                        |
+| **REQ-LIT-003** | **Dimension Literals**      | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                                           |
+| **REQ-LIT-004** | **Labeling Literals**       | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                                         |
+| **REQ-LIT-005** | **Execution Mode Literals** | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                                                   |
+| **REQ-LIT-006** | **Method Family Literals**  | Must define `MethodFamily` literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED", "STATISTICAL_PROCESS_CONTROL" |
+| **REQ-LIT-007** | **Dataset Source Literals** | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC"                                                                                    |
+| **REQ-LIT-008** | **File Format Literals**    | Must define `FileFormat` literal with values: "CSV"                                                                                                     |
+| **REQ-LIT-009** | **Log Level Literals**      | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                                                             |
 
 ---
 
@@ -159,25 +158,25 @@ This module provides a basic registry for drift detection methods through the `m
 
 ### 📋 Basic Detectors Registry
 
-| ID              | Requirement                  | Description                                                                                                                |
-| --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-DET-001** | **Methods Registry Loading** | Must provide `load_methods() -> Dict[str, Dict[str, Any]]` that loads methods from methods.toml file specified in settings |
-| **REQ-DET-002** | **Method Schema Compliance** | Each method in methods.toml must have required fields: name, description, family, data_dimension, data_types               |
-| **REQ-DET-003** | **Implementation Schema**    | Each implementation must have required fields: name, execution_mode                                                        |
-| **REQ-DET-004** | **Method Lookup**            | Must provide `get_method(method_id: str) -> Dict[str, Any]` that returns method info or raises MethodNotFoundError         |
-| **REQ-DET-005** | **Implementation Lookup**    | Must provide `get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]` or raises ImplementationNotFoundError    |
-| **REQ-DET-006** | **List Methods**             | Must provide `list_methods() -> List[str]` that returns all available method IDs                                           |
-| **REQ-DET-007** | **Registry File Validation** | Must validate methods.toml file exists and is readable, providing clear error message if missing or malformed              |
+| ID              | Requirement                  | Description                                                                                                                                            |
+| --------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **REQ-DET-001** | **Methods Registry Loading** | Must provide `load_methods() -> Dict[str, Dict[str, Any]]` that loads methods from methods.toml file specified in settings                             |
+| **REQ-DET-002** | **Method Schema Compliance** | Each method in methods.toml must have required fields: name, description, drift_types, family, data_dimension, data_types, requires_labels, references |
+| **REQ-DET-003** | **Implementation Schema**    | Each implementation must have required fields: name, execution_mode, hyperparameters, references                                                       |
+| **REQ-DET-004** | **Method Lookup**            | Must provide `get_method(method_id: str) -> Dict[str, Any]` that returns method info or raises MethodNotFoundError                                     |
+| **REQ-DET-005** | **Implementation Lookup**    | Must provide `get_implementation(method_id: str, impl_id: str) -> Dict[str, Any]` or raises ImplementationNotFoundError                                |
+| **REQ-DET-006** | **List Methods**             | Must provide `list_methods() -> List[str]` that returns all available method IDs                                                                       |
+| **REQ-DET-007** | **Registry File Validation** | Must validate methods.toml file exists and is readable, providing clear error message if missing or malformed                                          |
 
 ### 📋 Methods.toml Schema Definition
 
-| ID              | Requirement                        | Description                                                                                                                                                                           |
-| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-DET-008** | **Root Level Structure**           | methods.toml must have `[methods]` table containing method definitions as `[methods.{method_id}]` sub-tables                                                                          |
-| **REQ-DET-009** | **Method Required Fields**         | Each `[methods.{method_id}]` must have: name (string), description (string), family (MethodFamily enum), data_dimension (list of DataDimension), data_types (list of DataType)        |
-| **REQ-DET-010** | **Implementation Structure**       | Each method must have `[methods.{method_id}.implementations.{impl_id}]` sub-tables for implementation variants                                                                        |
-| **REQ-DET-011** | **Implementation Required Fields** | Each implementation must have: name (string), execution_mode (ExecutionMode enum value)                                                                                               |
-| **REQ-DET-012** | **Schema Example**                 | Example: `[methods.ks_test]` name="Kolmogorov-Smirnov Test", family="STATISTICAL_TEST", `[methods.ks_test.implementations.scipy]` name="SciPy Implementation", execution_mode="BATCH" |
+| ID              | Requirement                        | Description                                                                                                                                                                                                                                                                  |
+| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-DET-008** | **Root Level Structure**           | methods.toml must have `[methods]` table containing method definitions as `[methods.{method_id}]` sub-tables                                                                                                                                                                 |
+| **REQ-DET-009** | **Method Required Fields**         | Each `[methods.{method_id}]` must have: name (string), description (string), drift_types (list of DriftType), family (MethodFamily enum), data_dimension (DataDimension enum), data_types (list of DataType), requires_labels (bool), references (list of string)            |
+| **REQ-DET-010** | **Implementation Structure**       | Each method must have `[methods.{method_id}.implementations.{impl_id}]` sub-tables for implementation variants                                                                                                                                                               |
+| **REQ-DET-011** | **Implementation Required Fields** | Each implementation must have: name (string), execution_mode (ExecutionMode enum value), hyperparameters (list of string), references (list of string)                                                                                                                       |
+| **REQ-DET-012** | **Schema Example**                 | Example: `[methods.ks_test]` name="Kolmogorov-Smirnov Test", drift_types=["COVARIATE"], family="STATISTICAL_TEST", data_dimension="UNIVARIATE", `[methods.ks_test.implementations.scipy]` name="SciPy Implementation", execution_mode="BATCH", hyperparameters=["threshold"] |
 
 ---
 
@@ -233,16 +232,18 @@ This module provides basic data loading utilities for the drift-benchmark librar
 
 ## ⚙️ Configuration Loading Module
 
-This module defines how BenchmarkConfig is loaded, validated, and processed using Pydantic v2 validation. Located at `src/drift_benchmark/config/`.
+This module provides configuration loading utilities that return validated BenchmarkConfig instances from TOML files. Located at `src/drift_benchmark/config/`.
 
-| ID              | Requirement                        | Description                                                                                           |
-| --------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **REQ-CFG-001** | **TOML File Loading**              | Must load BenchmarkConfig from .toml files using `BenchmarkConfig.from_toml(path: str)` class method  |
-| **REQ-CFG-002** | **Pydantic V2 Validation**         | BenchmarkConfig must use Pydantic v2 BaseModel with automatic field validation                        |
-| **REQ-CFG-003** | **Basic Path Resolution**          | Configuration loading must resolve relative file paths to absolute paths using pathlib                |
-| **REQ-CFG-004** | **Basic Configuration Validation** | BenchmarkConfig must validate that detector method_id/implementation_id exist in the methods registry |
-| **REQ-CFG-005** | **Split Ratio Validation**         | Must validate reference_split is between 0.0 and 1.0 (exclusive) for DatasetConfig                    |
-| **REQ-CFG-006** | **File Existence Validation**      | Must validate dataset file paths exist during configuration loading, not during runtime               |
+| ID              | Requirement                        | Description                                                                                                                               |
+| --------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-CFG-001** | **TOML File Loading Function**     | Must provide `load_config(path: str) -> BenchmarkConfig` function that loads and validates TOML files, returning BenchmarkConfig instance |
+| **REQ-CFG-002** | **Pydantic V2 Validation**         | Configuration loading must use BenchmarkConfig Pydantic v2 BaseModel with automatic field validation                                      |
+| **REQ-CFG-003** | **Basic Path Resolution**          | Configuration loading must resolve relative file paths to absolute paths using pathlib                                                    |
+| **REQ-CFG-004** | **Basic Configuration Validation** | Configuration loading must validate that detector method_id/implementation_id exist in the methods registry                               |
+| **REQ-CFG-005** | **Split Ratio Validation**         | Configuration loading must validate reference_split is between 0.0 and 1.0 (exclusive) for DatasetConfig                                  |
+| **REQ-CFG-006** | **File Existence Validation**      | Configuration loading must validate dataset file paths exist during configuration loading, not during runtime                             |
+| **REQ-CFG-007** | **Separation of Concerns**         | Configuration loading logic must be separate from BenchmarkConfig model definition to maintain clean architecture                         |
+| **REQ-CFG-008** | **Error Handling**                 | Configuration loading must raise ConfigurationError with descriptive messages for invalid TOML files or validation failures               |
 
 ---
 
