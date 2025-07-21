@@ -1,8 +1,12 @@
+# Minimal Test Configuration  
+# Using only existing detectors to test the framework
+
 [[datasets]]
     path            = "datasets/example.csv"
     format          = "CSV"
     reference_split = 0.5
 
+# Built-in detectors only
 [[detectors]]
     method_id         = "kolmogorov_smirnov"
     implementation_id = "ks_batch"
