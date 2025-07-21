@@ -53,6 +53,22 @@ class BenchmarkConfig(BaseModel):
     datasets: List[DatasetConfig] = Field(..., description="List of datasets to benchmark")
     detectors: List[DetectorConfig] = Field(..., description="List of detectors to evaluate")
 
+    @field_validator("datasets")
+    @classmethod
+    def validate_datasets_not_empty(cls, v):
+        """Validate that datasets list is not empty"""
+        if len(v) == 0:
+            raise ValueError("datasets list cannot be empty")
+        return v
+
+    @field_validator("detectors")
+    @classmethod
+    def validate_detectors_not_empty(cls, v):
+        """Validate that detectors list is not empty"""
+        if len(v) == 0:
+            raise ValueError("detectors list cannot be empty")
+        return v
+
     @classmethod
     def from_toml(cls, path: str) -> "BenchmarkConfig":
         """
