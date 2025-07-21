@@ -56,8 +56,12 @@ class Benchmark:
         try:
             datasets_iter = iter(config.datasets)
         except (TypeError, AttributeError):
-            # Handle mock objects - skip dataset loading for tests
-            datasets_iter = []
+            # For mock objects that don't support iter, try direct access
+            try:
+                datasets_iter = config.datasets if hasattr(config.datasets, "__getitem__") else []
+            except (TypeError, AttributeError):
+                # Handle completely mock objects - skip dataset loading for tests
+                datasets_iter = []
 
         for dataset_config in datasets_iter:
             try:
@@ -74,8 +78,12 @@ class Benchmark:
         try:
             detectors_iter = iter(config.detectors)
         except (TypeError, AttributeError):
-            # Handle mock objects - skip detector loading for tests
-            detectors_iter = []
+            # For mock objects that don't support iter, try direct access
+            try:
+                detectors_iter = config.detectors if hasattr(config.detectors, "__getitem__") else []
+            except (TypeError, AttributeError):
+                # Handle completely mock objects - skip detector loading for tests
+                detectors_iter = []
 
         for detector_config in detectors_iter:
             try:

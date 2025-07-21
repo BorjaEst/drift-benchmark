@@ -48,7 +48,7 @@ parameters = { alpha = 0.05 }
     config_path.write_text(config_content)
 
     with (
-        patch("drift_benchmark.models.BenchmarkConfig.from_toml") as mock_from_toml,
+        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
         patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
     ):
 
@@ -95,7 +95,7 @@ def test_should_store_results_when_run(temp_workspace, mock_benchmark_config):
     """Test REQ-RUN-003: BenchmarkRunner.run() must save benchmark results to storage using Results.save() method"""
     # Arrange
     with (
-        patch("drift_benchmark.models.BenchmarkConfig.from_toml") as mock_from_toml,
+        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
         patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
         patch("drift_benchmark.results.Results") as mock_results_class,
     ):
@@ -132,7 +132,7 @@ def test_should_integrate_logging_when_run(temp_workspace, mock_benchmark_config
     """Test REQ-RUN-004: BenchmarkRunner.run() must log execution start, progress updates, and completion using configured logger"""
     # Arrange
     with (
-        patch("drift_benchmark.models.BenchmarkConfig.from_toml") as mock_from_toml,
+        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
         patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
         patch("drift_benchmark.results.Results") as mock_results_class,
         patch("drift_benchmark.benchmark.logger") as mock_logger,
@@ -201,7 +201,7 @@ implementation_id = "scipy"
     config_path.write_text(config_content)
 
     with (
-        patch("drift_benchmark.models.BenchmarkConfig.from_toml") as mock_from_toml,
+        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
         patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
     ):
 
@@ -228,7 +228,7 @@ def test_should_propagate_benchmark_errors_when_run(temp_workspace, mock_benchma
     """Test that BenchmarkRunner.run() properly handles and propagates benchmark execution errors"""
     # Arrange
     with (
-        patch("drift_benchmark.models.BenchmarkConfig.from_toml") as mock_from_toml,
+        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
         patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
         patch("drift_benchmark.benchmark.logger") as mock_logger,
     ):
@@ -260,7 +260,7 @@ def test_should_return_results_when_run(temp_workspace, mock_benchmark_config):
     """Test that BenchmarkRunner.run() returns the benchmark results"""
     # Arrange
     with (
-        patch("drift_benchmark.models.BenchmarkConfig.from_toml") as mock_from_toml,
+        patch("drift_benchmark.config.BenchmarkConfig.from_toml") as mock_from_toml,
         patch("drift_benchmark.benchmark.Benchmark") as mock_benchmark_class,
         patch("drift_benchmark.results.Results") as mock_results_class,
     ):

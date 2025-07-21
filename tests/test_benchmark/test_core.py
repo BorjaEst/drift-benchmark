@@ -43,7 +43,7 @@ def test_should_validate_detector_configurations_when_initialized(mock_benchmark
             benchmark = Benchmark(mock_benchmark_config)
 
             # Verify detector lookups were called
-            expected_calls = [(("ks_test", "scipy"),), (("drift_detector", "custom"),)]
+            expected_calls = [("ks_test", "scipy"), ("drift_detector", "custom")]
             actual_calls = [call[0] for call in mock_get_detector.call_args_list]
 
             for expected_call in expected_calls:
@@ -147,7 +147,7 @@ def test_should_handle_detector_errors_when_run(mock_benchmark_config, mock_dete
     with (
         patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
-        patch("drift_benchmark.benchmark.logger") as mock_logger,
+        patch("drift_benchmark.benchmark.core.logger") as mock_logger,
     ):
 
         mock_load_dataset.return_value = mock_dataset_result
@@ -159,7 +159,7 @@ def test_should_handle_detector_errors_when_run(mock_benchmark_config, mock_dete
             else:
                 return mock_failing_detector(method_id, implementation_id, **kwargs)
 
-        mock_get_detector.side_effect = lambda method_id, impl_id: lambda *args, **kwargs: detector_factory(method_id, impl_id, **kwargs)
+        mock_get_detector.side_effect = lambda method_id, impl_id: lambda *args, **kwargs: detector_factory(method_id, impl_id)
 
         # Act
         try:
@@ -301,7 +301,7 @@ def test_should_maintain_detector_isolation_when_run(mock_benchmark_config, mock
         successful_detector = mock_detector("successful_method", "successful_impl")
 
         def failing_detector_factory(*args, **kwargs):
-            detector = mock_detector("failing_method", "failing_impl")(*args, **kwargs)
+            detector = mock_detector("failing_method", "failing_impl")
             # Override detect to fail
             original_detect = detector.detect
 

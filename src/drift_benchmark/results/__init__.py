@@ -14,6 +14,28 @@ from .storage import save_benchmark_results
 logger = get_logger(__name__)
 
 
+class Results:
+    """
+    Results manager class for saving benchmark results.
+
+    This class provides the interface expected by the tests for managing
+    benchmark results storage.
+    """
+
+    def __init__(self, benchmark_result: BenchmarkResult):
+        """Initialize with benchmark result."""
+        self.benchmark_result = benchmark_result
+
+    def save(self) -> Path:
+        """
+        Save the benchmark results to storage.
+
+        Returns:
+            Path to the created timestamped directory
+        """
+        return save_results(self.benchmark_result)
+
+
 def save_results(benchmark_result: BenchmarkResult) -> Path:
     """
     High-level interface for saving benchmark results.
@@ -49,6 +71,7 @@ def save_results(benchmark_result: BenchmarkResult) -> Path:
 
 # Export both the high-level and low-level interfaces
 __all__ = [
+    "Results",
     "save_results",
     "save_benchmark_results",
 ]

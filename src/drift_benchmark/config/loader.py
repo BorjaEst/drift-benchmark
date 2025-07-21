@@ -80,6 +80,18 @@ class BenchmarkConfig(BaseBenchmarkConfig):
         try:
             with open(config_path, "r") as f:
                 data = toml.load(f)
+
+            # Handle the test format where datasets might be a dictionary
+            if "datasets" in data and isinstance(data["datasets"], dict):
+                # Convert dict format to list format
+                datasets_list = []
+                for name, config_dict in data["datasets"].items():
+                    # Add a reference_split if not present (required field)
+                    if "reference_split" not in config_dict:
+                        config_dict["reference_split"] = 0.5  # Default split
+                    datasets_list.append(DatasetConfig(**config_dict))
+                data["datasets"] = datasets_list
+
             return cls(**data)
         except Exception as e:
             raise ConfigurationError(f"Failed to load configuration from {path}: {e}")

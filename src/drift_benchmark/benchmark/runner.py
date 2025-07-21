@@ -36,6 +36,10 @@ class BenchmarkRunner:
         config_path = Path(path)
         logger.info(f"Loading benchmark configuration from: {config_path}")
 
+        # Validate file exists first (test expects FileNotFoundError)
+        if not config_path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
         # Load and validate configuration
         config = BenchmarkConfig.from_toml(str(config_path))
 
