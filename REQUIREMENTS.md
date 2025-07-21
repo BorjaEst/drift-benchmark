@@ -12,29 +12,29 @@ These are the core requirements needed to implement a working drift detection be
 
 This module defines architectural principles and dependency management for the drift-benchmark library following Python best practices.
 
-| ID              | Requirement                           | Description                                                                                                          |
-| --------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **REQ-INI-001** | **Module Independence**               | Core modules (exceptions, literals, settings) must be independently importable without circular dependencies        |
-| **REQ-INI-002** | **Architectural Layering**           | Modules should follow clear architectural layers: core → models → business logic → orchestration                     |
-| **REQ-INI-003** | **Import Error Handling**            | Package initialization must catch import errors and provide clear error messages for missing dependencies          |
-| **REQ-INI-004** | **Lazy Loading for Heavy Modules**   | Use lazy imports (importlib or function-level imports) for heavy modules or circular dependency scenarios           |
-| **REQ-INI-005** | **TYPE_CHECKING Imports**            | Use `typing.TYPE_CHECKING` blocks for type-only imports to avoid runtime circular dependencies                      |
-| **REQ-INI-006** | **Minimal Import Side Effects**      | Module imports should not create files, directories, or perform heavy initialization operations                      |
-| **REQ-INI-007** | **Graceful Degradation**             | Package should import successfully even if optional dependencies are missing, with clear error messages when needed |
+| ID              | Requirement                        | Description                                                                                                         |
+| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **REQ-INI-001** | **Module Independence**            | Core modules (exceptions, literals, settings) must be independently importable without circular dependencies        |
+| **REQ-INI-002** | **Architectural Layering**         | Modules should follow clear architectural layers: core → models → business logic → orchestration                    |
+| **REQ-INI-003** | **Import Error Handling**          | Package initialization must catch import errors and provide clear error messages for missing dependencies           |
+| **REQ-INI-004** | **Lazy Loading for Heavy Modules** | Use lazy imports (importlib or function-level imports) for heavy modules or circular dependency scenarios           |
+| **REQ-INI-005** | **TYPE_CHECKING Imports**          | Use `typing.TYPE_CHECKING` blocks for type-only imports to avoid runtime circular dependencies                      |
+| **REQ-INI-006** | **Minimal Import Side Effects**    | Module imports should not create files, directories, or perform heavy initialization operations                     |
+| **REQ-INI-007** | **Graceful Degradation**           | Package should import successfully even if optional dependencies are missing, with clear error messages when needed |
 
 ### 🔄 Module Architecture Design
 
-| Module         | Location                            | Exports                                       | Dependencies                              | Architecture Role                                         |
-| -------------- | ----------------------------------- | --------------------------------------------- | ----------------------------------------- | --------------------------------------------------------- |
-| **Settings**   | `src/drift_benchmark/settings.py`   | `Settings`, `get_logger()`, `setup_logging()` | `pydantic`, `logging`, `pathlib`          | Core configuration layer - no internal dependencies      |
-| **Exceptions** | `src/drift_benchmark/exceptions.py` | All custom exception classes                  | None (built-in exceptions only)           | Core error definitions - no dependencies                  |
-| **Literals**   | `src/drift_benchmark/literals.py`   | All literal type definitions                  | `typing_extensions`                       | Core type definitions - no runtime dependencies          |
-| **Models**     | `src/drift_benchmark/models/`       | Pydantic models for data structures           | `literals`, `exceptions`, `pydantic`      | Data layer - depends only on core modules                |
-| **Detectors**  | `src/drift_benchmark/detectors/`    | Registry, method metadata loading             | `models`, `literals`, `exceptions`        | Business logic - registry operations only                |
-| **Adapters**   | `src/drift_benchmark/adapters/`     | `BaseDetector`, registry functions            | `detectors`, `models`, `abc`              | Business logic - factory patterns and interfaces         |
-| **Data**       | `src/drift_benchmark/data/`         | Dataset loading utilities                     | `models`, `literals`, `exceptions`        | Business logic - data processing without heavy operations |
-| **Config**     | `src/drift_benchmark/config/`       | Configuration loading and validation          | `models`, `literals`, `exceptions`        | Business logic - configuration parsing                   |
-| **Benchmark**  | `src/drift_benchmark/benchmark/`    | Benchmark execution classes                   | All above modules (with lazy imports)     | Orchestration layer - coordinates all components         |
+| Module         | Location                            | Exports                                       | Dependencies                          | Architecture Role                                         |
+| -------------- | ----------------------------------- | --------------------------------------------- | ------------------------------------- | --------------------------------------------------------- |
+| **Settings**   | `src/drift_benchmark/settings.py`   | `Settings`, `get_logger()`, `setup_logging()` | `pydantic`, `logging`, `pathlib`      | Core configuration layer - no internal dependencies       |
+| **Exceptions** | `src/drift_benchmark/exceptions.py` | All custom exception classes                  | None (built-in exceptions only)       | Core error definitions - no dependencies                  |
+| **Literals**   | `src/drift_benchmark/literals.py`   | All literal type definitions                  | `typing_extensions`                   | Core type definitions - no runtime dependencies           |
+| **Models**     | `src/drift_benchmark/models/`       | Pydantic models for data structures           | `literals`, `exceptions`, `pydantic`  | Data layer - depends only on core modules                 |
+| **Detectors**  | `src/drift_benchmark/detectors/`    | Registry, method metadata loading             | `models`, `literals`, `exceptions`    | Business logic - registry operations only                 |
+| **Adapters**   | `src/drift_benchmark/adapters/`     | `BaseDetector`, registry functions            | `detectors`, `models`, `abc`          | Business logic - factory patterns and interfaces          |
+| **Data**       | `src/drift_benchmark/data/`         | Dataset loading utilities                     | `models`, `literals`, `exceptions`    | Business logic - data processing without heavy operations |
+| **Config**     | `src/drift_benchmark/config/`       | Configuration loading and validation          | `models`, `literals`, `exceptions`    | Business logic - configuration parsing                    |
+| **Benchmark**  | `src/drift_benchmark/benchmark/`    | Benchmark execution classes                   | All above modules (with lazy imports) | Orchestration layer - coordinates all components          |
 
 ---
 
