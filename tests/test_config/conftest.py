@@ -8,6 +8,57 @@ import toml
 
 
 @pytest.fixture
+def mock_methods_toml_file():
+    """Create a temporary methods.toml file for testing"""
+    methods_config = {
+        "methods": {
+            "ks_test": {
+                "name": "Kolmogorov-Smirnov Test",
+                "description": "Statistical test for distribution differences",
+                "drift_types": ["COVARIATE"],
+                "family": "STATISTICAL_TEST",
+                "data_dimension": "UNIVARIATE",
+                "data_types": ["CONTINUOUS"],
+                "requires_labels": False,
+                "references": ["https://doi.org/10.2307/2280095"],
+                "implementations": {
+                    "scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH", "hyperparameters": ["threshold"], "references": []}
+                },
+            },
+            "drift_detector": {
+                "name": "Basic Drift Detector",
+                "description": "Simple change detection algorithm",
+                "drift_types": ["CONCEPT"],
+                "family": "CHANGE_DETECTION",
+                "data_dimension": "UNIVARIATE",
+                "data_types": ["CONTINUOUS", "CATEGORICAL"],
+                "requires_labels": True,
+                "references": [],
+                "implementations": {
+                    "custom": {"name": "Custom Implementation", "execution_mode": "BATCH", "hyperparameters": [], "references": []},
+                    "river": {
+                        "name": "River Implementation",
+                        "execution_mode": "STREAMING",
+                        "hyperparameters": ["window_size"],
+                        "references": [],
+                    },
+                },
+            },
+        }
+    }
+
+    # Create temporary file
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
+        toml.dump(methods_config, f)
+        temp_path = Path(f.name)
+
+    yield temp_path
+
+    # Cleanup
+    temp_path.unlink()
+
+
+@pytest.fixture
 def valid_benchmark_config_toml():
     """Create a valid benchmark configuration TOML file"""
     config_data = {

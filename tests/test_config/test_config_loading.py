@@ -32,7 +32,9 @@ def test_should_load_benchmark_config_from_toml_when_called(valid_benchmark_conf
 
     # Assert first dataset configuration
     first_dataset = config.datasets[0]
-    assert first_dataset.path == "datasets/test_data.csv"
+    # REQ-CFG-003: Paths should be resolved to absolute paths
+    assert Path(first_dataset.path).is_absolute(), "path should be resolved to absolute path"
+    assert first_dataset.path.endswith("datasets/test_data.csv"), "resolved path should contain original relative path"
     assert first_dataset.format == "CSV"
     assert first_dataset.reference_split == 0.6
 
@@ -85,19 +87,21 @@ def test_should_resolve_relative_paths_when_loading(valid_benchmark_config_toml)
     # Assert - paths should be resolved to absolute
     for dataset_config in config.datasets:
         dataset_path = Path(dataset_config.path)
-        # Note: The path might be resolved to absolute during loading
-        # This test checks that the loading process handles path resolution
         assert isinstance(dataset_config.path, str), "path should remain as string"
+        assert dataset_path.is_absolute(), "path should be resolved to absolute path"
+        # Verify the original relative path component is preserved
+        assert str(dataset_path).find("datasets/") != -1, "resolved path should contain original path component"
 
-        # If path resolution is implemented, paths should be absolute
-        # For now, we test that the configuration loads successfully with relative paths
 
-
-def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_file):
+def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_file, tmp_path):
     """Test REQ-CFG-004: BenchmarkConfig must validate that detector method_id/implementation_id exist in the methods registry"""
+    # Create temporary test files for the configuration
+    test_csv = tmp_path / "test.csv"
+    test_csv.write_text("feature1,feature2\n1,2\n3,4\n")
+    
     # Arrange - create config with valid detector references
     valid_config_data = {
-        "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
+        "datasets": [{"path": str(test_csv), "format": "CSV", "reference_split": 0.5}],
         "detectors": [
             {"method_id": "ks_test", "implementation_id": "scipy"},
             {"method_id": "drift_detector", "implementation_id": "custom"},
@@ -105,7 +109,7 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
     }
 
     invalid_config_data = {
-        "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
+        "datasets": [{"path": str(test_csv), "format": "CSV", "reference_split": 0.5}],
         "detectors": [{"method_id": "non_existent_method", "implementation_id": "scipy"}],
     }
 
@@ -114,26 +118,37 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
         from drift_benchmark.config import BenchmarkConfig
         from drift_benchmark.exceptions import ConfigurationError
 
-        # Mock the methods registry to contain our test methods
-        with patch("drift_benchmark.detectors.settings") as mock_settings:
-            mock_settings.methods_registry_path = mock_methods_toml_file
+        # Valid configuration should work when validation is enabled
+        # Turn off skip validation temporarily to test validation
+        import os
+        original_skip = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION")
+        try:
+            # Enable validation for this test
+            if original_skip:
+                del os.environ["DRIFT_BENCHMARK_SKIP_VALIDATION"]
+            
+            # Mock the methods registry to contain our test methods
+            with patch("drift_benchmark.detectors.settings.methods_registry_path", mock_methods_toml_file):
 
-            # Valid configuration should load successfully
-            try:
-                valid_config = BenchmarkConfig.model_validate(valid_config_data)
-                # Additional validation might be done during from_toml or in a separate validation step
-            except Exception as e:
-                # If validation is not yet implemented, that's OK for TDD
-                pass
+                # Valid configuration should load successfully
+                try:
+                    valid_config = BenchmarkConfig(**valid_config_data)
+                    assert valid_config is not None
+                except Exception as e:
+                    pytest.fail(f"Valid configuration should not raise error: {e}")
 
-            # Invalid configuration should raise error
-            try:
-                with pytest.raises(ConfigurationError):
-                    invalid_config = BenchmarkConfig.model_validate(invalid_config_data)
-                    # Additional validation that might check registry
-            except Exception:
-                # If validation is not yet implemented, that's OK for TDD
-                pass
+                # Invalid configuration should raise error
+                with pytest.raises(ConfigurationError) as exc_info:
+                    invalid_config = BenchmarkConfig(**invalid_config_data)
+                
+                # Check that error message is informative
+                error_msg = str(exc_info.value).lower()
+                assert "non_existent_method" in error_msg or "invalid detector" in error_msg
+
+        finally:
+            # Restore original skip validation setting
+            if original_skip:
+                os.environ["DRIFT_BENCHMARK_SKIP_VALIDATION"] = original_skip
 
     except ImportError as e:
         pytest.fail(f"Failed to import components for detector validation test: {e}")
@@ -185,12 +200,12 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files):
 
     valid_config_data = {
         "datasets": [{"path": str(existing_file), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "test_method", "implementation_id": "test_impl"}],
+        "detectors": [{"method_id": "kolmogorov_smirnov", "implementation_id": "ks_batch"}],
     }
 
     invalid_config_data = {
         "datasets": [{"path": str(non_existent_file), "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "test_method", "implementation_id": "test_impl"}],
+        "detectors": [{"method_id": "kolmogorov_smirnov", "implementation_id": "ks_batch"}],
     }
 
     # Act & Assert
@@ -198,22 +213,33 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files):
         from drift_benchmark.config import BenchmarkConfig
         from drift_benchmark.exceptions import ConfigurationError
 
-        # Valid configuration with existing file should load
+        # Turn off skip validation temporarily to test file validation
+        import os
+        original_skip = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION")
         try:
-            valid_config = BenchmarkConfig.model_validate(valid_config_data)
-            # Additional file existence validation might be done in from_toml
-        except Exception as e:
-            # If file validation is not yet implemented, that's OK for TDD
-            pass
+            # Enable validation for this test
+            if original_skip:
+                del os.environ["DRIFT_BENCHMARK_SKIP_VALIDATION"]
 
-        # Invalid configuration with non-existent file should fail
-        try:
-            with pytest.raises(ConfigurationError):
-                invalid_config = BenchmarkConfig.model_validate(invalid_config_data)
-                # Additional validation that checks file existence
-        except Exception:
-            # If file validation is not yet implemented, that's OK for TDD
-            pass
+            # Valid configuration with existing file should load
+            try:
+                valid_config = BenchmarkConfig(**valid_config_data)
+                assert valid_config is not None
+            except Exception as e:
+                pytest.fail(f"Valid configuration with existing file should not raise error: {e}")
+
+            # Invalid configuration with non-existent file should fail
+            with pytest.raises(ConfigurationError) as exc_info:
+                invalid_config = BenchmarkConfig(**invalid_config_data)
+            
+            # Check that error message mentions file not found
+            error_msg = str(exc_info.value).lower()
+            assert "file not found" in error_msg or "not found" in error_msg
+
+        finally:
+            # Restore original skip validation setting
+            if original_skip:
+                os.environ["DRIFT_BENCHMARK_SKIP_VALIDATION"] = original_skip
 
     except ImportError as e:
         pytest.fail(f"Failed to import components for file existence test: {e}")
