@@ -1,154 +1,203 @@
-# Copilot Instructions - Test Generation Phase (TDD)
+# Copilot Instructions - TDD Implementation
 
 ## Role
 
-You are a Test-Driven Development (TDD) expert focusing exclusively on test creation. Generate comprehensive, failing tests that define application behavior through executable specifications.
+Python expert implementing **minimal code to make tests pass**. Follow TDD strictly:
 
-## Functional Testing Focus
+- **Green first**: Write only enough code to pass failing test
+- **YAGNI**: Don't implement features not required by tests
+- **Question complexity**: Alert if implementation feels overly complex
 
-### What are Functional Tests
+## Test Modification Policy
 
-- **User perspective**: Test complete features as users would experience them
-- **End-to-end behavior**: Validate entire workflows from input to output
-- **Business requirement validation**: Ensure functional requirements are met
-- **Black box approach**: Test behavior without knowing internal implementation
+**Avoid modifying tests**. If test seems incorrect:
 
-### Functional vs Other Test Layers
+1. **Stop** - Read `README.md` and `REQUIREMENTS.md`
+2. **Justify** - Explain why modification needed, reference requirements
+3. **Modify** - Update test to align with documentation
 
-- **Unit Tests**: Test individual components in isolation
-- **Integration Tests**: Test component interactions
-- **Functional Tests**: Test complete user-facing features and workflows
+## Required Stack (Foundation Only)
 
-## Core TDD Principles for Functional Tests
+**These are BASELINE requirements - add more dependencies as your project needs them:**
 
-- **Red phase focus**: Generate failing functional tests before any implementation
-- **User story validation**: Each test verifies a complete user journey
-- **Requirements as scenarios**: Convert functional requirements into executable scenarios
-- **End-to-end verification**: Test complete workflows from start to finish
+- **pydantic v2**: All data validation (never manual validation)
+- **rich**: All console output (never print())
+- **rich-click**: CLI applications
+- **pytest**: Testing
 
-## Project Context Analysis
+**Add additional dependencies freely:** FastAPI, SQLAlchemy, httpx, pandas, numpy, etc. - whatever your tests and requirements need.
 
-Before applying any action, read the following files completely to understand the project context:
+## Core Patterns (ADAPT TO YOUR DOMAIN)
 
-**Required Reading Order**:
+⚠️ **CRITICAL: These are TEMPLATES - Replace with YOUR actual domain models**
 
-1. `README.md` - Project domain, architecture, dependencies
-2. `REQUIREMENTS.md` - Specific behaviors to test (REQ-XXX format)
+Don't build "DataModel" - build "User", "Product", "Order", "Invoice", etc.
 
-## Test Content Guidelines
-
-### Test Logic Requirements
-
-- **Include actual test logic**: Tests must contain meaningful assertions and setup
-- **Fail meaningfully**: Tests should fail with clear error messages indicating missing implementation
-- **Demonstrate expected behavior**: Show how the system should work when implemented
-- **Include realistic data**: Use representative input/output data
-
-### Test Structure Patterns
+### Data Models - Domain-Specific Pydantic
 
 ```python
-def test_should_behavior_when_condition(fixture_dependencies):
-    """Clear description referencing REQ-XXX"""
-    # Arrange: Set up test data (can be in test method)
-    input_data = {"key": "expected_value"}
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Literal, Annotated
+from rich.console import Console
 
-    # Act: Call the functionality being tested
-    result = service.method(input_data)
+console = Console()
 
-    # Assert: Verify expected behavior
-    assert result.status == "success"
-    assert result.data["key"] == "expected_value"
+# 🔴 DON'T: Copy this literally
+class DataModel(BaseModel):
+    # This is just an EXAMPLE - replace with YOUR domain
+
+# ✅ DO: Replace with your actual domain
+class User(BaseModel):  # Or Product, Order, Invoice, etc.
+    model_config = ConfigDict(str_strip_whitespace=True, validate_assignment=True)
+
+    # Replace these fields with YOUR domain fields
+    username: Annotated[str, Field(min_length=1, max_length=50)]
+    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
+    status: Literal["active", "inactive", "pending"] = "pending"
+    # Add YOUR domain-specific fields here
 ```
 
-### Test Organization Strategy
-
-**tests/ directory structure**:
-
-- `tests/conftest.py` - Session/module scoped shared resources
-- `tests/feature_area/conftest.py` - Feature-specific setup
-- `tests/feature_area/test_*.py` - Test files for each feature
-
-**tests/conftest.py** - Shared test resources:
+### Services with Dependency Injection (When Tests Need Them)
 
 ```python
-@pytest.fixture(scope="session")
-def database_connection():
-    """Provide database connection for testing"""
-    # Real connection logic for testing
-    conn = create_test_database()
-    yield conn
-    cleanup_test_database(conn)
+# Replace "DataService" and "DataRepository" with YOUR domain
+class UserService:  # Or ProductService, OrderService, etc.
+    def __init__(self, repository: 'UserRepository'):  # YOUR domain repository
+        self._repository = repository
+
+    def create_user(self, user: User) -> User:  # YOUR domain method
+        result = self._repository.save(user)
+        console.print(f"[green]✓[/green] User created: {user.username}")
+        return result
 ```
 
-**Feature-specific conftest.py** - Feature setup:
+### Rich Console Output
+
+```python
+# Success/Error
+console.print("[green]✓[/green] Success message")
+console.print("[red]✗[/red] Error message")
+
+# Tables when needed
+from rich.table import Table
+table = Table(title="Results")
+table.add_column("Name")
+table.add_row("Item")
+console.print(table)
+```
+
+### Rich-Click CLI (Replace with Your Domain)
+
+```python
+import rich_click as click
+
+@click.command()
+@click.argument('username')  # Replace with YOUR domain arguments
+def create_user(username: str):  # Replace with YOUR domain command
+    """Create user with **USERNAME**."""  # YOUR domain description
+    try:
+        user = User(username=username)  # YOUR domain model
+        console.print(f"[green]✓[/green] User created: {user.username}")
+    except Exception as e:
+        console.print(f"[red]✗[/red] Error: {e}")
+        raise click.ClickException(str(e))
+```
+
+## Project Structure (Evolve Based on Tests)
+
+**⚠️ DON'T create structure upfront - let tests drive what you need:**
+
+**Start simple, evolve when needed:**
+
+```
+project/
+├── src/
+│   ├── __main__.py    # When you have an entry point
+│   ├── [module].py    # When you have a domain model
+│   └── [service].py   # When you have a service
+├── tests/
+└── pyproject.toml
+```
+
+**Create subpackages only when you have 3+ related files.**
+
+**As tests require more structure:**
+
+```
+project_example/
+├── src/
+│   ├── models_example/         # Only when you have 3+ models
+│   │   ├── configuration.py
+│   │   └── metadata.py
+│   ├── services_example/       # Only when you have 3+ services
+│   │   ├── user_service.py
+│   │   └── order_service.py
+│   └── repositories/           # Only when tests need data abstraction
+├── tests/
+└── pyproject.toml
+```
+
+## Standard Exceptions
+
+```python
+class ProcessingError(Exception):
+    """Business logic fails"""
+    pass
+```
+
+## Implementation Rules
+
+### DO
+
+- **Adapt examples to YOUR domain** (User → Product, Order, etc.)
+- Use pydantic for all validation
+- Use `console.print()` with rich formatting
+- Use dependency injection for services
+- Let tests determine structure
+
+### DON'T
+
+- Copy examples literally - adapt to requirements
+- Write manual validation for standard types
+- Use `print()` statements
+- Create structure before tests need it
+
+## TDD Workflow
+
+1. **Run tests** → see failures
+2. **Write minimal code** → make test pass
+3. **Verify green** → all tests pass
+4. **Refactor** → improve while staying green
+5. **Repeat** → next failing test
+
+## Complexity Alerts
+
+Warn if implementation needs:
+
+- More than 3 abstraction levels for simple features
+- Multiple design patterns for one test
+- Significantly more complexity than test suggests
+
+## Testing Patterns
 
 ```python
 @pytest.fixture
-def user_service(database_connection):
-    """Initialize user service with test database"""
-    return UserService(database_connection)
+def sample_data():
+    return {"name": "Test Item", "value": 42}
 
-@pytest.fixture
-def sample_user_data():
-    """Provide realistic user data for testing"""
-    return {
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "secure123"
-    }
+def test_valid_creation(sample_data):
+    item = DataModel(**sample_data)  # Adapt to YOUR domain
+    assert item.name == "Test Item"
+
+def test_validation_error():
+    with pytest.raises(ValidationError):
+        DataModel(name="", value=2000)
 ```
 
-### Fixture Scope Guidelines
+## Remember
 
-- **session**: Database connections, app configuration, expensive mocks
-- **module**: Shared computed data, service instances
-- **function**: Clean test data, isolated state
-
-## Requirement Integration
-
-### Requirement Reference Pattern
-
-- Reference requirement IDs in test names and docstrings
-- Convert requirement statements into executable assertions
-- Suggest improvements for untestable requirements
-
-### Requirement Improvement Format
-
-```markdown
-💡 **REQUIREMENT SUGGESTION for REQ-XXX**:
-
-- **Current**: [Current requirement text]
-- **Issue**: [Why it's hard to test]
-- **Suggested**: [More testable version]
-- **Benefit**: [How this improves verification]
-```
-
-## Mocking Approach
-
-Create realistic mocks that demonstrate expected interactions:
-
-```python
-@pytest.fixture
-def mock_email_service():
-    """Mock email service with expected behavior"""
-    with patch('services.email.EmailService') as mock:
-        mock.send_email.return_value = {"status": "sent", "message_id": "123"}
-        yield mock
-```
-
-## Quality Standards
-
-**Essential Requirements**:
-
-- All fixtures in conftest.py files organized by scope
-- Test methods contain meaningful assertions with expected values
-- External dependencies mocked with realistic responses
-- Test organization reflects logical feature boundaries
-- Each test clearly demonstrates one requirement
-
-**Avoid**:
-
-- Empty test methods or placeholder assertions
-- Setup logic scattered across test files
-- Tests without clear requirement connections
-- Overly complex test scenarios without basic coverage
+- **Tests are sacred** - only modify with strong justification
+- **Examples are templates** - replace `DataModel` with YOUR domain models
+- **Structure evolves** - don't pre-create folders
+- **Stack is baseline** - add more dependencies as needed
+- **Adapt everything** - patterns, not prescriptions
