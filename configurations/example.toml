@@ -6,11 +6,24 @@
     format          = "CSV"
     reference_split = 0.5
 
-# Built-in detectors only
+# Evidently Detectors
 [[detectors]]
     method_id  = "kolmogorov_smirnov"
     variant_id = "ks_batch"
+    library_id = "evidently"
 
 [[detectors]]
     method_id  = "cramer_von_mises"
     variant_id = "cvm_batch"
+    library_id = "evidently"
+
+# Alibi Detect Detectors
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "alibi_detect"
+
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "alibi_detect"
