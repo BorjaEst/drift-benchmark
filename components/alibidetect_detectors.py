@@ -194,6 +194,49 @@ class BaseAlibiDetectDetector(BaseDetector):
         """
         return self._last_score
 
+    def _check_numpy_compatibility(self) -> None:
+        """
+        Check NumPy compatibility with Alibi-Detect.
+
+        Raises:
+            RuntimeError: If NumPy version is incompatible with Alibi-Detect
+        """
+        try:
+            import numpy as np
+
+            numpy_version = np.__version__
+
+            # Check if NumPy version is 2.x which has compatibility issues
+            if numpy_version.startswith("2."):
+                logger.warning(
+                    f"NumPy version {numpy_version} detected. "
+                    f"Alibi-Detect may have compatibility issues with NumPy 2.x. "
+                    f"Consider downgrading to 'numpy<2.0' if errors occur."
+                )
+
+                # Try to import alibi-detect core modules to check compatibility
+                try:
+                    from alibi_detect.cd import KSDrift
+
+                    # If import succeeds, compatibility is OK
+                    logger.debug("Alibi-Detect import successful despite NumPy 2.x")
+
+                except Exception as e:
+                    if any(keyword in str(e).lower() for keyword in ["numpy", "dtype", "array_api", "multiarray_umath"]):
+                        raise RuntimeError(
+                            f"NumPy {numpy_version} is incompatible with installed Alibi-Detect version. "
+                            f"Please run: pip install 'numpy<2.0' to downgrade NumPy, "
+                            f"or upgrade Alibi-Detect to a NumPy 2.x compatible version. "
+                            f"Original error: {e}"
+                        ) from e
+                    else:
+                        # Re-raise if it's not a NumPy compatibility issue
+                        raise
+
+        except ImportError:
+            # NumPy not available - this is a different issue
+            raise ImportError("NumPy is required but not installed")
+
     def _extract_result(self, result: Dict) -> tuple[bool, Optional[float]]:
         """
         Extract drift detection and score from Alibi-Detect result.
