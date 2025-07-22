@@ -23,11 +23,13 @@ class DetectorNotFoundError(DriftBenchmarkError):
     REQ-EXC-002: Detector registry error for missing detectors
     """
 
-    def __init__(self, method_id: str = None, implementation_id: str = None, message: str = None):
+    def __init__(self, method_id: str = None, variant_id: str = None, library_id: str = None, message: str = None):
         if message:
             super().__init__(message)
-        elif method_id and implementation_id:
-            super().__init__(f"Detector not found for method '{method_id}' and implementation '{implementation_id}'")
+        elif method_id and variant_id and library_id:
+            super().__init__(f"Detector not found for method '{method_id}', variant '{variant_id}', and library '{library_id}'")
+        elif method_id and variant_id:
+            super().__init__(f"Detector not found for method '{method_id}' and variant '{variant_id}'")
         elif method_id:
             super().__init__(f"Detector not found for method '{method_id}'")
         else:
@@ -41,7 +43,20 @@ class DuplicateDetectorError(DriftBenchmarkError):
     REQ-EXC-002: Detector registry error for duplicate registrations
     """
 
-    pass
+    def __init__(
+        self, method_id: str = None, variant_id: str = None, library_id: str = None, existing_class: str = None, message: str = None
+    ):
+        if message:
+            super().__init__(message)
+        elif method_id and variant_id and library_id:
+            msg = f"Detector already registered for method '{method_id}', variant '{variant_id}', and library '{library_id}'"
+            if existing_class:
+                msg += f" (existing class: {existing_class})"
+            super().__init__(msg)
+        elif method_id and variant_id:
+            super().__init__(f"Detector already registered for method '{method_id}' and variant '{variant_id}'")
+        else:
+            super().__init__("Duplicate detector registration")
 
 
 class MethodNotFoundError(DriftBenchmarkError):
@@ -60,11 +75,11 @@ class MethodNotFoundError(DriftBenchmarkError):
             super().__init__("Method not found")
 
 
-class ImplementationNotFoundError(DriftBenchmarkError):
+class VariantNotFoundError(DriftBenchmarkError):
     """
-    Raised when a requested implementation is not found for a method.
+    Raised when a requested variant is not found for a method.
 
-    REQ-EXC-003: Method registry error for missing implementations
+    REQ-EXC-003: Method registry error for missing variants
     """
 
     pass

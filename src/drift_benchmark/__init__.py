@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING
 # Import order following REQ-INI-001: Core modules independently importable
 try:
     # REQ-INI-001: Core modules (exceptions, literals, settings) - independently importable
+    # REQ-INI-004: Business logic modules with lazy loading for heavy components
+    from .detectors import get_method, get_variant, list_methods, load_methods
     from .exceptions import (
         BenchmarkExecutionError,
         ConfigurationError,
@@ -25,13 +27,10 @@ try:
         DetectorNotFoundError,
         DriftBenchmarkError,
         DuplicateDetectorError,
-        ImplementationNotFoundError,
         MethodNotFoundError,
+        VariantNotFoundError,
     )
-
     from .literals import DataDimension, DataLabeling, DatasetSource, DataType, DriftType, ExecutionMode, FileFormat, LogLevel, MethodFamily
-
-    from .settings import Settings, get_logger, settings, setup_logging
 
     # REQ-INI-002: Data layer depends only on core modules
     from .models import (
@@ -45,9 +44,7 @@ try:
         DetectorMetadata,
         DetectorResult,
     )
-
-    # REQ-INI-004: Business logic modules with lazy loading for heavy components
-    from .detectors import get_implementation, get_method, list_methods, load_methods
+    from .settings import Settings, get_logger, settings, setup_logging
 
     # REQ-INI-005: TYPE_CHECKING imports for type-only dependencies to avoid circular imports
     if TYPE_CHECKING:
@@ -66,48 +63,56 @@ except ImportError as e:
 def get_benchmark_runner():
     """Get BenchmarkRunner class - lazy import to avoid heavy dependencies"""
     from .benchmark import BenchmarkRunner
+
     return BenchmarkRunner
 
 
 def get_benchmark():
     """Get Benchmark class - lazy import to avoid heavy dependencies"""
     from .benchmark import Benchmark
+
     return Benchmark
 
 
-def get_detector_class(method_id: str, implementation_id: str):
+def get_detector_class(method_id: str, variant_id: str):
     """Get detector class - lazy import for registry"""
     from .adapters import get_detector_class as _get_detector_class
-    return _get_detector_class(method_id, implementation_id)
+
+    return _get_detector_class(method_id, variant_id)
 
 
-def register_detector(method_id: str, implementation_id: str):
+def register_detector(method_id: str, variant_id: str):
     """Register detector decorator - lazy import for registry"""
     from .adapters import register_detector as _register_detector
-    return _register_detector(method_id, implementation_id)
+
+    return _register_detector(method_id, variant_id)
 
 
 def list_detectors():
     """List available detectors - lazy import for registry"""
     from .adapters import list_detectors as _list_detectors
+
     return _list_detectors()
 
 
 def load_config(path: str):
     """Load configuration - lazy import to avoid heavy dependencies"""
     from .config import load_config as _load_config
+
     return _load_config(path)
 
 
 def load_dataset(config):
     """Load dataset - lazy import to avoid heavy dependencies"""
     from .data import load_dataset as _load_dataset
+
     return _load_dataset(config)
 
 
 def save_results(results):
     """Save results - lazy import to avoid heavy dependencies"""
     from .results import save_results as _save_results
+
     return _save_results(results)
 
 
@@ -127,7 +132,7 @@ __all__ = [
     "DetectorNotFoundError",
     "DuplicateDetectorError",
     "MethodNotFoundError",
-    "ImplementationNotFoundError",
+    "VariantNotFoundError",
     "DataLoadingError",
     "DataValidationError",
     "ConfigurationError",
@@ -155,7 +160,7 @@ __all__ = [
     # Detector registry
     "load_methods",
     "get_method",
-    "get_implementation",
+    "get_variant",
     "list_methods",
     # Adapter framework
     "BaseDetector",

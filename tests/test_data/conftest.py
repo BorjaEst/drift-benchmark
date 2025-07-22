@@ -9,7 +9,7 @@ import pytest
 
 @pytest.fixture
 def sample_csv_file():
-    """Create a temporary CSV file for testing"""
+    """Create a temporary csv file for testing"""
     csv_content = """feature_1,feature_2,categorical_feature
 1.5,2.3,A
 2.1,1.8,B
@@ -34,7 +34,7 @@ def sample_csv_file():
 
 @pytest.fixture
 def numeric_only_csv_file():
-    """Create a CSV file with only numeric data"""
+    """Create a csv file with only numeric data"""
     csv_content = """feature_1,feature_2,feature_3
 1.5,2.3,0.1
 2.1,1.8,0.2
@@ -54,7 +54,7 @@ def numeric_only_csv_file():
 
 @pytest.fixture
 def categorical_only_csv_file():
-    """Create a CSV file with only categorical data"""
+    """Create a csv file with only categorical data"""
     csv_content = """category_1,category_2,category_3
 A,X,red
 B,Y,blue
@@ -89,7 +89,7 @@ def sample_dataset_config():
 
         # Set defaults for any missing values
         kwargs.setdefault("path", "test.csv")
-        kwargs.setdefault("format", "CSV")
+        kwargs.setdefault("format", "csv")
         kwargs.setdefault("reference_split", 0.5)
 
         return DatasetConfig(**kwargs)

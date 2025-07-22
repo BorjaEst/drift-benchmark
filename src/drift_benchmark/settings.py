@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     logs_dir: Path = Field(default=Path("logs"), description="Directory for log files")
 
     # REQ-SET-104: Log level setting with enum validation
-    log_level: LogLevel = Field(default="INFO", description="Logging level for the application")
+    log_level: LogLevel = Field(default="info", description="Logging level for the application")
 
     # REQ-SET-105: Random seed setting for reproducibility
     random_seed: Optional[int] = Field(default=42, description="Random seed for reproducible results")

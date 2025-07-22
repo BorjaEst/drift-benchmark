@@ -64,12 +64,12 @@ def test_should_define_dataset_config_model_when_imported(sample_dataset_config_
 
     # Assert - field values are correct
     assert config.path == "datasets/example.csv"
-    assert config.format == "CSV"
+    assert config.format == "csv"
     assert config.reference_split == 0.7
 
 
 def test_should_define_detector_config_model_when_imported(sample_detector_config_data):
-    """Test REQ-CFM-003: Must define DetectorConfig with fields: method_id, implementation_id for individual detector setup"""
+    """Test REQ-CFM-003: Must define DetectorConfig with fields: method_id, variant_id, library_id for individual detector setup"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorConfig
@@ -88,11 +88,13 @@ def test_should_define_detector_config_model_when_imported(sample_detector_confi
 
     # Assert - has required fields
     assert hasattr(config, "method_id"), "DetectorConfig must have method_id field"
-    assert hasattr(config, "implementation_id"), "DetectorConfig must have implementation_id field"
+    assert hasattr(config, "variant_id"), "DetectorConfig must have variant_id field"
+    assert hasattr(config, "library_id"), "DetectorConfig must have library_id field"
 
     # Assert - field values are correct
     assert config.method_id == "ks_test"
-    assert config.implementation_id == "scipy"
+    assert config.variant_id == "scipy"
+    assert config.library_id == "scipy"
 
 
 def test_should_use_pydantic_v2_validation_when_created():
@@ -102,7 +104,7 @@ def test_should_use_pydantic_v2_validation_when_created():
         from drift_benchmark.models import DatasetConfig
 
         # Test valid configuration
-        valid_config = DatasetConfig(path="test.csv", format="CSV", reference_split=0.5)
+        valid_config = DatasetConfig(path="test.csv", format="csv", reference_split=0.5)
         assert valid_config.reference_split == 0.5
 
     except ImportError as e:
@@ -114,7 +116,7 @@ def test_should_use_pydantic_v2_validation_when_created():
 
         # Test invalid reference_split (should fail validation)
         with pytest.raises(Exception):  # Pydantic ValidationError
-            DatasetConfig(path="test.csv", format="CSV", reference_split=1.5)  # Invalid: > 1.0
+            DatasetConfig(path="test.csv", format="csv", reference_split=1.5)  # Invalid: > 1.0
 
     except ImportError:
         pytest.fail("DatasetConfig should validate reference_split constraints")
@@ -123,7 +125,7 @@ def test_should_use_pydantic_v2_validation_when_created():
 def test_should_support_model_serialization_when_used():
     """Test REQ-MOD-004: Models must support basic serialization/deserialization for JSON and TOML formats"""
     # Arrange
-    config_data = {"path": "test.csv", "format": "CSV", "reference_split": 0.6}
+    config_data = {"path": "test.csv", "format": "csv", "reference_split": 0.6}
 
     # Act
     try:
@@ -156,8 +158,8 @@ def test_should_use_literal_types_when_imported():
         from drift_benchmark.models import DatasetConfig
 
         # Test that format field uses literal types (should accept valid values)
-        valid_config = DatasetConfig(path="test.csv", format="CSV", reference_split=0.5)  # This should be a literal type
-        assert valid_config.format == "CSV"
+        valid_config = DatasetConfig(path="test.csv", format="csv", reference_split=0.5)  # This should be a literal type
+        assert valid_config.format == "csv"
 
     except ImportError as e:
         pytest.fail(f"Failed to import DatasetConfig for literal type test: {e}")
@@ -186,7 +188,7 @@ def test_should_validate_nested_models_when_created(sample_benchmark_config_data
     # Check first detector is properly typed
     first_detector = config.detectors[0]
     assert hasattr(first_detector, "method_id"), "Nested DetectorConfig must have method_id field"
-    assert hasattr(first_detector, "implementation_id"), "Nested DetectorConfig must have implementation_id field"
+    assert hasattr(first_detector, "variant_id"), "Nested DetectorConfig must have variant_id field"
 
 
 def test_should_provide_model_validation_errors_when_invalid():
@@ -199,7 +201,7 @@ def test_should_provide_model_validation_errors_when_invalid():
         with pytest.raises(Exception) as exc_info:
             DatasetConfig(
                 # Missing path field
-                format="CSV",
+                format="csv",
                 reference_split=0.5,
             )
 

@@ -1,5 +1,5 @@
 """
-Statistical test-based drift detectors implementation.
+Statistical test-based drift detectors variant.
 
 This module implements drift detectors based on statistical tests like
 Kolmogorov-Smirnov and Cramér-von Mises for distribution comparison.
@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from ..literals import LibraryId
 from ..models.results import DatasetResult
 from ..settings import get_logger
 from .base_detector import BaseDetector
@@ -19,10 +20,10 @@ from .registry import register_detector
 logger = get_logger(__name__)
 
 
-@register_detector(method_id="kolmogorov_smirnov", implementation_id="ks_batch")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="scipy")
 class KolmogorovSmirnovDetector(BaseDetector):
     """
-    Kolmogorov-Smirnov drift detector implementation.
+    Kolmogorov-Smirnov drift detector variant.
 
     This detector implements the two-sample Kolmogorov-Smirnov test to detect
     covariate drift by comparing the empirical distribution functions of
@@ -32,17 +33,18 @@ class KolmogorovSmirnovDetector(BaseDetector):
     - Massey Jr (1951): https://doi.org/10.2307/2280095
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         """
         Initialize Kolmogorov-Smirnov detector.
 
         Args:
             method_id: Must be "kolmogorov_smirnov"
-            implementation_id: Must be "ks_batch"
+            variant_id: Must be "ks_batch"
+            library_id: Must be "scipy"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """
-        super().__init__(method_id, implementation_id, **kwargs)
+        super().__init__(method_id, variant_id, library_id, **kwargs)
 
         # Hyperparameters from methods.toml
         self.threshold = kwargs.get("threshold", 0.05)
@@ -55,70 +57,56 @@ class KolmogorovSmirnovDetector(BaseDetector):
 
         logger.info(f"Initialized {self.__class__.__name__} with threshold={self.threshold}")
 
-    def preprocess(self, data: DatasetResult, **kwargs) -> dict:
+    def preprocess(self, data: DatasetResult, phase: str = "reference", **kwargs) -> np.ndarray:
         """
         Convert pandas DataFrames to numpy arrays for KS test.
 
         Args:
             data: DatasetResult containing X_ref and X_test DataFrames
+            phase: Either "reference" for training or "test" for detection
             **kwargs: Additional preprocessing parameters
 
         Returns:
-            dict: Preprocessed data with numpy arrays
+            np.ndarray: Preprocessed data array for the specified phase
         """
-        # Extract reference data (for training phase)
-        X_ref = data.X_ref
-        if isinstance(X_ref, pd.DataFrame):
-            # Select only numeric columns and use the first one
-            numeric_cols = X_ref.select_dtypes(include=[np.number]).columns
-            if len(numeric_cols) == 0:
-                raise ValueError("No numeric columns found in reference data")
-            ref_values = X_ref[numeric_cols[0]].values
+        if phase == "reference":
+            # Extract reference data (for training phase)
+            X_data = data.X_ref
+        elif phase == "test":
+            # Extract test data (for detection phase)
+            X_data = data.X_test
         else:
-            ref_values = np.asarray(X_ref).flatten()
+            raise ValueError(f"Invalid phase '{phase}'. Must be 'reference' or 'test'.")
 
-        # Extract test data (for detection phase)
-        X_test = data.X_test
-        if isinstance(X_test, pd.DataFrame):
-            # Use same column as reference
-            numeric_cols = X_test.select_dtypes(include=[np.number]).columns
+        if isinstance(X_data, pd.DataFrame):
+            # Select only numeric columns and use the first one
+            numeric_cols = X_data.select_dtypes(include=[np.number]).columns
             if len(numeric_cols) == 0:
-                raise ValueError("No numeric columns found in test data")
-            test_values = X_test[numeric_cols[0]].values
+                raise ValueError(f"No numeric columns found in {phase} data")
+            values = X_data[numeric_cols[0]].values
         else:
-            test_values = np.asarray(X_test).flatten()
+            values = np.asarray(X_data).flatten()
 
         # Remove NaN values (required for KS test)
-        ref_values = ref_values[~np.isnan(ref_values)]
-        test_values = test_values[~np.isnan(test_values)]
+        values = values[~np.isnan(values)]
 
-        preprocessed = {
-            "X_ref": ref_values,
-            "X_test": test_values,
-            "metadata": data.metadata,
-            "n_ref_samples": len(ref_values),
-            "n_test_samples": len(test_values),
-        }
-
-        logger.debug(f"Preprocessed data: {preprocessed['n_ref_samples']} ref samples, " f"{preprocessed['n_test_samples']} test samples")
-
-        return preprocessed
+        return values
 
     def fit(self, preprocessed_data: Any, **kwargs) -> "KolmogorovSmirnovDetector":
         """
         Train the detector on reference data.
 
         Args:
-            preprocessed_data: Output from preprocess() method
+            preprocessed_data: Preprocessed reference data (numpy array)
             **kwargs: Additional fitting parameters
 
         Returns:
             self: Fitted detector instance
         """
-        if not isinstance(preprocessed_data, dict) or "X_ref" not in preprocessed_data:
-            raise ValueError("preprocessed_data must be dict with 'X_ref' key")
+        if not isinstance(preprocessed_data, np.ndarray):
+            raise ValueError("preprocessed_data must be numpy array")
 
-        self._reference_data = preprocessed_data["X_ref"]
+        self._reference_data = preprocessed_data
 
         if len(self._reference_data) == 0:
             logger.warning("Empty reference data provided to fit()")
@@ -132,7 +120,7 @@ class KolmogorovSmirnovDetector(BaseDetector):
         Perform drift detection using KS test.
 
         Args:
-            preprocessed_data: Output from preprocess() method
+            preprocessed_data: Preprocessed test data (numpy array)
             **kwargs: Additional detection parameters
 
         Returns:
@@ -141,10 +129,10 @@ class KolmogorovSmirnovDetector(BaseDetector):
         if self._reference_data is None:
             raise RuntimeError("Detector must be fitted before detection")
 
-        if not isinstance(preprocessed_data, dict) or "X_test" not in preprocessed_data:
-            raise ValueError("preprocessed_data must be dict with 'X_test' key")
+        if not isinstance(preprocessed_data, np.ndarray):
+            raise ValueError("preprocessed_data must be numpy array")
 
-        test_data = preprocessed_data["X_test"]
+        test_data = preprocessed_data
 
         if len(test_data) == 0:
             logger.warning("Empty test data provided to detect()")
@@ -187,10 +175,10 @@ class KolmogorovSmirnovDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="cramer_von_mises", implementation_id="cvm_batch")
+@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="scipy")
 class CramerVonMisesDetector(BaseDetector):
     """
-    Cramér-von Mises drift detector implementation.
+    Cramér-von Mises drift detector variant.
 
     This detector implements the two-sample Cramér-von Mises test to detect
     covariate drift by comparing the distribution functions of reference and test datasets.
@@ -199,17 +187,18 @@ class CramerVonMisesDetector(BaseDetector):
     - Cramér (1902): https://doi.org/10.1080/03461238.1928.10416862
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         """
         Initialize Cramér-von Mises detector.
 
         Args:
             method_id: Must be "cramer_von_mises"
-            implementation_id: Must be "cvm_batch"
+            variant_id: Must be "cvm_batch"
+            library_id: Must be "scipy"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """
-        super().__init__(method_id, implementation_id, **kwargs)
+        super().__init__(method_id, variant_id, library_id, **kwargs)
 
         # Hyperparameters from methods.toml
         self.threshold = kwargs.get("threshold", 0.05)
@@ -322,7 +311,7 @@ class CramerVonMisesDetector(BaseDetector):
 
         # Perform two-sample Cramér-von Mises test
         try:
-            # Use scipy's implementation
+            # Use scipy's variant
             result = stats.cramervonmises_2samp(self._reference_data, test_data)
             statistic = result.statistic
             pvalue = result.pvalue

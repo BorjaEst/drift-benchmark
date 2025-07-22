@@ -75,18 +75,18 @@ def mock_methods_registry():
             "ks_test": {
                 "name": "Kolmogorov-Smirnov Test",
                 "description": "Statistical test for distribution differences",
-                "family": "STATISTICAL_TEST",
-                "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
-                "data_types": ["CONTINUOUS"],
-                "implementations": {"scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH"}},
+                "family": "statistical-test",
+                "data_dimension": ["univariate", "multivariate"],
+                "data_types": ["continuous"],
+                "variants": {"scipy": {"name": "SciPy Variant", "execution_mode": "batch"}},
             },
             "drift_detector": {
                 "name": "Basic Drift Detector",
                 "description": "Simple change detection algorithm",
-                "family": "CHANGE_DETECTION",
-                "data_dimension": ["UNIVARIATE", "MULTIVARIATE"],
-                "data_types": ["CONTINUOUS", "CATEGORICAL"],
-                "implementations": {"custom": {"name": "Custom Implementation", "execution_mode": "BATCH"}},
+                "family": "change-detection",
+                "data_dimension": ["univariate", "multivariate"],
+                "data_types": ["continuous", "categorical"],
+                "variants": {"custom": {"name": "Custom Variant", "execution_mode": "batch"}},
             },
         }
     }
@@ -100,14 +100,14 @@ def settings_env_vars():
         "DRIFT_BENCHMARK_DATASETS_DIR": "test_datasets",
         "DRIFT_BENCHMARK_RESULTS_DIR": "test_results",
         "DRIFT_BENCHMARK_LOGS_DIR": "test_logs",
-        "DRIFT_BENCHMARK_LOG_LEVEL": "DEBUG",
+        "DRIFT_BENCHMARK_LOG_LEVEL": "debug",
         "DRIFT_BENCHMARK_RANDOM_SEED": "123",
     }
 
 
 @pytest.fixture(scope="module")
 def sample_csv_content():
-    """Provide sample CSV content for file-based testing"""
+    """Provide sample csv content for file-based testing"""
     return """feature_1,feature_2,categorical_feature
 1.2,0.8,A
 -0.5,1.1,B
@@ -122,13 +122,14 @@ def sample_csv_content():
 
 
 @pytest.fixture(scope="module")
-def mock_detector_implementations():
-    """Provide mock detector implementations for testing"""
+def mock_detector_variants():
+    """Provide mock detector variants for testing"""
 
     class MockDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "custom", **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
+            self.library_id = library_id
             self._fitted = False
             self._last_score = None
 
@@ -169,19 +170,20 @@ def mock_benchmark_config():
             self.reference_split = reference_split
 
     class MockDetectorConfig:
-        def __init__(self, method_id, implementation_id):
+        def __init__(self, method_id, variant_id, library_id):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
+            self.library_id = library_id
 
     class MockBenchmarkConfig:
         def __init__(self):
             self.datasets = [
-                MockDatasetConfig("tests/assets/datasets/test1.csv", "CSV", 0.6),
-                MockDatasetConfig("tests/assets/datasets/test2.csv", "CSV", 0.7),
+                MockDatasetConfig("tests/assets/datasets/test1.csv", "csv", 0.6),
+                MockDatasetConfig("tests/assets/datasets/test2.csv", "csv", 0.7),
             ]
             self.detectors = [
-                MockDetectorConfig("ks_test", "scipy"),
-                MockDetectorConfig("drift_detector", "custom"),
+                MockDetectorConfig("ks_test", "scipy", "scipy"),
+                MockDetectorConfig("drift_detector", "custom", "custom"),
             ]
 
     return MockBenchmarkConfig()
@@ -210,8 +212,8 @@ def mock_dataset_result():
 
     metadata = Mock()
     metadata.name = "mock_dataset"
-    metadata.data_type = "MIXED"
-    metadata.dimension = "MULTIVARIATE"
+    metadata.data_type = "mixed"
+    metadata.dimension = "multivariate"
     metadata.n_samples_ref = 100
     metadata.n_samples_test = 50
 
@@ -232,9 +234,10 @@ def mock_detector():
     import numpy as np
 
     class MockDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "custom", **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
+            self.library_id = library_id
             self._fitted = False
             self._last_score = None
             self._execution_count = 0
@@ -271,9 +274,10 @@ def mock_failing_detector():
     from typing import Any, Optional
 
     class FailingDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "custom", **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
+            self.library_id = library_id
 
         def preprocess(self, data, **kwargs) -> Any:
             return data

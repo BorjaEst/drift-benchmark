@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from components import alibidetect_detectors, evidently_detectors
 from drift_benchmark import get_benchmark_runner
 
 config_path = Path("configurations/example.toml")

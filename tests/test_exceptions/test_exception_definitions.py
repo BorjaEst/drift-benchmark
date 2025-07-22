@@ -43,23 +43,25 @@ def test_should_define_detector_registry_errors_when_imported():
     # Assert - DetectorNotFoundError
     assert issubclass(DetectorNotFoundError, DriftBenchmarkError), "DetectorNotFoundError must inherit from DriftBenchmarkError"
 
-    detector_error = DetectorNotFoundError("method_id", "implementation_id")
+    detector_error = DetectorNotFoundError("method_id", "variant_id", "library_id")
     assert "method_id" in str(detector_error)
-    assert "implementation_id" in str(detector_error)
+    assert "variant_id" in str(detector_error)
+    assert "library_id" in str(detector_error)
 
     # Assert - DuplicateDetectorError
     assert issubclass(DuplicateDetectorError, DriftBenchmarkError), "DuplicateDetectorError must inherit from DriftBenchmarkError"
 
-    duplicate_error = DuplicateDetectorError("method_id", "implementation_id")
+    duplicate_error = DuplicateDetectorError("method_id", "variant_id", "library_id")
     assert "method_id" in str(duplicate_error)
-    assert "implementation_id" in str(duplicate_error)
+    assert "variant_id" in str(duplicate_error)
+    assert "library_id" in str(duplicate_error)
 
 
 def test_should_define_method_registry_errors_when_imported():
-    """Test REQ-EXC-003: Must define MethodNotFoundError, ImplementationNotFoundError for methods.toml registry issues"""
+    """Test REQ-EXC-003: Must define MethodNotFoundError, VariantNotFoundError for methods.toml registry issues"""
     # Arrange & Act
     try:
-        from drift_benchmark.exceptions import DriftBenchmarkError, ImplementationNotFoundError, MethodNotFoundError
+        from drift_benchmark.exceptions import DriftBenchmarkError, MethodNotFoundError, VariantNotFoundError
     except ImportError as e:
         pytest.fail(f"Failed to import method registry exceptions: {e}")
 
@@ -69,10 +71,10 @@ def test_should_define_method_registry_errors_when_imported():
     method_error = MethodNotFoundError("unknown_method")
     assert "unknown_method" in str(method_error)
 
-    # Assert - ImplementationNotFoundError
-    assert issubclass(ImplementationNotFoundError, DriftBenchmarkError), "ImplementationNotFoundError must inherit from DriftBenchmarkError"
+    # Assert - VariantNotFoundError
+    assert issubclass(VariantNotFoundError, DriftBenchmarkError), "VariantNotFoundError must inherit from DriftBenchmarkError"
 
-    impl_error = ImplementationNotFoundError("method_id", "unknown_impl")
+    impl_error = VariantNotFoundError("method_id", "unknown_impl")
     assert "method_id" in str(impl_error)
     assert "unknown_impl" in str(impl_error)
 
@@ -144,7 +146,7 @@ def test_should_provide_all_exceptions_in_module_when_imported():
         "DetectorNotFoundError",
         "DuplicateDetectorError",
         "MethodNotFoundError",
-        "ImplementationNotFoundError",
+        "VariantNotFoundError",
         "DataLoadingError",
         "DataValidationError",
         "ConfigurationError",
@@ -171,8 +173,8 @@ def test_should_have_proper_exception_hierarchy_when_used():
             DetectorNotFoundError,
             DriftBenchmarkError,
             DuplicateDetectorError,
-            ImplementationNotFoundError,
             MethodNotFoundError,
+            VariantNotFoundError,
         )
     except ImportError as e:
         pytest.fail(f"Failed to import exceptions for hierarchy test: {e}")
@@ -182,7 +184,7 @@ def test_should_have_proper_exception_hierarchy_when_used():
         DetectorNotFoundError,
         DuplicateDetectorError,
         MethodNotFoundError,
-        ImplementationNotFoundError,
+        VariantNotFoundError,
         DataLoadingError,
         DataValidationError,
         ConfigurationError,

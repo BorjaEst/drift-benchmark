@@ -46,7 +46,7 @@ def test_should_define_dataset_result_model_when_imported(sample_dataset_result_
 
 
 def test_should_define_detector_result_model_when_imported(sample_detector_result_data):
-    """Test REQ-MDL-002: Must define DetectorResult with fields: detector_id, dataset_name, drift_detected, execution_time (float, seconds), drift_score (Optional[float])"""
+    """Test REQ-MDL-002: Must define DetectorResult with fields: detector_id, library_id, dataset_name, drift_detected, execution_time (float, seconds), drift_score (Optional[float])"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorResult
@@ -65,6 +65,7 @@ def test_should_define_detector_result_model_when_imported(sample_detector_resul
 
     # Assert - has required fields
     assert hasattr(result, "detector_id"), "DetectorResult must have detector_id field"
+    assert hasattr(result, "library_id"), "DetectorResult must have library_id field"
     assert hasattr(result, "dataset_name"), "DetectorResult must have dataset_name field"
     assert hasattr(result, "drift_detected"), "DetectorResult must have drift_detected field"
     assert hasattr(result, "execution_time"), "DetectorResult must have execution_time field"
@@ -72,6 +73,7 @@ def test_should_define_detector_result_model_when_imported(sample_detector_resul
 
     # Assert - field types and values are correct
     assert isinstance(result.detector_id, str), "detector_id must be string"
+    assert isinstance(result.library_id, str), "library_id must be string"
     assert isinstance(result.dataset_name, str), "dataset_name must be string"
     assert isinstance(result.drift_detected, bool), "drift_detected must be boolean"
     assert isinstance(result.execution_time, float), "execution_time must be float (seconds)"
@@ -79,6 +81,7 @@ def test_should_define_detector_result_model_when_imported(sample_detector_resul
 
     # Assert - specific values from test data
     assert result.detector_id == "ks_test_scipy"
+    assert result.library_id == "scipy"
     assert result.dataset_name == "test_dataset"
     assert result.drift_detected == True
     assert result.execution_time == 0.0123
@@ -89,13 +92,14 @@ def test_should_define_benchmark_result_model_when_imported():
     """Test REQ-MDL-003: Must define BenchmarkResult with fields: config, detector_results, summary for basic result storage"""
     # Arrange
     sample_config = {
-        "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "ks_test", "implementation_id": "scipy"}],
+        "datasets": [{"path": "test.csv", "format": "csv", "reference_split": 0.5}],
+        "detectors": [{"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"}],
     }
 
     sample_detector_results = [
         {
             "detector_id": "ks_test_scipy",
+            "library_id": "scipy",
             "dataset_name": "test_dataset",
             "drift_detected": True,
             "execution_time": 0.0123,
@@ -144,6 +148,7 @@ def test_should_support_optional_drift_score_when_created():
     # Arrange
     result_data_no_score = {
         "detector_id": "test_detector",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": False,
         "execution_time": 0.001,
@@ -152,6 +157,7 @@ def test_should_support_optional_drift_score_when_created():
 
     result_data_with_score = {
         "detector_id": "test_detector",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.002,
@@ -181,7 +187,7 @@ def test_should_preserve_dataframe_structure_when_created():
 
     test_data = pd.DataFrame({"numeric_col": [4.2, 5.1, 6.8], "categorical_col": ["D", "E", "F"], "mixed_col": ["text2", 2, 2.71]})
 
-    metadata = {"name": "complex_dataset", "data_type": "MIXED", "dimension": "MULTIVARIATE", "n_samples_ref": 3, "n_samples_test": 3}
+    metadata = {"name": "complex_dataset", "data_type": "mixed", "dimension": "multivariate", "n_samples_ref": 3, "n_samples_test": 3}
 
     # Act
     try:
@@ -207,6 +213,7 @@ def test_should_validate_execution_time_precision_when_created():
     # Arrange
     high_precision_data = {
         "detector_id": "precise_detector",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.001234567,  # High precision float
@@ -232,6 +239,7 @@ def test_should_support_model_serialization_for_results():
     # Arrange
     detector_result_data = {
         "detector_id": "test_detector",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.123,

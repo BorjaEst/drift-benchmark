@@ -29,8 +29,8 @@ def mock_dataset_result():
 
     metadata = Mock()
     metadata.name = "mock_dataset"
-    metadata.data_type = "MIXED"
-    metadata.dimension = "MULTIVARIATE"
+    metadata.data_type = "mixed"
+    metadata.dimension = "multivariate"
     metadata.n_samples_ref = 100
     metadata.n_samples_test = 50
 
@@ -48,9 +48,10 @@ def mock_detector():
     """Provide mock detector for testing"""
 
     class MockDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "custom", **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
+            self.library_id = library_id
             self._fitted = False
             self._last_score = None
             self._execution_count = 0
@@ -86,9 +87,10 @@ def mock_failing_detector():
     """Provide mock detector that fails for error handling testing"""
 
     class FailingDetector:
-        def __init__(self, method_id: str, implementation_id: str, **kwargs):
+        def __init__(self, method_id: str, variant_id: str, library_id: str = "custom", **kwargs):
             self.method_id = method_id
-            self.implementation_id = implementation_id
+            self.variant_id = variant_id
+            self.library_id = library_id
 
         def preprocess(self, data, **kwargs) -> Any:
             return data

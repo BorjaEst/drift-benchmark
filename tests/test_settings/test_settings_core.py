@@ -46,7 +46,7 @@ def test_should_support_environment_variables_when_configured(clean_environment)
     os.environ["DRIFT_BENCHMARK_DATASETS_DIR"] = "/custom/datasets"
     os.environ["DRIFT_BENCHMARK_RESULTS_DIR"] = "/custom/results"
     os.environ["DRIFT_BENCHMARK_LOGS_DIR"] = "/custom/logs"
-    os.environ["DRIFT_BENCHMARK_LOG_LEVEL"] = "ERROR"
+    os.environ["DRIFT_BENCHMARK_LOG_LEVEL"] = "error"
     os.environ["DRIFT_BENCHMARK_RANDOM_SEED"] = "999"
     os.environ["DRIFT_BENCHMARK_METHODS_REGISTRY_PATH"] = "/custom/methods.toml"
 
@@ -62,7 +62,7 @@ def test_should_support_environment_variables_when_configured(clean_environment)
     assert str(settings.datasets_dir) == "/custom/datasets"
     assert str(settings.results_dir) == "/custom/results"
     assert str(settings.logs_dir) == "/custom/logs"
-    assert settings.log_level == "ERROR"
+    assert settings.log_level == "error"
     assert settings.random_seed == 999
     assert str(settings.methods_registry_path) == "/custom/methods.toml"
 
@@ -122,7 +122,7 @@ def test_should_provide_setup_logging_method_when_called(clean_environment, temp
     # Arrange
     logs_dir = temp_config_dir / "test_logs"
     os.environ["DRIFT_BENCHMARK_LOGS_DIR"] = str(logs_dir)
-    os.environ["DRIFT_BENCHMARK_LOG_LEVEL"] = "DEBUG"
+    os.environ["DRIFT_BENCHMARK_LOG_LEVEL"] = "debug"
 
     # Act
     try:
@@ -142,7 +142,7 @@ def test_should_provide_setup_logging_method_when_called(clean_environment, temp
     assert len(root_logger.handlers) > 0, "setup_logging() must configure logger handlers"
 
     # Check log level is set correctly
-    expected_level = logging.DEBUG
+    expected_level = logging.debug
     assert any(handler.level <= expected_level for handler in root_logger.handlers), "setup_logging() must set log level based on settings"
 
 
@@ -230,7 +230,7 @@ def test_should_have_logs_directory_default_when_created(clean_environment):
 
 
 def test_should_have_log_level_default_when_created(clean_environment):
-    """Test REQ-SET-104: Must provide log_level setting (default: "INFO") with enum validation"""
+    """Test REQ-SET-104: Must provide log_level setting (default: "info") with enum validation"""
     # Arrange & Act
     try:
         from drift_benchmark.settings import Settings
@@ -241,10 +241,10 @@ def test_should_have_log_level_default_when_created(clean_environment):
 
     # Assert
     assert hasattr(settings, "log_level"), "Settings must have log_level field"
-    assert settings.log_level == "INFO", "log_level default must be 'INFO'"
+    assert settings.log_level == "info", "log_level default must be 'info'"
 
     # Test enum validation
-    valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+    valid_levels = {"debug", "info", "warning", "error", "critical"}
     assert settings.log_level in valid_levels, f"log_level must be validated against {valid_levels}"
 
 

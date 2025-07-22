@@ -71,7 +71,7 @@ def test_should_coordinate_detector_setup_flow_when_benchmark_runs(mock_benchmar
 
         # Verify each detector in config was looked up
         for detector_config in mock_benchmark_config.detectors:
-            mock_get_detector.assert_any_call(detector_config.method_id, detector_config.implementation_id)
+            mock_get_detector.assert_any_call(detector_config.method_id, detector_config.variant_id, detector_config.library_id)
 
 
 def test_should_coordinate_preprocessing_flow_when_benchmark_runs(mock_benchmark_config, mock_detector, mock_dataset_result):
@@ -99,7 +99,7 @@ def test_should_coordinate_preprocessing_flow_when_benchmark_runs(mock_benchmark
             pytest.skip("Import failed - testing in TDD mode")
 
         # Assert - preprocessing coordination
-        # In real implementation, preprocess should be called before fit
+        # In real variant, preprocess should be called before fit
         assert hasattr(mock_detector_instance, "preprocess"), "detector must have preprocess method for data flow"
 
 
@@ -244,15 +244,15 @@ def test_should_coordinate_error_handling_flow_when_benchmark_runs(mock_benchmar
         mock_load_dataset.return_value = mock_dataset_result
 
         # Mix of failing and successful detectors
-        def detector_class_factory(method_id, impl_id):
+        def detector_class_factory(method_id, impl_id, lib_id):
             if method_id == "ks_test":
                 return mock_failing_detector
             else:
                 # Return a basic mock class for successful case
-                def MockSuccessfulDetector(method_id, implementation_id, **kwargs):
+                def MockSuccessfulDetector(method_id, variant_id, **kwargs):
                     mock_instance = Mock()
                     mock_instance.method_id = method_id
-                    mock_instance.implementation_id = implementation_id
+                    mock_instance.variant_id = variant_id
                     return mock_instance
 
                 return MockSuccessfulDetector

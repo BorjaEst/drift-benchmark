@@ -42,14 +42,14 @@ def test_should_define_dataset_metadata_model_when_imported(sample_dataset_metad
 
     # Assert - specific values from test data
     assert metadata.name == "test_dataset"
-    assert metadata.data_type == "CONTINUOUS"
-    assert metadata.dimension == "MULTIVARIATE"
+    assert metadata.data_type == "continuous"
+    assert metadata.dimension == "multivariate"
     assert metadata.n_samples_ref == 1000
     assert metadata.n_samples_test == 500
 
 
 def test_should_define_detector_metadata_model_when_imported(sample_detector_metadata_data):
-    """Test REQ-MET-002: Must define DetectorMetadata with fields: method_id (str), implementation_id (str), name (str), family (MethodFamily) for basic detector information"""
+    """Test REQ-MET-002: Must define DetectorMetadata with fields: method_id (str), variant_id (str), library_id (str), name (str), family (MethodFamily) for basic detector information"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorMetadata
@@ -68,20 +68,23 @@ def test_should_define_detector_metadata_model_when_imported(sample_detector_met
 
     # Assert - has required fields
     assert hasattr(metadata, "method_id"), "DetectorMetadata must have method_id field"
-    assert hasattr(metadata, "implementation_id"), "DetectorMetadata must have implementation_id field"
+    assert hasattr(metadata, "variant_id"), "DetectorMetadata must have variant_id field"
+    assert hasattr(metadata, "library_id"), "DetectorMetadata must have library_id field"
     assert hasattr(metadata, "name"), "DetectorMetadata must have name field"
     assert hasattr(metadata, "family"), "DetectorMetadata must have family field"
 
     # Assert - field types and values are correct
     assert isinstance(metadata.method_id, str), "method_id must be string"
-    assert isinstance(metadata.implementation_id, str), "implementation_id must be string"
+    assert isinstance(metadata.variant_id, str), "variant_id must be string"
+    assert isinstance(metadata.library_id, str), "library_id must be string"
     assert isinstance(metadata.name, str), "name must be string"
 
     # Assert - specific values from test data
     assert metadata.method_id == "ks_test"
-    assert metadata.implementation_id == "scipy"
+    assert metadata.variant_id == "scipy"
+    assert metadata.library_id == "scipy"
     assert metadata.name == "Kolmogorov-Smirnov Test"
-    assert metadata.family == "STATISTICAL_TEST"
+    assert metadata.family == "statistical-test"
 
 
 def test_should_define_benchmark_summary_model_when_imported(sample_benchmark_summary_data):
@@ -139,8 +142,8 @@ def test_should_use_literal_types_for_enums_when_created():
         # Test DatasetMetadata with literal enum values
         dataset_metadata = DatasetMetadata(
             name="test_dataset",
-            data_type="CATEGORICAL",  # Should be DataType literal
-            dimension="UNIVARIATE",  # Should be DataDimension literal
+            data_type="categorical",  # Should be DataType literal
+            dimension="univariate",  # Should be DataDimension literal
             n_samples_ref=100,
             n_samples_test=50,
         )
@@ -148,18 +151,19 @@ def test_should_use_literal_types_for_enums_when_created():
         # Test DetectorMetadata with literal enum values
         detector_metadata = DetectorMetadata(
             method_id="test_method",
-            implementation_id="test_impl",
+            variant_id="test_impl",
+            library_id="custom",
             name="Test Detector",
-            family="DISTANCE_BASED",  # Should be MethodFamily literal
+            family="distance-based",  # Should be MethodFamily literal
         )
 
     except ImportError as e:
         pytest.fail(f"Failed to import metadata models for literal type test: {e}")
 
     # Assert
-    assert dataset_metadata.data_type == "CATEGORICAL"
-    assert dataset_metadata.dimension == "UNIVARIATE"
-    assert detector_metadata.family == "DISTANCE_BASED"
+    assert dataset_metadata.data_type == "categorical"
+    assert dataset_metadata.dimension == "univariate"
+    assert detector_metadata.family == "distance-based"
 
 
 def test_should_support_optional_metrics_when_no_ground_truth():
@@ -213,7 +217,7 @@ def test_should_validate_sample_counts_when_created():
 
         # Test valid sample counts
         valid_metadata = DatasetMetadata(
-            name="valid_dataset", data_type="CONTINUOUS", dimension="MULTIVARIATE", n_samples_ref=1000, n_samples_test=500
+            name="valid_dataset", data_type="continuous", dimension="multivariate", n_samples_ref=1000, n_samples_test=500
         )
         assert valid_metadata.n_samples_ref == 1000
         assert valid_metadata.n_samples_test == 500
@@ -229,8 +233,8 @@ def test_should_validate_sample_counts_when_created():
         with pytest.raises(Exception):  # Pydantic ValidationError
             DatasetMetadata(
                 name="invalid_dataset",
-                data_type="CONTINUOUS",
-                dimension="MULTIVARIATE",
+                data_type="continuous",
+                dimension="multivariate",
                 n_samples_ref=-100,  # Invalid: negative
                 n_samples_test=500,
             )
@@ -244,9 +248,10 @@ def test_should_support_serialization_for_metadata():
     # Arrange
     detector_metadata_data = {
         "method_id": "test_method",
-        "implementation_id": "test_impl",
+        "variant_id": "test_impl",
+        "library_id": "custom",
         "name": "Test Detection Method",
-        "family": "STATISTICAL_TEST",
+        "family": "statistical-test",
     }
 
     # Act
@@ -265,12 +270,12 @@ def test_should_support_serialization_for_metadata():
     # Assert
     assert isinstance(serialized, dict), "model_dump() must return dictionary for JSON export"
     assert serialized["method_id"] == detector_metadata_data["method_id"]
-    assert serialized["implementation_id"] == detector_metadata_data["implementation_id"]
+    assert serialized["variant_id"] == detector_metadata_data["variant_id"]
     assert serialized["name"] == detector_metadata_data["name"]
     assert serialized["family"] == detector_metadata_data["family"]
 
     # Assert restoration
     assert restored_metadata.method_id == metadata.method_id
-    assert restored_metadata.implementation_id == metadata.implementation_id
+    assert restored_metadata.variant_id == metadata.variant_id
     assert restored_metadata.name == metadata.name
     assert restored_metadata.family == metadata.family

@@ -1,6 +1,6 @@
 """
 This module implements distance-based drift detectors using the
-drift-benchmark adapter framework with custom implementations.
+drift-benchmark adapter framework with custom variants.
 """
 
 from typing import Optional
@@ -15,17 +15,17 @@ from drift_benchmark.adapters import BaseDetector, register_detector
 from drift_benchmark.models.results import DatasetResult
 
 
-@register_detector(method_id="jensen_shannon_divergence", implementation_id="js_custom")
+@register_detector(method_id="jensen_shannon_divergence", variant_id="js_custom")
 class CustomJensenShannonDetector(BaseDetector):
     """
-    Custom Jensen-Shannon divergence implementation for drift detection.
+    Custom Jensen-Shannon divergence variants for drift detection.
 
-    Enhanced implementation with robust preprocessing and multivariate support
+    Enhanced variants with robust preprocessing and multivariate support
     using feature-wise divergence calculation.
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get("threshold", 0.1)  # Divergence threshold
         self.bins = kwargs.get("bins", 30)  # Number of bins for histogram
         self._reference_data: Optional[np.ndarray] = None
@@ -135,17 +135,17 @@ class CustomJensenShannonDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="wasserstein_distance", implementation_id="ws_custom")
+@register_detector(method_id="wasserstein_distance", variant_id="ws_custom")
 class CustomWassersteinDetector(BaseDetector):
     """
-    Custom Wasserstein distance implementation for drift detection.
+    Custom Wasserstein distance variants for drift detection.
 
-    Enhanced implementation with robust preprocessing and multivariate support
+    Enhanced variants with robust preprocessing and multivariate support
     using feature-wise distance calculation.
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get("threshold", 0.5)  # Distance threshold
         self._reference_data: Optional[np.ndarray] = None
         self._last_score: Optional[float] = None
@@ -230,7 +230,7 @@ class CustomWassersteinDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="maximum_mean_discrepancy", implementation_id="mmd_rbf")
+@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf")
 class MaximumMeanDiscrepancyDetector(BaseDetector):
     """
     Maximum Mean Discrepancy with RBF kernel for drift detection.
@@ -239,8 +239,8 @@ class MaximumMeanDiscrepancyDetector(BaseDetector):
     distributions using a Radial Basis Function (RBF) kernel.
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get("threshold", 0.1)
         self.gamma = kwargs.get("gamma", 1.0)
         self._reference_data: Optional[np.ndarray] = None
@@ -319,7 +319,7 @@ class MaximumMeanDiscrepancyDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="wasserstein_distance", implementation_id="wasserstein_1d")
+@register_detector(method_id="wasserstein_distance", variant_id="wasserstein_1d")
 class WassersteinDistanceDetector(BaseDetector):
     """
     Wasserstein (Earth Mover's) distance for drift detection.
@@ -328,8 +328,8 @@ class WassersteinDistanceDetector(BaseDetector):
     distributions for univariate drift detection.
     """
 
-    def __init__(self, method_id: str, implementation_id: str, **kwargs):
-        super().__init__(method_id, implementation_id)
+    def __init__(self, method_id: str, variant_id: str, **kwargs):
+        super().__init__(method_id, variant_id)
         self.threshold = kwargs.get("threshold", 0.1)
         self._reference_data: Optional[np.ndarray] = None
         self._last_score: Optional[float] = None

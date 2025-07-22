@@ -2,7 +2,7 @@
 Test suite for data module - REQ-DAT-XXX
 
 This module tests the basic data loading utilities for the drift-benchmark
-library, providing CSV file loading and preprocessing capabilities.
+library, providing csv file loading and preprocessing capabilities.
 """
 
 from pathlib import Path
@@ -15,7 +15,7 @@ import pytest
 def test_should_provide_load_dataset_function_when_imported(sample_csv_file, sample_dataset_config):
     """Test REQ-DAT-001: Data module must provide load_dataset(config: DatasetConfig) -> DatasetResult for loading datasets from files"""
     # Arrange
-    config = sample_dataset_config(path=str(sample_csv_file), format="CSV", reference_split=0.6)
+    config = sample_dataset_config(path=str(sample_csv_file), format="csv", reference_split=0.6)
 
     # Act
     try:
@@ -33,9 +33,9 @@ def test_should_provide_load_dataset_function_when_imported(sample_csv_file, sam
 
 
 def test_should_support_csv_format_when_loaded(sample_csv_file, sample_dataset_config):
-    """Test REQ-DAT-002: File loading must support CSV format using pandas.read_csv() with default parameters"""
+    """Test REQ-DAT-002: File loading must support csv format using pandas.read_csv() with default parameters"""
     # Arrange
-    config = sample_dataset_config(path=str(sample_csv_file), format="CSV", reference_split=0.7)
+    config = sample_dataset_config(path=str(sample_csv_file), format="csv", reference_split=0.7)
 
     # Act
     try:
@@ -43,16 +43,16 @@ def test_should_support_csv_format_when_loaded(sample_csv_file, sample_dataset_c
 
         result = load_dataset(config)
     except ImportError as e:
-        pytest.fail(f"Failed to import load_dataset for CSV test: {e}")
+        pytest.fail(f"Failed to import load_dataset for csv test: {e}")
 
     # Assert - data loaded successfully
     assert isinstance(result.X_ref, pd.DataFrame), "X_ref must be pandas DataFrame"
     assert isinstance(result.X_test, pd.DataFrame), "X_test must be pandas DataFrame"
 
-    # Assert - CSV format parsed correctly
+    # Assert - csv format parsed correctly
     expected_columns = ["feature_1", "feature_2", "categorical_feature"]
-    assert list(result.X_ref.columns) == expected_columns, "CSV columns should be preserved"
-    assert list(result.X_test.columns) == expected_columns, "CSV columns should be preserved"
+    assert list(result.X_ref.columns) == expected_columns, "csv columns should be preserved"
+    assert list(result.X_test.columns) == expected_columns, "csv columns should be preserved"
 
     # Assert - data types inferred correctly
     assert result.X_ref["feature_1"].dtype in [np.float64, np.int64], "numeric columns should be numeric type"
@@ -63,9 +63,9 @@ def test_should_support_split_configuration_when_loaded(sample_csv_file, sample_
     """Test REQ-DAT-003: File datasets must support reference_split ratio (0.0 to 1.0) for creating X_ref/X_test divisions"""
     # Arrange - test different split ratios
     configs = [
-        sample_dataset_config(str(sample_csv_file), "CSV", 0.3),
-        sample_dataset_config(str(sample_csv_file), "CSV", 0.5),
-        sample_dataset_config(str(sample_csv_file), "CSV", 0.8),
+        sample_dataset_config(str(sample_csv_file), "csv", 0.3),
+        sample_dataset_config(str(sample_csv_file), "csv", 0.5),
+        sample_dataset_config(str(sample_csv_file), "csv", 0.8),
     ]
 
     # Act & Assert
@@ -93,7 +93,7 @@ def test_should_support_split_configuration_when_loaded(sample_csv_file, sample_
 def test_should_validate_file_path_when_loading(sample_dataset_config):
     """Test REQ-DAT-004: File loading must validate file exists and is readable, raising DataLoadingError with descriptive message"""
     # Arrange
-    non_existent_config = sample_dataset_config(path="non_existent_file.csv", format="CSV", reference_split=0.5)
+    non_existent_config = sample_dataset_config(path="non_existent_file.csv", format="csv", reference_split=0.5)
 
     # Act & Assert
     try:
@@ -117,20 +117,20 @@ def test_should_infer_data_types_when_loaded(numeric_only_csv_file, categorical_
     try:
         from drift_benchmark.data import load_dataset
 
-        # Test CONTINUOUS data type inference
-        numeric_config = sample_dataset_config(str(numeric_only_csv_file), "CSV", 0.5)
+        # Test continuous data type inference
+        numeric_config = sample_dataset_config(str(numeric_only_csv_file), "csv", 0.5)
         numeric_result = load_dataset(numeric_config)
-        assert numeric_result.metadata.data_type == "CONTINUOUS", "numeric-only dataset should be inferred as CONTINUOUS"
+        assert numeric_result.metadata.data_type == "continuous", "numeric-only dataset should be inferred as continuous"
 
-        # Test CATEGORICAL data type inference
-        categorical_config = sample_dataset_config(str(categorical_only_csv_file), "CSV", 0.5)
+        # Test categorical data type inference
+        categorical_config = sample_dataset_config(str(categorical_only_csv_file), "csv", 0.5)
         categorical_result = load_dataset(categorical_config)
-        assert categorical_result.metadata.data_type == "CATEGORICAL", "categorical-only dataset should be inferred as CATEGORICAL"
+        assert categorical_result.metadata.data_type == "categorical", "categorical-only dataset should be inferred as categorical"
 
-        # Test MIXED data type inference
-        mixed_config = sample_dataset_config(str(sample_csv_file), "CSV", 0.5)
+        # Test mixed data type inference
+        mixed_config = sample_dataset_config(str(sample_csv_file), "csv", 0.5)
         mixed_result = load_dataset(mixed_config)
-        assert mixed_result.metadata.data_type == "MIXED", "mixed dataset should be inferred as MIXED"
+        assert mixed_result.metadata.data_type == "mixed", "mixed dataset should be inferred as mixed"
 
     except ImportError as e:
         pytest.fail(f"Failed to import load_dataset for data type inference test: {e}")
@@ -139,7 +139,7 @@ def test_should_infer_data_types_when_loaded(numeric_only_csv_file, categorical_
 def test_should_return_dataframes_when_loaded(sample_csv_file, sample_dataset_config):
     """Test REQ-DAT-006: All loaded datasets must return X_ref and X_test as pandas.DataFrame objects with preserved column names and index"""
     # Arrange
-    config = sample_dataset_config(path=str(sample_csv_file), format="CSV", reference_split=0.6)
+    config = sample_dataset_config(path=str(sample_csv_file), format="csv", reference_split=0.6)
 
     # Act
     try:
@@ -168,8 +168,8 @@ def test_should_return_dataframes_when_loaded(sample_csv_file, sample_dataset_co
 
 
 def test_should_handle_missing_data_when_loaded(sample_dataset_config):
-    """Test REQ-DAT-007: CSV loading must handle missing values using pandas defaults (empty strings become NaN)"""
-    # Arrange - create CSV with missing values
+    """Test REQ-DAT-007: csv loading must handle missing values using pandas defaults (empty strings become NaN)"""
+    # Arrange - create csv with missing values
     csv_content_with_missing = """feature_1,feature_2,categorical_feature
 1.5,2.3,A
 2.1,,B
@@ -184,7 +184,7 @@ def test_should_handle_missing_data_when_loaded(sample_dataset_config):
         temp_path = Path(f.name)
 
     try:
-        config = sample_dataset_config(path=str(temp_path), format="CSV", reference_split=0.6)
+        config = sample_dataset_config(path=str(temp_path), format="csv", reference_split=0.6)
 
         # Act
         from drift_benchmark.data import load_dataset
@@ -208,42 +208,42 @@ def test_should_handle_missing_data_when_loaded(sample_dataset_config):
 def test_should_implement_data_type_inference_algorithm_when_called(
     numeric_only_csv_file, categorical_only_csv_file, sample_csv_file, sample_dataset_config
 ):
-    """Test REQ-DAT-008: CONTINUOUS: numeric dtypes (int, float), CATEGORICAL: object/string dtypes, MIXED: datasets with both"""
+    """Test REQ-DAT-008: continuous: numeric dtypes (int, float), categorical: object/string dtypes, mixed: datasets with both"""
     # Act & Assert
     try:
         from drift_benchmark.data import load_dataset
 
-        # Test CONTINUOUS: numeric dtypes only
-        numeric_config = sample_dataset_config(str(numeric_only_csv_file), "CSV", 0.5)
+        # Test continuous: numeric dtypes only
+        numeric_config = sample_dataset_config(str(numeric_only_csv_file), "csv", 0.5)
         numeric_result = load_dataset(numeric_config)
 
         # Verify all columns are numeric
         combined_numeric = pd.concat([numeric_result.X_ref, numeric_result.X_test])
         numeric_columns = combined_numeric.select_dtypes(include=[np.number]).columns
-        assert len(numeric_columns) == len(combined_numeric.columns), "CONTINUOUS dataset should have all numeric columns"
-        assert numeric_result.metadata.data_type == "CONTINUOUS"
+        assert len(numeric_columns) == len(combined_numeric.columns), "continuous dataset should have all numeric columns"
+        assert numeric_result.metadata.data_type == "continuous"
 
-        # Test CATEGORICAL: object/string dtypes only
-        categorical_config = sample_dataset_config(str(categorical_only_csv_file), "CSV", 0.5)
+        # Test categorical: object/string dtypes only
+        categorical_config = sample_dataset_config(str(categorical_only_csv_file), "csv", 0.5)
         categorical_result = load_dataset(categorical_config)
 
         # Verify all columns are object/string
         combined_categorical = pd.concat([categorical_result.X_ref, categorical_result.X_test])
         object_columns = combined_categorical.select_dtypes(include=[object]).columns
-        assert len(object_columns) == len(combined_categorical.columns), "CATEGORICAL dataset should have all object columns"
-        assert categorical_result.metadata.data_type == "CATEGORICAL"
+        assert len(object_columns) == len(combined_categorical.columns), "categorical dataset should have all object columns"
+        assert categorical_result.metadata.data_type == "categorical"
 
-        # Test MIXED: both numeric and object dtypes
-        mixed_config = sample_dataset_config(str(sample_csv_file), "CSV", 0.5)
+        # Test mixed: both numeric and object dtypes
+        mixed_config = sample_dataset_config(str(sample_csv_file), "csv", 0.5)
         mixed_result = load_dataset(mixed_config)
 
         # Verify mix of column types
         combined_mixed = pd.concat([mixed_result.X_ref, mixed_result.X_test])
         numeric_mixed_columns = combined_mixed.select_dtypes(include=[np.number]).columns
         object_mixed_columns = combined_mixed.select_dtypes(include=[object]).columns
-        assert len(numeric_mixed_columns) > 0, "MIXED dataset should have numeric columns"
-        assert len(object_mixed_columns) > 0, "MIXED dataset should have object columns"
-        assert mixed_result.metadata.data_type == "MIXED"
+        assert len(numeric_mixed_columns) > 0, "mixed dataset should have numeric columns"
+        assert len(object_mixed_columns) > 0, "mixed dataset should have object columns"
+        assert mixed_result.metadata.data_type == "mixed"
 
     except ImportError as e:
         pytest.fail(f"Failed to import load_dataset for algorithm test: {e}")
@@ -252,7 +252,7 @@ def test_should_implement_data_type_inference_algorithm_when_called(
 def test_should_set_dimension_metadata_when_loaded(sample_csv_file, sample_dataset_config):
     """Test that data loading sets appropriate dimension metadata based on number of features"""
     # Arrange & Act
-    config = sample_dataset_config(path=str(sample_csv_file), format="CSV", reference_split=0.5)
+    config = sample_dataset_config(path=str(sample_csv_file), format="csv", reference_split=0.5)
 
     try:
         from drift_benchmark.data import load_dataset
@@ -262,9 +262,9 @@ def test_should_set_dimension_metadata_when_loaded(sample_csv_file, sample_datas
         pytest.fail(f"Failed to import load_dataset for dimension test: {e}")
 
     # Assert - multivariate for multiple columns
-    assert result.metadata.dimension == "MULTIVARIATE", "dataset with multiple columns should be MULTIVARIATE"
+    assert result.metadata.dimension == "multivariate", "dataset with multiple columns should be multivariate"
 
-    # Test univariate with single column CSV
+    # Test univariate with single column csv
     single_column_csv = """single_feature
 1.5
 2.1
@@ -279,9 +279,9 @@ def test_should_set_dimension_metadata_when_loaded(sample_csv_file, sample_datas
         temp_path = Path(f.name)
 
     try:
-        single_config = sample_dataset_config(str(temp_path), "CSV", 0.5)
+        single_config = sample_dataset_config(str(temp_path), "csv", 0.5)
         single_result = load_dataset(single_config)
-        assert single_result.metadata.dimension == "UNIVARIATE", "dataset with single column should be UNIVARIATE"
+        assert single_result.metadata.dimension == "univariate", "dataset with single column should be univariate"
     finally:
         temp_path.unlink()
 
@@ -289,7 +289,7 @@ def test_should_set_dimension_metadata_when_loaded(sample_csv_file, sample_datas
 def test_should_set_sample_counts_in_metadata_when_loaded(sample_csv_file, sample_dataset_config):
     """Test that metadata includes correct sample counts for reference and test sets"""
     # Arrange
-    config = sample_dataset_config(path=str(sample_csv_file), format="CSV", reference_split=0.7)
+    config = sample_dataset_config(path=str(sample_csv_file), format="csv", reference_split=0.7)
 
     # Act
     try:

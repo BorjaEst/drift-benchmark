@@ -9,6 +9,7 @@ from typing import Any, List, Optional, Union
 import pandas as pd
 from pydantic import BaseModel, Field
 
+from ..literals import LibraryId
 from .configurations import BenchmarkConfig
 from .metadata import BenchmarkSummary, DatasetMetadata
 
@@ -36,6 +37,7 @@ class DetectorResult(BaseModel):
     """
 
     detector_id: str = Field(..., description="Unique identifier for detector")
+    library_id: LibraryId = Field(..., description="Library implementation identifier")
     dataset_name: str = Field(..., description="Name of dataset processed")
     drift_detected: bool = Field(..., description="Whether drift was detected")
     execution_time: float = Field(..., description="Execution time in seconds")

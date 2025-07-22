@@ -9,7 +9,7 @@ from typing import List, Union
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..literals import FileFormat
+from ..literals import FileFormat, LibraryId
 
 
 class DatasetConfig(BaseModel):
@@ -20,7 +20,7 @@ class DatasetConfig(BaseModel):
     """
 
     path: str = Field(..., description="Path to dataset file")
-    format: FileFormat = Field(default="CSV", description="Dataset file format")
+    format: FileFormat = Field(default="csv", description="Dataset file format")
     reference_split: float = Field(..., description="Ratio for reference/test split (0.0 to 1.0)")
 
     @field_validator("reference_split")
@@ -36,11 +36,12 @@ class DetectorConfig(BaseModel):
     """
     Configuration for individual detector.
 
-    REQ-CFM-003: DetectorConfig with fields: method_id, implementation_id
+    REQ-CFM-003: DetectorConfig with fields: method_id, variant_id, library_id
     """
 
     method_id: str = Field(..., description="Method identifier from registry")
-    implementation_id: str = Field(..., description="Implementation variant identifier")
+    variant_id: str = Field(..., description="Variant variant identifier")
+    library_id: LibraryId = Field(..., description="Library implementation identifier")
 
 
 class BenchmarkConfig(BaseModel):

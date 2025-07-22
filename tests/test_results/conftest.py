@@ -26,10 +26,10 @@ def temp_results_dir():
 def sample_benchmark_config():
     """Provide realistic BenchmarkConfig data for testing - REQ-RST-003"""
     return {
-        "datasets": [{"path": "datasets/test_dataset.csv", "format": "CSV", "reference_split": 0.5}],
+        "datasets": [{"path": "datasets/test_dataset.csv", "format": "csv", "reference_split": 0.5}],
         "detectors": [
-            {"method_id": "ks_test", "implementation_id": "scipy"},
-            {"method_id": "cramer_von_mises", "implementation_id": "cvm_batch"},
+            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"},
+            {"method_id": "cramer_von_mises", "variant_id": "cvm_batch", "library_id": "scipy"},
         ],
     }
 
@@ -81,15 +81,15 @@ def mock_benchmark_result():
         "dataset2": Mock(path="data/dataset2.csv", drift_column="drift_flag"),
     }
     result.config.detectors = [
-        Mock(method_id="ks_test", implementation_id="scipy", parameters={"alpha": 0.05}),
-        Mock(method_id="drift_detector", implementation_id="custom", parameters={}),
+        Mock(method_id="ks_test", variant_id="scipy", parameters={"alpha": 0.05}),
+        Mock(method_id="drift_detector", variant_id="custom", parameters={}),
     ]
 
     # Mock detector results
     result.detector_results = [
         Mock(
             method_id="ks_test",
-            implementation_id="scipy",
+            variant_id="scipy",
             detector_id="ks_test.scipy",
             dataset_name="dataset1",
             execution_time=0.123,
@@ -102,7 +102,7 @@ def mock_benchmark_result():
         ),
         Mock(
             method_id="ks_test",
-            implementation_id="scipy",
+            variant_id="scipy",
             detector_id="ks_test.scipy",
             dataset_name="dataset2",
             execution_time=0.156,
@@ -115,7 +115,7 @@ def mock_benchmark_result():
         ),
         Mock(
             method_id="drift_detector",
-            implementation_id="custom",
+            variant_id="custom",
             detector_id="drift_detector.custom",
             dataset_name="dataset1",
             execution_time=0.234,
@@ -150,14 +150,14 @@ def mock_benchmark_result():
                     "dataset2": {"path": "data/dataset2.csv", "drift_column": "drift_flag"},
                 },
                 "detectors": [
-                    {"method_id": "ks_test", "implementation_id": "scipy", "parameters": {"alpha": 0.05}},
-                    {"method_id": "drift_detector", "implementation_id": "custom", "parameters": {}},
+                    {"method_id": "ks_test", "variant_id": "scipy", "parameters": {"alpha": 0.05}},
+                    {"method_id": "drift_detector", "variant_id": "custom", "parameters": {}},
                 ],
             },
             "detector_results": [
                 {
                     "method_id": "ks_test",
-                    "implementation_id": "scipy",
+                    "variant_id": "scipy",
                     "detector_id": "ks_test.scipy",
                     "dataset_name": "dataset1",
                     "execution_time": 0.123,
@@ -166,7 +166,7 @@ def mock_benchmark_result():
                 },
                 {
                     "method_id": "ks_test",
-                    "implementation_id": "scipy",
+                    "variant_id": "scipy",
                     "detector_id": "ks_test.scipy",
                     "dataset_name": "dataset2",
                     "execution_time": 0.156,
@@ -175,7 +175,7 @@ def mock_benchmark_result():
                 },
                 {
                     "method_id": "drift_detector",
-                    "implementation_id": "custom",
+                    "variant_id": "custom",
                     "detector_id": "drift_detector.custom",
                     "dataset_name": "dataset1",
                     "execution_time": 0.234,
@@ -240,8 +240,8 @@ def mock_logger():
 @pytest.fixture(scope="session")
 def sample_log_content():
     """Sample log content for testing log export - REQ-RST-004"""
-    return """2024-01-01 12:00:00,000 - INFO - drift_benchmark.benchmark - Starting benchmark execution
-2024-01-01 12:00:01,123 - INFO - drift_benchmark.adapters - Loading detector: ks_test.scipy  
-2024-01-01 12:00:01,456 - INFO - drift_benchmark.data - Loading dataset: test_dataset.csv
-2024-01-01 12:00:02,789 - INFO - drift_benchmark.benchmark - Detector ks_test.scipy completed successfully
-2024-01-01 12:00:03,012 - INFO - drift_benchmark.benchmark - Benchmark execution completed"""
+    return """2024-01-01 12:00:00,000 - info - drift_benchmark.benchmark - Starting benchmark execution
+2024-01-01 12:00:01,123 - info - drift_benchmark.adapters - Loading detector: ks_test.scipy  
+2024-01-01 12:00:01,456 - info - drift_benchmark.data - Loading dataset: test_dataset.csv
+2024-01-01 12:00:02,789 - info - drift_benchmark.benchmark - Detector ks_test.scipy completed successfully
+2024-01-01 12:00:03,012 - info - drift_benchmark.benchmark - Benchmark execution completed"""

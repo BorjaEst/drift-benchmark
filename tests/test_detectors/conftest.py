@@ -15,30 +15,30 @@ def mock_methods_toml_file():
             "ks_test": {
                 "name": "Kolmogorov-Smirnov Test",
                 "description": "Statistical test for distribution differences",
-                "drift_types": ["COVARIATE"],
-                "family": "STATISTICAL_TEST",
-                "data_dimension": "UNIVARIATE",
-                "data_types": ["CONTINUOUS"],
+                "drift_types": ["covariate"],
+                "family": "statistical-test",
+                "data_dimension": "univariate",
+                "data_types": ["continuous"],
                 "requires_labels": False,
                 "references": ["https://doi.org/10.2307/2280095"],
-                "implementations": {
-                    "scipy": {"name": "SciPy Implementation", "execution_mode": "BATCH", "hyperparameters": ["threshold"], "references": []}
+                "variants": {
+                    "scipy": {"name": "SciPy Variant", "execution_mode": "batch", "hyperparameters": ["threshold"], "references": []}
                 },
             },
             "drift_detector": {
                 "name": "Basic Drift Detector",
                 "description": "Simple change detection algorithm",
-                "drift_types": ["CONCEPT"],
-                "family": "CHANGE_DETECTION",
-                "data_dimension": "UNIVARIATE",
-                "data_types": ["CONTINUOUS", "CATEGORICAL"],
+                "drift_types": ["concept"],
+                "family": "change-detection",
+                "data_dimension": "univariate",
+                "data_types": ["continuous", "categorical"],
                 "requires_labels": True,
                 "references": [],
-                "implementations": {
-                    "custom": {"name": "Custom Implementation", "execution_mode": "BATCH", "hyperparameters": [], "references": []},
+                "variants": {
+                    "custom": {"name": "Custom Variant", "execution_mode": "batch", "hyperparameters": [], "references": []},
                     "river": {
-                        "name": "River Implementation",
-                        "execution_mode": "STREAMING",
+                        "name": "River Variant",
+                        "execution_mode": "streaming",
                         "hyperparameters": ["window_size"],
                         "references": [],
                     },
@@ -66,9 +66,9 @@ def invalid_methods_toml_file():
             "incomplete_method": {
                 "name": "Incomplete Method",
                 # Missing required fields: description, drift_types, family, data_dimension, data_types, requires_labels, references
-                "implementations": {
+                "variants": {
                     "incomplete_impl": {
-                        "name": "Incomplete Implementation"
+                        "name": "Incomplete Variant"
                         # Missing required fields: execution_mode, hyperparameters, references
                     }
                 },
