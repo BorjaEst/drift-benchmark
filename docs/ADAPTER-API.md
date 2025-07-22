@@ -1,67 +1,217 @@
 # Drift Detection Adapter API Documentation
 
 > **Version**: 0.1.0  
-> **Date**: July 21, 2025  
-> **Purpose**: Complete API reference for creating drift detection adapters in the drift-benchmark framework
+> **Date**: July 22, 2025  
+> **Purpose**: Complete API reference for creating drift detection adapters to enable library comparison
 
 ## 📖 Table of Contents
 
 1. [Overview](#overview)
-2. [Core Architecture](#core-architecture)
+2. [Core Concepts](#core-concepts)
 3. [BaseDetector Abstract Class](#basedetector-abstract-class)
-4. [Adapter Variants Guide](#adapter-variants-guide)
+4. [Creating Library Adapters](#creating-library-adapters)
 5. [Registration System](#registration-system)
 6. [Data Flow and Lifecycle](#data-flow-and-lifecycle)
-7. [Type System and Literals](#type-system-and-literals)
-8. [Error Handling](#error-handling)
-9. [Complete Examples](#complete-examples)
-10. [Testing Adapters](#testing-adapters)
-11. [Best Practices](#best-practices)
+7. [Library Comparison Examples](#library-comparison-examples)
+8. [Type System and Error Handling](#type-system-and-error-handling)
+9. [Testing Adapters](#testing-adapters)
+10. [Best Practices](#best-practices)
 
 ---
 
 ## 📋 Overview
 
-The drift-benchmark framework provides a unified interface for integrating various drift detection libraries through an adapter pattern. This document describes how to create new adapters that can be seamlessly integrated into the benchmarking system.
+The drift-benchmark framework enables **fair comparison of how different libraries implement the same mathematical drift detection methods**. This document shows how to create adapter classes that integrate your preferred libraries with our standardized interface.
+
+### 🎯 Primary Purpose
+
+**Compare library implementations** rather than just methods. For example:
+
+- How does **Evidently's** Kolmogorov-Smirnov implementation compare to **Alibi-Detect's**?
+- Which library provides better performance for Maximum Mean Discrepancy: **scikit-learn** or **River**?
+- Is **SciPy's** statistical tests faster than custom implementations?
 
 ### Key Concepts
 
-- **Adapter Pattern**: Wraps external drift detection libraries with a consistent interface
-- **Registration System**: Automatic discovery and registration of detector variants
-- **Data Format Agnostic**: Supports conversion between pandas DataFrames and library-specific formats
-- **Lifecycle Management**: Standardized flow: preprocess → fit → detect → score
+- **Method+Variant Standardization**: We define consistent algorithmic approaches (variants) for each mathematical method
+- **Library-Agnostic Interface**: Compare implementations across Evidently, Alibi-Detect, scikit-learn, River, etc.
+- **Adapter Pattern**: Your code bridges library-specific APIs to our unified interface
+- **Performance Benchmarking**: Measure speed, accuracy, and resource usage across libraries
 
 ---
 
-## 🏗️ Core Architecture
+## 🏗️ Core Concepts
 
-### Module Structure
+### Framework Architecture
 
-```text
-src/drift_benchmark/adapters/
-├── __init__.py           # Public API exports
-├── base_detector.py      # BaseDetector abstract class
-├── registry.py           # Registration and lookup system
-├── test_detectors.py     # Test detector variants
-└── statistical_detectors.py  # Real detector variants
-```
-
-### Architectural Layers
+The drift-benchmark framework acts as a **standardization layer** between different drift detection libraries:
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │                   BenchmarkRunner                       │
-│                 (Orchestration Layer)                   │
+│              (Orchestrates Comparisons)                 │
 ├─────────────────────────────────────────────────────────┤
-│                     Benchmark                           │
-│                 (Execution Engine)                      │
+│                 Benchmark Core                          │
+│              (Executes All Detectors)                   │
 ├─────────────────────────────────────────────────────────┤
 │                  Adapter Layer                          │
-│              BaseDetector + Registry                    │
+│              BaseDetector Interface                     │
 ├─────────────────────────────────────────────────────────┤
-│               External Libraries                        │
-│        (scikit-learn, River, Evidently, etc.)           │
+│               Library Implementations                   │
+│        Evidently | Alibi-Detect | scikit-learn          │
+│           River | SciPy | Custom Libraries              │
 └─────────────────────────────────────────────────────────┘
+```
+
+### Method+Variant+Library Hierarchy
+
+**drift-benchmark** organizes drift detection into a three-level hierarchy:
+
+1. **🔬 Method**: Mathematical approach (e.g., "kolmogorov_smirnov", "maximum_mean_discrepancy")
+2. **⚙️ Variant**: Algorithmic implementation defined by us (e.g., "batch", "streaming", "sliding_window")
+3. **🔌 Library**: Specific library implementation (e.g., "evidently", "alibi_detect", "scipy")
+
+### Registry Structure
+
+```text
+methods.toml defines:
+├── kolmogorov_smirnov (method)
+│   ├── batch (variant)          ← drift-benchmark defines this
+│   └── streaming (variant)      ← drift-benchmark defines this
+└── maximum_mean_discrepancy (method)
+    ├── rbf_kernel (variant)     ← drift-benchmark defines this
+    └── linear_kernel (variant)  ← drift-benchmark defines this
+
+Your adapters implement:
+├── kolmogorov_smirnov + batch + evidently      ← You implement this
+├── kolmogorov_smirnov + batch + alibi_detect   ← You implement this
+├── kolmogorov_smirnov + batch + scipy          ← You implement this
+└── ... (any library you want to compare)
+```
+
+### Key Framework Roles
+
+- **drift-benchmark provides**: Standardized method+variant definitions in `methods.toml`
+- **You provide**: Adapter classes that map library implementations to our variants
+- **Framework enables**: Fair comparison of different libraries implementing the same method+variant
+
+---
+
+## 🧬 BaseDetector Abstract Class
+
+### Class Definition
+
+```python
+from abc import ABC, abstractmethod
+from typing import Any, Optional
+from drift_benchmark.models.results import DatasetResult
+
+class BaseDetector(ABC):
+    """Abstract base class for all drift detection library adapters."""
+
+    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+        """
+        Initialize detector with standardized identifiers.
+
+        Args:
+            method_id: Method from methods.toml (e.g., "kolmogorov_smirnov")
+            variant_id: Variant from methods.toml (e.g., "batch")
+            library_id: Library identifier (e.g., "evidently", "alibi_detect")
+            **kwargs: Library-specific parameters
+        """
+        self._method_id = method_id
+        self._variant_id = variant_id
+        self._library_id = library_id
+        # Store any library-specific configuration
+        self._config = kwargs
+```
+
+### Required Properties
+
+```python
+@property
+def method_id(self) -> str:
+    """Mathematical method identifier from methods.toml registry."""
+    return self._method_id
+
+@property
+def variant_id(self) -> str:
+    """Algorithmic variant identifier from methods.toml registry."""
+    return self._variant_id
+
+@property
+def library_id(self) -> str:
+    """Library implementation identifier for comparison."""
+    return self._library_id
+```
+
+### Required Methods
+
+#### Data Preprocessing
+
+```python
+def preprocess(self, data: DatasetResult, **kwargs) -> Any:
+    """
+    Convert pandas DataFrames to library-specific format.
+
+    Args:
+        data: Contains X_ref and X_test DataFrames plus metadata
+        **kwargs: Phase-specific parameters (e.g., phase='train'/'detect')
+
+    Returns:
+        Data in format expected by your library (numpy arrays, etc.)
+    """
+    # Default implementation - override for library-specific formats
+    return {"X_ref": data.X_ref, "X_test": data.X_test}
+```
+
+#### Training (Abstract)
+
+```python
+@abstractmethod
+def fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector":
+    """
+    Train detector on reference data using your library.
+
+    Args:
+        preprocessed_data: Output from preprocess() containing reference data
+        **kwargs: Training parameters
+
+    Returns:
+        Self for method chaining
+    """
+    pass
+```
+
+#### Detection (Abstract)
+
+```python
+@abstractmethod
+def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+    """
+    Perform drift detection using your library.
+
+    Args:
+        preprocessed_data: Output from preprocess() containing test data
+        **kwargs: Detection parameters
+
+    Returns:
+        Boolean indicating whether drift was detected
+    """
+    pass
+```
+
+#### Scoring (Optional)
+
+```python
+def score(self) -> Optional[float]:
+    """
+    Return drift score after detection, if available.
+
+    Returns:
+        Continuous drift score or None if library doesn't provide scores
+    """
+    return getattr(self, "_last_score", None)
 ```
 
 ---
@@ -271,87 +421,227 @@ def score(self) -> Optional[float]:
 
 ---
 
-## 📚 Adapter Variants Guide
+## � Creating Library Adapters
 
-### Step-by-Step Variants
+### Step 1: Choose Method+Variant from Registry
 
-#### 1. Define Your Detector Class
+First, check which methods and variants are available in `methods.toml`:
+
+```toml
+[methods.kolmogorov_smirnov]
+name = "Kolmogorov-Smirnov Test"
+description = "Two-sample test for equality of continuous distributions"
+drift_types = ["COVARIATE"]
+family = "STATISTICAL_TEST"
+data_dimension = "UNIVARIATE"
+data_types = ["CONTINUOUS"]
+requires_labels = false
+
+[methods.kolmogorov_smirnov.variants.batch]
+name = "Batch Processing"
+execution_mode = "BATCH"
+hyperparameters = ["threshold"]
+```
+
+### Step 2: Create Library-Specific Adapters
+
+Create multiple adapters for the **same method+variant** to enable library comparison:
 
 ```python
 from drift_benchmark.adapters import BaseDetector, register_detector
 import numpy as np
-from scipy import stats
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch")
-class KolmogorovSmirnovDetector(BaseDetector):
-    """Kolmogorov-Smirnov drift detector variants."""
+# Evidently's implementation
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="evidently")
+class EvidentlyKSDetector(BaseDetector):
+    """Evidently's implementation of Kolmogorov-Smirnov batch processing."""
 
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
-        super().__init__(method_id, variant_id)
+    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+        super().__init__(method_id, variant_id, library_id, **kwargs)
         self.threshold = kwargs.get('threshold', 0.05)
         self._reference_data = None
-        self._last_score = None
+
+    def preprocess(self, data, **kwargs):
+        """Convert to Evidently's expected format."""
+        # Evidently typically expects pandas DataFrames
+        phase = kwargs.get('phase', 'detect')
+        if phase == 'train':
+            return data.X_ref
+        else:
+            return data.X_test
+
+    def fit(self, preprocessed_data, **kwargs):
+        """Store reference data for Evidently."""
+        self._reference_data = preprocessed_data
+        return self
+
+    def detect(self, preprocessed_data, **kwargs):
+        """Use Evidently's drift detection."""
+        from evidently.metrics import DataDriftPreset
+
+        # Evidently-specific implementation
+        # ... implementation details ...
+
+        return drift_detected
+
+# Alibi-Detect's implementation of the SAME method+variant
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi_detect")
+class AlibiDetectKSDetector(BaseDetector):
+    """Alibi-Detect's implementation of Kolmogorov-Smirnov batch processing."""
+
+    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+        super().__init__(method_id, variant_id, library_id, **kwargs)
+        self.threshold = kwargs.get('threshold', 0.05)
+        self._detector = None
+
+    def preprocess(self, data, **kwargs):
+        """Convert to Alibi-Detect's expected format."""
+        # Alibi-Detect typically expects numpy arrays
+        phase = kwargs.get('phase', 'detect')
+        if phase == 'train':
+            return data.X_ref.values
+        else:
+            return data.X_test.values
+
+    def fit(self, preprocessed_data, **kwargs):
+        """Initialize Alibi-Detect detector."""
+        from alibi_detect.cd import KSDrift
+
+        self._detector = KSDrift(preprocessed_data, p_val=self.threshold)
+        return self
+
+    def detect(self, preprocessed_data, **kwargs):
+        """Use Alibi-Detect's drift detection."""
+        result = self._detector.predict(preprocessed_data)
+        self._last_score = result['data']['p_val']
+        return result['data']['is_drift']
+
+# SciPy's implementation of the SAME method+variant
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="scipy")
+class SciPyKSDetector(BaseDetector):
+    """SciPy's implementation of Kolmogorov-Smirnov batch processing."""
+
+    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
+        super().__init__(method_id, variant_id, library_id, **kwargs)
+        self.threshold = kwargs.get('threshold', 0.05)
+        self._reference_data = None
+
+    def preprocess(self, data, **kwargs):
+        """Convert to SciPy's expected format."""
+        # SciPy expects 1D numpy arrays for KS test
+        phase = kwargs.get('phase', 'detect')
+        if phase == 'train':
+            return data.X_ref.iloc[:, 0].values  # First column only
+        else:
+            return data.X_test.iloc[:, 0].values
+
+    def fit(self, preprocessed_data, **kwargs):
+        """Store reference data for SciPy."""
+        self._reference_data = preprocessed_data
+        return self
+
+    def detect(self, preprocessed_data, **kwargs):
+        """Use SciPy's KS test."""
+        from scipy.stats import ks_2samp
+
+        statistic, p_value = ks_2samp(self._reference_data, preprocessed_data)
+        self._last_score = p_value
+        return p_value < self.threshold
 ```
 
-#### 2. Implement Data Preprocessing
+### Step 3: Configure Benchmark to Compare Libraries
 
-```python
-def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-    """Convert DataFrame to numpy array for scipy.stats functions."""
-    phase = kwargs.get('phase', 'train')
+```toml
+# benchmark_config.toml
+[[datasets]]
+path = "datasets/example.csv"
+format = "CSV"
+reference_split = 0.5
 
-    if phase == 'train':
-        # For training, return reference data
-        return data.X_ref.values
-    else:
-        # For detection, return test data
-        return data.X_test.values
+# Compare the same method+variant across different libraries
+[[detectors]]
+method_id = "kolmogorov_smirnov"
+variant_id = "batch"
+library_id = "evidently"
+threshold = 0.05
+
+[[detectors]]
+method_id = "kolmogorov_smirnov"  # Same method
+variant_id = "batch"              # Same variant
+library_id = "alibi_detect"       # Different library
+threshold = 0.05
+
+[[detectors]]
+method_id = "kolmogorov_smirnov"  # Same method
+variant_id = "batch"              # Same variant
+library_id = "scipy"              # Different library
+threshold = 0.05
 ```
 
-#### 3. Implement Training Logic
+### Library-Specific Patterns
+
+#### Evidently Integration
 
 ```python
-def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "KolmogorovSmirnovDetector":
-    """Store reference data for later comparison."""
-    self._reference_data = preprocessed_data.copy()
+def preprocess(self, data, **kwargs):
+    """Evidently usually works with pandas DataFrames."""
+    return data.X_ref if kwargs.get('phase') == 'train' else data.X_test
+
+def detect(self, preprocessed_data, **kwargs):
+    """Use Evidently's built-in metrics."""
+    from evidently.report import Report
+    from evidently.metrics import DataDriftPreset
+
+    report = Report(metrics=[DataDriftPreset()])
+    report.run(reference_data=self._reference_data, current_data=preprocessed_data)
+    result = report.as_dict()
+    return result['metrics'][0]['result']['dataset_drift']
+```
+
+#### Alibi-Detect Integration
+
+```python
+def preprocess(self, data, **kwargs):
+    """Alibi-Detect usually expects numpy arrays."""
+    data_array = data.X_ref.values if kwargs.get('phase') == 'train' else data.X_test.values
+    return data_array.astype(np.float32)
+
+def fit(self, preprocessed_data, **kwargs):
+    """Initialize Alibi-Detect detector with reference data."""
+    from alibi_detect.cd import MMDDrift
+
+    self._detector = MMDDrift(preprocessed_data, backend='pytorch')
     return self
 ```
 
-#### 4. Implement Detection Logic
+#### SciPy/scikit-learn Integration
 
 ```python
-def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
-    """Perform KS test between reference and test data."""
-    if self._reference_data is None:
-        raise RuntimeError("Detector must be fitted before detection")
+def preprocess(self, data, **kwargs):
+    """Convert to numpy arrays for scikit-learn/SciPy."""
+    df = data.X_ref if kwargs.get('phase') == 'train' else data.X_test
+    return df.select_dtypes(include=[np.number]).values
 
-    # Perform Kolmogorov-Smirnov test
-    statistic, p_value = stats.ks_2samp(
-        self._reference_data.flatten(),
-        preprocessed_data.flatten()
-    )
+def detect(self, preprocessed_data, **kwargs):
+    """Use SciPy statistical tests."""
+    from scipy.stats import ks_2samp
 
-    # Store p-value as drift score (lower = more drift)
-    self._last_score = p_value
+    # For multivariate data, test each feature
+    p_values = []
+    for i in range(preprocessed_data.shape[1]):
+        _, p_val = ks_2samp(self._reference_data[:, i], preprocessed_data[:, i])
+        p_values.append(p_val)
 
-    # Return drift detection result
-    return p_value < self.threshold
+    # Combine p-values (simple minimum for this example)
+    combined_p = min(p_values)
+    self._last_score = combined_p
+    return combined_p < self.threshold
 ```
 
-### Working with Different Data Types
-
-#### Continuous Data
-
-```python
-def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-    """Handle continuous numerical data."""
-    phase = kwargs.get('phase', 'train')
-    df = data.X_ref if phase == 'train' else data.X_test
-
-    # Convert to float and handle missing values
     numeric_data = df.select_dtypes(include=[np.number])
     return numeric_data.fillna(numeric_data.mean()).values
-```
+
+````
 
 #### Categorical Data
 
@@ -377,7 +667,7 @@ def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
         encoded_data[col] = encoder.transform(df[col].astype(str))
 
     return encoded_data.values
-```
+````
 
 #### Multivariate Data
 

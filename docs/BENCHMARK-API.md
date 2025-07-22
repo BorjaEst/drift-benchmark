@@ -1,8 +1,8 @@
 # Drift Detection Benchmarking API Documentation
 
 > **Version**: 0.1.0  
-> **Date**: July 21, 2025  
-> **Purpose**: Complete API reference for benchmarking multiple drift detection adapters
+> **Date**: July 22, 2025  
+> **Purpose**: Complete API reference for benchmarking drift detection library implementations
 
 ## 📖 Table of Contents
 
@@ -13,44 +13,51 @@
 5. [Benchmark Core API](#benchmark-core-api)
 6. [Data Models](#data-models)
 7. [Result Management](#result-management)
-8. [Advanced Configuration](#advanced-configuration)
-9. [Integration Examples](#integration-examples)
-10. [Performance Analysis](#performance-analysis)
-11. [Best Practices](#best-practices)
+8. [Library Comparison Examples](#library-comparison-examples)
+9. [Performance Analysis](#performance-analysis)
+10. [Best Practices](#best-practices)
 
 ---
 
 ## 📋 Overview
 
-The drift-benchmark framework provides a comprehensive system for evaluating and comparing multiple drift detection methods across different datasets. This document describes the complete API for configuring, running, and analyzing benchmark experiments.
+The drift-benchmark framework provides a comprehensive system for **comparing how different libraries implement the same drift detection methods**. This document describes the complete API for configuring, running, and analyzing library comparison experiments.
+
+### 🎯 Primary Goal
+
+**Enable fair comparison of library implementations** to help you choose the best performing library for your specific use case:
+
+- **Performance Comparison**: Which library is faster - Evidently or Alibi-Detect?
+- **Accuracy Analysis**: Which implementation provides better drift detection accuracy?
+- **Resource Efficiency**: Which library uses less memory or computational resources?
 
 ### Key Features
 
-- **Multi-Detector Support**: Run multiple detectors simultaneously
-- **Multi-Dataset Support**: Test across various datasets and scenarios
-- **Automated Execution**: Sequential detector execution with error handling
-- **Performance Metrics**: Execution time, accuracy, precision, recall
-- **Result Storage**: Automated saving with timestamped directories
-- **Configuration Management**: TOML-based reproducible configurations
+- **Multi-Library Support**: Compare Evidently, Alibi-Detect, scikit-learn, SciPy, River, and custom implementations
+- **Standardized Testing**: All libraries tested under identical conditions and data preprocessing
+- **Performance Metrics**: Execution time, accuracy, precision, recall, and resource usage
+- **Automated Execution**: Sequential library execution with comprehensive error handling
+- **Result Storage**: Automated saving with timestamped directories and detailed logs
+- **Configuration Management**: TOML-based reproducible experiment configurations
 
 ### Architecture Overview
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │               Configuration Layer                       │
-│              (TOML + Validation)                        │
+│         (TOML + Library Identification)                 │
 ├─────────────────────────────────────────────────────────┤
 │                BenchmarkRunner                          │
-│              (High-level Interface)                     │
+│         (Orchestrates Library Comparison)               │
 ├─────────────────────────────────────────────────────────┤
 │                  Benchmark Core                         │
-│               (Execution Engine)                        │
+│            (Executes All Library Variants)              │
 ├─────────────────────────────────────────────────────────┤
-│              Data + Adapter Layer                       │
-│          (Dataset Loading + Detectors)                  │
+│              Adapter + Data Layer                       │
+│      (Standardized Interface + Dataset Loading)         │
 ├─────────────────────────────────────────────────────────┤
 │                Result Management                        │
-│           (Storage + Analysis + Export)                 │
+│         (Library Comparison + Analysis)                 │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -58,43 +65,93 @@ The drift-benchmark framework provides a comprehensive system for evaluating and
 
 ## 🚀 Quick Start
 
-### Basic Benchmark Setup
+### Library Comparison Setup
 
-```python
-from drift_benchmark import BenchmarkRunner
+Create a benchmark configuration to compare how different libraries implement the same method:
 
-# 1. Create configuration file
-config_content = """
+```toml
+# benchmark_config.toml
+
 [[datasets]]
 path = "datasets/example.csv"
 format = "CSV"
 reference_split = 0.5
 
+# Compare different library implementations of Kolmogorov-Smirnov
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-variant_id = "ks_batch"
+variant_id = "batch"
+library_id = "evidently"
+threshold = 0.05
 
 [[detectors]]
-method_id = "cramer_von_mises"
-variant_id = "cvm_batch"
-"""
+method_id = "kolmogorov_smirnov"  # Same method
+variant_id = "batch"              # Same variant
+library_id = "alibi_detect"       # Different library
+threshold = 0.05
 
-# Save to file
-with open("benchmark_config.toml", "w") as f:
-    f.write(config_content)
+[[detectors]]
+method_id = "kolmogorov_smirnov"  # Same method
+variant_id = "batch"              # Same variant
+library_id = "scipy"              # Different library
+threshold = 0.05
 
-# 2. Run benchmark
+# Also compare different methods across libraries
+[[detectors]]
+method_id = "maximum_mean_discrepancy"
+variant_id = "rbf_kernel"
+library_id = "alibi_detect"
+```
+
+### Run Library Comparison
+
+```python
+from drift_benchmark import BenchmarkRunner
+
+# Load configuration and run benchmark
 runner = BenchmarkRunner.from_config_file("benchmark_config.toml")
 results = runner.run()
 
-# 3. Access results
-print(f"Total detectors: {results.summary.total_detectors}")
-print(f"Successful runs: {results.summary.successful_runs}")
-print(f"Average execution time: {results.summary.avg_execution_time:.4f}s")
+# Results are automatically saved to timestamped directory
+print(f"Results saved to: {results.output_directory}")
+```
 
-for result in results.detector_results:
-    print(f"{result.detector_id}: drift={result.drift_detected}, "
-          f"time={result.execution_time:.4f}s")
+### Analyze Library Performance
+
+```python
+# Compare library implementations of the same method+variant
+ks_results = [r for r in results.detector_results
+              if r.method_id == "kolmogorov_smirnov" and r.variant_id == "batch"]
+
+for result in ks_results:
+    print(f"Library: {result.library_id}")
+    print(f"Execution Time: {result.execution_time:.4f}s")
+    print(f"Drift Detected: {result.drift_detected}")
+    print(f"Drift Score: {result.drift_score}")
+    print("---")
+
+# Expected output showing library comparison:
+# Library: evidently
+# Execution Time: 0.0234s
+# Drift Detected: True
+# Drift Score: 0.023
+# ---
+# Library: alibi_detect
+# Execution Time: 0.0156s  ← Alibi-Detect is faster!
+# Drift Detected: True
+# Drift Score: 0.021
+# ---
+# Library: scipy
+# Execution Time: 0.0089s  ← SciPy is fastest!
+# Drift Detected: True
+# Drift Score: 0.019
+# ---
+
+# View summary statistics
+summary = results.summary
+print(f"Total Library Combinations: {summary.total_detectors}")
+print(f"Successful Runs: {summary.successful_runs}")
+print(f"Average Execution Time: {summary.avg_execution_time:.4f}s")
 ```
 
 ### Programmatic Configuration
@@ -102,28 +159,33 @@ for result in results.detector_results:
 ```python
 from drift_benchmark import BenchmarkRunner, BenchmarkConfig, DatasetConfig, DetectorConfig
 
-# Create configuration programmatically
+# Create configuration programmatically for library comparison
 config = BenchmarkConfig(
     datasets=[
         DatasetConfig(
-            path="datasets/data1.csv",
+            path="datasets/example.csv",
             format="CSV",
             reference_split=0.5
-        ),
-        DatasetConfig(
-            path="datasets/data2.csv",
-            format="CSV",
-            reference_split=0.6
         )
     ],
     detectors=[
-        DetectorConfig(method_id="kolmogorov_smirnov", variant_id="ks_batch"),
-        DetectorConfig(method_id="anderson_darling", variant_id="ad_batch"),
-        DetectorConfig(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf")
+        # Compare Evidently vs Alibi-Detect for KS test
+        DetectorConfig(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="evidently",
+            threshold=0.05
+        ),
+        DetectorConfig(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="alibi_detect",
+            threshold=0.05
+        )
     ]
 )
 
-# Run benchmark
+# Run library comparison
 runner = BenchmarkRunner(config)
 results = runner.run()
 ```
