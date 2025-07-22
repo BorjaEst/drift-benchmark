@@ -164,7 +164,7 @@ def test_should_export_execution_log_when_saving(temp_results_dir, mock_pydantic
     # Verify log contains execution information
     assert "benchmark" in exported_log.lower(), "Log should contain benchmark execution information"
     assert "detector" in exported_log.lower(), "Log should contain detector information"
-    assert "INFO" in exported_log, "Log should contain INFO level messages"
+    assert "info" in exported_log, "Log should contain info level messages"
 
 
 def test_should_create_directory_with_proper_permissions_when_saving(temp_results_dir, mock_pydantic_benchmark_result):
@@ -351,16 +351,16 @@ def test_should_integrate_with_pydantic_models_when_saving(temp_results_dir):
         # Create real DetectorResult instances
         detector_results = [
             DetectorResult(
-                detector_id="ks_test.scipy.SCIPY",
-                library_id="SCIPY",
+                detector_id="ks_test.scipy.scipy",
+                library_id="scipy",
                 dataset_name="integration_test",
                 drift_detected=True,
                 execution_time=0.042,
                 drift_score=0.89,
             ),
             DetectorResult(
-                detector_id="cvm.batch.SCIPY",
-                library_id="SCIPY",
+                detector_id="cvm.batch.scipy",
+                library_id="scipy",
                 dataset_name="integration_test",
                 drift_detected=False,
                 execution_time=0.031,
@@ -375,8 +375,8 @@ def test_should_integrate_with_pydantic_models_when_saving(temp_results_dir):
 
         # Create real BenchmarkResult
         config_dict = {
-            "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-            "detectors": [{"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"}],
+            "datasets": [{"path": "test.csv", "format": "csv", "reference_split": 0.5}],
+            "detectors": [{"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"}],
         }
 
         benchmark_result = BenchmarkResult(config=config_dict, detector_results=detector_results, summary=summary)

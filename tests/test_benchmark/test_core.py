@@ -43,7 +43,7 @@ def test_should_validate_detector_configurations_when_initialized(mock_benchmark
             benchmark = Benchmark(mock_benchmark_config)
 
             # Verify detector lookups were called
-            expected_calls = [("ks_test", "scipy", "SCIPY"), ("drift_detector", "custom", "CUSTOM")]
+            expected_calls = [("ks_test", "scipy", "scipy"), ("drift_detector", "custom", "custom")]
             actual_calls = [call[0] for call in mock_get_detector.call_args_list]
 
             for expected_call in expected_calls:

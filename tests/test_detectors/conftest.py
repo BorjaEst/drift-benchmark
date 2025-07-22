@@ -15,30 +15,30 @@ def mock_methods_toml_file():
             "ks_test": {
                 "name": "Kolmogorov-Smirnov Test",
                 "description": "Statistical test for distribution differences",
-                "drift_types": ["COVARIATE"],
-                "family": "STATISTICAL_TEST",
-                "data_dimension": "UNIVARIATE",
-                "data_types": ["CONTINUOUS"],
+                "drift_types": ["covariate"],
+                "family": "statistical-test",
+                "data_dimension": "univariate",
+                "data_types": ["continuous"],
                 "requires_labels": False,
                 "references": ["https://doi.org/10.2307/2280095"],
                 "variants": {
-                    "scipy": {"name": "SciPy Variant", "execution_mode": "BATCH", "hyperparameters": ["threshold"], "references": []}
+                    "scipy": {"name": "SciPy Variant", "execution_mode": "batch", "hyperparameters": ["threshold"], "references": []}
                 },
             },
             "drift_detector": {
                 "name": "Basic Drift Detector",
                 "description": "Simple change detection algorithm",
-                "drift_types": ["CONCEPT"],
-                "family": "CHANGE_DETECTION",
-                "data_dimension": "UNIVARIATE",
-                "data_types": ["CONTINUOUS", "CATEGORICAL"],
+                "drift_types": ["concept"],
+                "family": "change-detection",
+                "data_dimension": "univariate",
+                "data_types": ["continuous", "categorical"],
                 "requires_labels": True,
                 "references": [],
                 "variants": {
-                    "custom": {"name": "Custom Variant", "execution_mode": "BATCH", "hyperparameters": [], "references": []},
+                    "custom": {"name": "Custom Variant", "execution_mode": "batch", "hyperparameters": [], "references": []},
                     "river": {
                         "name": "River Variant",
-                        "execution_mode": "STREAMING",
+                        "execution_mode": "streaming",
                         "hyperparameters": ["window_size"],
                         "references": [],
                     },

@@ -297,10 +297,10 @@ def test_should_accept_initialization_parameters_when_created():
                 return True
 
         # Test initialization with required parameters
-        detector1 = TestDetector("ks_test", "scipy", "SCIPY")
+        detector1 = TestDetector("ks_test", "scipy", "scipy")
 
         # Test initialization with additional kwargs
-        detector2 = TestDetector("drift_detector", "custom", "CUSTOM", threshold=0.05, window_size=100)
+        detector2 = TestDetector("drift_detector", "custom", "custom", threshold=0.05, window_size=100)
 
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for initialization test: {e}")
@@ -308,10 +308,10 @@ def test_should_accept_initialization_parameters_when_created():
     # Assert - required parameters stored correctly
     assert detector1.method_id == "ks_test"
     assert detector1.variant_id == "scipy"
-    assert detector1.library_id == "SCIPY"
+    assert detector1.library_id == "scipy"
     assert detector2.method_id == "drift_detector"
     assert detector2.variant_id == "custom"
-    assert detector2.library_id == "CUSTOM"
+    assert detector2.library_id == "custom"
 
 
 def test_should_handle_data_flow_in_preprocess_when_called(sample_dataset_result):

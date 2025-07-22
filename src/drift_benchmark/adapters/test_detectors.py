@@ -6,7 +6,7 @@ from ..adapters import BaseDetector, register_detector
 from ..literals import LibraryId
 
 
-@register_detector("ks_test", "scipy", "SCIPY")
+@register_detector("ks_test", "scipy", "scipy")
 class TestKSDetector(BaseDetector):
     """Simple test detector for ks_test.scipy"""
 
@@ -23,7 +23,7 @@ class TestKSDetector(BaseDetector):
         return True
 
 
-@register_detector("drift_detector", "custom", "CUSTOM")
+@register_detector("drift_detector", "custom", "custom")
 class TestDriftDetector(BaseDetector):
     """Simple test detector for drift_detector.custom"""
 

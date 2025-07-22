@@ -20,7 +20,7 @@ class DatasetConfig(BaseModel):
     """
 
     path: str = Field(..., description="Path to dataset file")
-    format: FileFormat = Field(default="CSV", description="Dataset file format")
+    format: FileFormat = Field(default="csv", description="Dataset file format")
     reference_split: float = Field(..., description="Ratio for reference/test split (0.0 to 1.0)")
 
     @field_validator("reference_split")

@@ -76,7 +76,7 @@ The drift-benchmark framework acts as a **standardization layer** between differ
 
 1. **🔬 Method**: Mathematical approach (e.g., "kolmogorov_smirnov", "maximum_mean_discrepancy")
 2. **⚙️ Variant**: Algorithmic implementation defined by us (e.g., "batch", "streaming", "sliding_window")
-3. **🔌 Library**: Specific library implementation (e.g., "evidently", "alibi_detect", "scipy")
+3. **🔌 Library**: Specific library implementation (e.g., "evidently", "alibi-detect", "scipy")
 
 ### Registry Structure
 
@@ -123,7 +123,7 @@ class BaseDetector(ABC):
         Args:
             method_id: Method from methods.toml (e.g., "kolmogorov_smirnov")
             variant_id: Variant from methods.toml (e.g., "batch")
-            library_id: Library identifier (e.g., "evidently", "alibi_detect")
+            library_id: Library identifier (e.g., "evidently", "alibi-detect")
             **kwargs: Library-specific parameters
         """
         self._method_id = method_id
@@ -233,15 +233,15 @@ First, check which methods and variants are available in `methods.toml`:
 [methods.kolmogorov_smirnov]
 name = "Kolmogorov-Smirnov Test"
 description = "Two-sample test for equality of continuous distributions"
-drift_types = ["COVARIATE"]
-family = "STATISTICAL_TEST"
-data_dimension = "UNIVARIATE"
-data_types = ["CONTINUOUS"]
+drift_types = ["covariate"]
+family = "statistical-test"
+data_dimension = "univariate"
+data_types = ["continuous"]
 requires_labels = false
 
 [methods.kolmogorov_smirnov.variants.batch]
 name = "Batch Processing"
-execution_mode = "BATCH"
+execution_mode = "batch"
 hyperparameters = ["threshold"]
 ```
 
@@ -285,7 +285,7 @@ class EvidentlyKSDetector(BaseDetector):
         return result.dataset_drift
 
 # Alibi-Detect's implementation of the SAME method+variant
-@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi_detect")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi-detect")
 class AlibiDetectKSDetector(BaseDetector):
     """Alibi-Detect's implementation of Kolmogorov-Smirnov batch processing."""
 
@@ -588,7 +588,7 @@ class MyDetector(BaseDetector):
 
 1. **Method ID**: Must exist in `methods.toml` registry
 2. **Variant ID**: Must be listed under the method in `methods.toml`
-3. **Library ID**: Must be a valid library identifier ("evidently", "alibi_detect", "scipy", etc.)
+3. **Library ID**: Must be a valid library identifier ("evidently", "alibi-detect", "scipy", etc.)
 4. **Class Inheritance**: Must inherit from `BaseDetector`
 5. **Import Side Effects**: Registration happens at import time
 
@@ -1006,7 +1006,7 @@ class TestLibraryComparison:
 
     def test_library_consistency(self, drift_dataset):
         """Test that different libraries detect the same obvious drift."""
-        libraries = ["scipy", "evidently", "alibi_detect"]  # Available libraries
+        libraries = ["scipy", "evidently", "alibi-detect"]  # Available libraries
         results = {}
 
         for library_id in libraries:
@@ -1153,7 +1153,7 @@ class TestWithMockedLibraries:
            return data.X_ref if kwargs.get('phase') == 'train' else data.X_test
 
        # For alibi-detect: convert to numpy
-       elif self.library_id == "alibi_detect":
+       elif self.library_id == "alibi-detect":
            df = data.X_ref if kwargs.get('phase') == 'train' else data.X_test
            return df.values.astype(np.float32)
    ```
@@ -1202,7 +1202,7 @@ class TestWithMockedLibraries:
        df = data.X_ref if kwargs.get('phase') == 'train' else data.X_test
 
        # Convert once to most efficient format for library
-       if self.library_id == "alibi_detect":
+       if self.library_id == "alibi-detect":
            return df.values.astype(np.float32)  # Memory efficient
 
        return df  # Keep as pandas if library prefers it

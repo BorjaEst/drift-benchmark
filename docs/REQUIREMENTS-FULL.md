@@ -41,10 +41,10 @@ This module defines how all components use the centralized logging system to pro
 | --------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **REQ-LOG-001** | **Centralized Logger Access**     | All modules must use `settings.get_logger(__name__)` to obtain properly configured logger instances                      |
 | **REQ-LOG-002** | **Consistent Log Formatting**     | All log messages must follow standard format: timestamp, level, module, message with structured context where applicable |
-| **REQ-LOG-003** | **Error Logging Standardization** | All error handling must log errors using appropriate levels: ERROR for failures, WARNING for recoverable issues          |
+| **REQ-LOG-003** | **Error Logging Standardization** | All error handling must log errors using appropriate levels: error for failures, warning for recoverable issues          |
 | **REQ-LOG-004** | **Benchmark Progress Logging**    | BenchmarkRunner must log progress milestones: benchmark start/end, dataset loading, detector execution phases            |
 | **REQ-LOG-005** | **Configuration Logging**         | Settings and configuration loading must log key configuration values and validation results                              |
-| **REQ-LOG-006** | **Performance Metrics Logging**   | Detector execution times, memory usage, and resource statistics must be logged at INFO level                             |
+| **REQ-LOG-006** | **Performance Metrics Logging**   | Detector execution times, memory usage, and resource statistics must be logged at info level                             |
 | **REQ-LOG-007** | **Log Level Respect**             | All modules must respect the configured log level and avoid logging below the configured threshold                       |
 | **REQ-LOG-008** | **Structured Context Logging**    | Log messages must include relevant context (detector_id, dataset_name, method_id) as structured fields where applicable  |
 | **REQ-LOG-009** | **File and Console Output**       | Logging configuration must support both file output (benchmark.log) and console output based on settings                 |
@@ -64,7 +64,7 @@ This module defines the end-to-end benchmarking workflow that coordinates data l
 | **REQ-BCH-004** | **Progress Tracking**               | BenchmarkRunner must track and log progress through each stage of the benchmark with detector and dataset context                        |
 | **REQ-BCH-005** | **Result Collection**               | BenchmarkRunner must collect all DetectorResult instances and coordinate with evaluation engine to produce comprehensive BenchmarkResult |
 | **REQ-BCH-006** | **Error Isolation and Recovery**    | BenchmarkRunner must isolate detector failures and continue execution with remaining detectors, logging errors appropriately             |
-| **REQ-BCH-007** | **Automatic Result Storage**        | BenchmarkRunner must automatically save results to timestamped directories with all required formats (JSON, CSV, logs)                   |
+| **REQ-BCH-007** | **Automatic Result Storage**        | BenchmarkRunner must automatically save results to timestamped directories with all required formats (JSON, csv, logs)                   |
 | **REQ-BCH-008** | **Execution Timing Measurement**    | BenchmarkRunner must measure and record execution time for each detector operation (fit, detect, score) with high precision              |
 | **REQ-BCH-009** | **Memory Usage Monitoring**         | BenchmarkRunner must monitor and record memory usage during detector execution and include in performance metrics                        |
 | **REQ-BCH-010** | **Benchmark Reproducibility**       | BenchmarkRunner must ensure reproducible results by using configured random seeds and deterministic execution order                      |
@@ -144,16 +144,16 @@ This module defines the initialization order and dependency resolution for the d
 
 | ID              | Requirement                        | Description                                                                                                                    |
 | --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **REQ-LIT-001** | **Drift Type Literals**            | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                                   |
-| **REQ-LIT-002** | **Data Type Literals**             | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                               |
-| **REQ-LIT-003** | **Dimension Literals**             | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                  |
-| **REQ-LIT-004** | **Labeling Literals**              | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                |
-| **REQ-LIT-005** | **Execution Mode Literals**        | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                          |
-| **REQ-LIT-006** | **Method Family Literals**         | Must define `MethodFamily` literal with values: "CHANGE_DETECTION", "WINDOW_BASED", "DISTANCE_BASED", "STATISTICAL_TEST", etc. |
+| **REQ-LIT-001** | **Drift Type Literals**            | Must define `DriftType` literal with values: "covariate", "concept", "prior"                                                   |
+| **REQ-LIT-002** | **Data Type Literals**             | Must define `DataType` literal with values: "continuous", "categorical", "mixed"                                               |
+| **REQ-LIT-003** | **Dimension Literals**             | Must define `DataDimension` literal with values: "univariate", "multivariate"                                                  |
+| **REQ-LIT-004** | **Labeling Literals**              | Must define `DataLabeling` literal with values: "supervised", "unsupervised", "semi-supervised"                                |
+| **REQ-LIT-005** | **Execution Mode Literals**        | Must define `ExecutionMode` literal with values: "batch", "streaming"                                                          |
+| **REQ-LIT-006** | **Method Family Literals**         | Must define `MethodFamily` literal with values: "change-detection", "window-based", "distance-based", "statistical-test", etc. |
 | **REQ-LIT-007** | **Drift Pattern Literals**         | Must define `DriftPattern` literal with values: "SUDDEN", "GRADUAL"                                                            |
-| **REQ-LIT-008** | **Dataset Source Literals**        | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC", "SCENARIO"                                               |
-| **REQ-LIT-009** | **File Format Literals**           | Must define `FileFormat` literal with values: "CSV", "JSON"                                                                    |
-| **REQ-LIT-010** | **Log Level Literals**             | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                                    |
+| **REQ-LIT-008** | **Dataset Source Literals**        | Must define `DatasetSource` literal with values: "file", "synthetic", "SCENARIO"                                               |
+| **REQ-LIT-009** | **File Format Literals**           | Must define `FileFormat` literal with values: "csv", "JSON"                                                                    |
+| **REQ-LIT-010** | **Log Level Literals**             | Must define `LogLevel` literal with values: "debug", "info", "warning", "error", "critical"                                    |
 | **REQ-LIT-011** | **Classification Metric Literals** | Must define `ClassificationMetric` literal with values: "ACCURACY", "PRECISION", "RECALL", "F1_SCORE"                          |
 | **REQ-LIT-012** | **Performance Metric Literals**    | Must define `PerformanceMetric` literal with values: "COMPUTATION_TIME", "MEMORY_USAGE"                                        |
 | **REQ-LIT-013** | **Metric Union Type**              | Must define `Metric` as union of all metric literal types for evaluation support                                               |
@@ -201,7 +201,7 @@ This module provides comprehensive configuration management for the drift-benchm
 | **REQ-SET-103** | **Datasets Directory**       | Must provide `datasets_dir` setting (default: "datasets") for datasets directory                                |
 | **REQ-SET-104** | **Results Directory**        | Must provide `results_dir` setting (default: "results") for results output directory                            |
 | **REQ-SET-105** | **Logs Directory**           | Must provide `logs_dir` setting (default: "logs") for log files directory                                       |
-| **REQ-SET-106** | **Log Level Setting**        | Must provide `log_level` setting (default: "INFO") with enum validation (DEBUG/INFO/WARNING/ERROR/CRITICAL)     |
+| **REQ-SET-106** | **Log Level Setting**        | Must provide `log_level` setting (default: "info") with enum validation (debug/info/warning/error/critical)     |
 | **REQ-SET-107** | **Caching Setting**          | Must provide `enable_caching` setting (default: true) for method registry caching                               |
 | **REQ-SET-108** | **Max Workers Setting**      | Must provide `max_workers` setting (default: 4) with validation (1-cpu_count(), auto-limited by available CPUs) |
 | **REQ-SET-109** | **Random Seed Setting**      | Must provide `random_seed` setting (default: 42) for reproducibility, optional int/None                         |
@@ -413,7 +413,7 @@ This module contains the data models used throughout the drift-benchmark library
 | ID              | Requirement               | Description                                                                                          |
 | --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **REQ-RMF-301** | **Result Aggregation**    | Result models must support aggregation methods for combining multiple detector/evaluation results    |
-| **REQ-RMF-302** | **Result Export Support** | Result models must support export to various formats (JSON, CSV, Parquet) for analysis and reporting |
+| **REQ-RMF-302** | **Result Export Support** | Result models must support export to various formats (JSON, csv, Parquet) for analysis and reporting |
 
 ## 🔍 Detectors Module
 
@@ -437,16 +437,16 @@ This module provides a centralized registry for drift detection methods through 
 
 | ID              | Requirement                            | Description                                                                                            |
 | --------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **REQ-DET-101** | **Statistical Test Family**            | Registry must support STATISTICAL_TEST family for hypothesis testing approaches                        |
-| **REQ-DET-102** | **Distance Based Family**              | Registry must support DISTANCE_BASED family for distribution distance measures                         |
-| **REQ-DET-103** | **Statistical Process Control Family** | Registry must support STATISTICAL_PROCESS_CONTROL family for control chart methods                     |
-| **REQ-DET-104** | **Change Detection Family**            | Registry must support CHANGE_DETECTION family for sequential change detection                          |
-| **REQ-DET-105** | **Window Based Family**                | Registry must support WINDOW_BASED family for sliding window approaches                                |
+| **REQ-DET-101** | **Statistical Test Family**            | Registry must support statistical-test family for hypothesis testing approaches                        |
+| **REQ-DET-102** | **Distance Based Family**              | Registry must support distance-based family for distribution distance measures                         |
+| **REQ-DET-103** | **Statistical Process Control Family** | Registry must support statistical-process-control family for control chart methods                     |
+| **REQ-DET-104** | **Change Detection Family**            | Registry must support change-detection family for sequential change detection                          |
+| **REQ-DET-105** | **Window Based Family**                | Registry must support window-based family for sliding window approaches                                |
 | **REQ-DET-106** | **Ensemble Family**                    | Registry must support ENSEMBLE family for ensemble methods                                             |
 | **REQ-DET-107** | **Machine Learning Family**            | Registry must support MACHINE_LEARNING family for ML-based approaches                                  |
-| **REQ-DET-108** | **Family Support**                     | Registry must support all MethodFamily literal values: STATISTICAL_TEST, DISTANCE_BASED, etc.          |
-| **REQ-DET-109** | **Execution Mode Support**             | Registry must support all ExecutionMode literal values: BATCH, STREAMING                               |
-| **REQ-DET-110** | **Drift Type Support**                 | Registry must support all DriftType literal values: COVARIATE, CONCEPT, PRIOR                          |
+| **REQ-DET-108** | **Family Support**                     | Registry must support all MethodFamily literal values: statistical-test, distance-based, etc.          |
+| **REQ-DET-109** | **Execution Mode Support**             | Registry must support all ExecutionMode literal values: batch, streaming                               |
+| **REQ-DET-110** | **Drift Type Support**                 | Registry must support all DriftType literal values: covariate, concept, prior                          |
 | **REQ-DET-111** | **Data Characteristics Support**       | Registry must support all DataDimension and DataType literal values for method compatibility           |
 | **REQ-DET-112** | **Requires Labels Field**              | Each method must specify requires_labels boolean indicating if method needs labeled data for operation |
 
@@ -525,10 +525,10 @@ This module provides comprehensive, configuration-driven utilities for data load
 | **REQ-DAT-201** | **File Loading Interface** | Data module must provide `load_dataset(config: DatafileConfig) -> DatasetResult` for loading datasets from files |
 | **REQ-DAT-202** | **Feature Selection**      | File loading must support feature_columns and target_column parameters for column selection                      |
 | **REQ-DAT-203** | **Split Configuration**    | File datasets must support reference_split ratio (0.0 to 1.0) for creating X_ref/X_test divisions                |
-| **REQ-DAT-204** | **CSV Format Support**     | File loading must support CSV format with automatic type inference and configurable missing value handling       |
+| **REQ-DAT-204** | **csv Format Support**     | File loading must support csv format with automatic type inference and configurable missing value handling       |
 | **REQ-DAT-205** | **Path Validation**        | File loading must validate file exists and is readable, raising FileNotFoundError with descriptive message       |
 | **REQ-DAT-206** | **Data Type Inference**    | File loading must automatically infer data types and set appropriate DataType in metadata                        |
-| **REQ-DAT-207** | **Basic Format Support**   | File loading must support common formats (CSV, JSON) for basic benchmarking needs                                |
+| **REQ-DAT-207** | **Basic Format Support**   | File loading must support common formats (csv, JSON) for basic benchmarking needs                                |
 
 ### 🔄 Data Preprocessing
 
@@ -614,7 +614,7 @@ This module provides a comprehensive results management system for the drift-ben
 | --------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-RES-001** | **Timestamped Result Folders** | Must create result folders with timestamp format `YYYYMMDD_HHMMSS` (e.g., `20250719_143052`) within configured results directory |
 | **REQ-RES-002** | **JSON Results Export**        | Must export complete benchmark results to `benchmark_results.json` with structured data and metadata                             |
-| **REQ-RES-003** | **CSV Metrics Export**         | Must export detector performance metrics to `detector_*metric*.csv` files for easy analysis                                      |
+| **REQ-RES-003** | **csv Metrics Export**         | Must export detector performance metrics to `detector_*metric*.csv` files for easy analysis                                      |
 | **REQ-RES-004** | **Statistical Tests Export**   | Must export statistical test results and p-values to `statistical_tests.csv`                                                     |
 | **REQ-RES-005** | **Rankings Analysis Export**   | Must export detector rankings with confidence intervals to `rankings_analysis.csv`                                               |
 | **REQ-RES-006** | **Runtime Analysis Export**    | Must export memory usage and timing analysis to `runtime_analysis.csv`                                                           |

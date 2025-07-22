@@ -3,7 +3,7 @@
 
 [[datasets]]
     path            = "datasets/example.csv"
-    format          = "CSV"
+    format          = "csv"
     reference_split = 0.5
 
 # Evidently Detectors
@@ -21,9 +21,9 @@
 [[detectors]]
     method_id  = "kolmogorov_smirnov"
     variant_id = "ks_batch"
-    library_id = "alibi_detect"
+    library_id = "alibi-detect"
 
 [[detectors]]
     method_id  = "cramer_von_mises"
     variant_id = "cvm_batch"
-    library_id = "alibi_detect"
+    library_id = "alibi-detect"

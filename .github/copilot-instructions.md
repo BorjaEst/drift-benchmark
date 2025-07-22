@@ -29,7 +29,7 @@ Python expert implementing **minimal code to make tests pass**. Follow TDD stric
 
 ## Core Patterns (ADAPT TO YOUR DOMAIN)
 
-⚠️ **CRITICAL: These are TEMPLATES - Replace with YOUR actual domain models**
+⚠️ **critical: These are TEMPLATES - Replace with YOUR actual domain models**
 
 Don't build "DataModel" - build "User", "Product", "Order", "Invoice", etc.
 

@@ -81,7 +81,7 @@ def test_should_define_detector_result_model_when_imported(sample_detector_resul
 
     # Assert - specific values from test data
     assert result.detector_id == "ks_test_scipy"
-    assert result.library_id == "SCIPY"
+    assert result.library_id == "scipy"
     assert result.dataset_name == "test_dataset"
     assert result.drift_detected == True
     assert result.execution_time == 0.0123
@@ -92,14 +92,14 @@ def test_should_define_benchmark_result_model_when_imported():
     """Test REQ-MDL-003: Must define BenchmarkResult with fields: config, detector_results, summary for basic result storage"""
     # Arrange
     sample_config = {
-        "datasets": [{"path": "test.csv", "format": "CSV", "reference_split": 0.5}],
-        "detectors": [{"method_id": "ks_test", "variant_id": "scipy", "library_id": "SCIPY"}],
+        "datasets": [{"path": "test.csv", "format": "csv", "reference_split": 0.5}],
+        "detectors": [{"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"}],
     }
 
     sample_detector_results = [
         {
             "detector_id": "ks_test_scipy",
-            "library_id": "SCIPY",
+            "library_id": "scipy",
             "dataset_name": "test_dataset",
             "drift_detected": True,
             "execution_time": 0.0123,
@@ -148,7 +148,7 @@ def test_should_support_optional_drift_score_when_created():
     # Arrange
     result_data_no_score = {
         "detector_id": "test_detector",
-        "library_id": "CUSTOM",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": False,
         "execution_time": 0.001,
@@ -157,7 +157,7 @@ def test_should_support_optional_drift_score_when_created():
 
     result_data_with_score = {
         "detector_id": "test_detector",
-        "library_id": "CUSTOM",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.002,
@@ -187,7 +187,7 @@ def test_should_preserve_dataframe_structure_when_created():
 
     test_data = pd.DataFrame({"numeric_col": [4.2, 5.1, 6.8], "categorical_col": ["D", "E", "F"], "mixed_col": ["text2", 2, 2.71]})
 
-    metadata = {"name": "complex_dataset", "data_type": "MIXED", "dimension": "MULTIVARIATE", "n_samples_ref": 3, "n_samples_test": 3}
+    metadata = {"name": "complex_dataset", "data_type": "mixed", "dimension": "multivariate", "n_samples_ref": 3, "n_samples_test": 3}
 
     # Act
     try:
@@ -213,7 +213,7 @@ def test_should_validate_execution_time_precision_when_created():
     # Arrange
     high_precision_data = {
         "detector_id": "precise_detector",
-        "library_id": "CUSTOM",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.001234567,  # High precision float
@@ -239,7 +239,7 @@ def test_should_support_model_serialization_for_results():
     # Arrange
     detector_result_data = {
         "detector_id": "test_detector",
-        "library_id": "CUSTOM",
+        "library_id": "custom",
         "dataset_name": "test_dataset",
         "drift_detected": True,
         "execution_time": 0.123,

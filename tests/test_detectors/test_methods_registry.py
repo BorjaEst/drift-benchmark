@@ -123,7 +123,7 @@ def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
     # Assert - returns correct method info
     assert isinstance(ks_test_method, dict), "get_method() must return dictionary"
     assert ks_test_method["name"] == "Kolmogorov-Smirnov Test"
-    assert ks_test_method["family"] == "STATISTICAL_TEST"
+    assert ks_test_method["family"] == "statistical-test"
     assert "variants" in ks_test_method
 
     # Assert - raises error for non-existent method
@@ -159,7 +159,7 @@ def test_should_provide_get_variant_function_when_called(mock_methods_toml_file)
     # Assert - returns correct variant info
     assert isinstance(scipy_impl, dict), "get_variant() must return dictionary"
     assert scipy_impl["name"] == "SciPy Variant"
-    assert scipy_impl["execution_mode"] == "BATCH"
+    assert scipy_impl["execution_mode"] == "batch"
 
     # Assert - raises error for non-existent variant
     try:
@@ -282,13 +282,13 @@ def test_should_follow_methods_toml_schema_when_loaded(mock_methods_toml_file):
     # Check that ks_test method follows expected schema
     ks_test = methods["ks_test"]
     assert ks_test["name"] == "Kolmogorov-Smirnov Test"
-    assert ks_test["drift_types"] == ["COVARIATE"]
-    assert ks_test["family"] == "STATISTICAL_TEST"
-    assert ks_test["data_dimension"] == "UNIVARIATE"
+    assert ks_test["drift_types"] == ["covariate"]
+    assert ks_test["family"] == "statistical-test"
+    assert ks_test["data_dimension"] == "univariate"
     assert "scipy" in ks_test["variants"]
     scipy_impl = ks_test["variants"]["scipy"]
     assert scipy_impl["name"] == "SciPy Variant"
-    assert scipy_impl["execution_mode"] == "BATCH"
+    assert scipy_impl["execution_mode"] == "batch"
     assert scipy_impl["hyperparameters"] == ["threshold"]
 
 

@@ -106,7 +106,7 @@ Create a benchmark configuration to compare how different libraries implement th
 
 [[datasets]]
 path = "datasets/example.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 # Compare different library implementations of Kolmogorov-Smirnov
@@ -119,7 +119,7 @@ threshold = 0.05
 [[detectors]]
 method_id = "kolmogorov_smirnov"  # Same method
 variant_id = "batch"              # Same variant
-library_id = "alibi_detect"       # Different library
+library_id = "alibi-detect"       # Different library
 threshold = 0.05
 
 [[detectors]]
@@ -132,7 +132,7 @@ threshold = 0.05
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
 variant_id = "rbf_kernel"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 ```
 
 ### Run Library Comparison
@@ -196,7 +196,7 @@ config = BenchmarkConfig(
     datasets=[
         DatasetConfig(
             path="datasets/example.csv",
-            format="CSV",
+            format="csv",
             reference_split=0.5
         )
     ],
@@ -211,14 +211,14 @@ config = BenchmarkConfig(
         DetectorConfig(
             method_id="kolmogorov_smirnov",  # Same method+variant
             variant_id="batch",
-            library_id="alibi_detect",      # Different library
+            library_id="alibi-detect",      # Different library
             threshold=0.05
         ),
         # Compare different libraries for MMD
         DetectorConfig(
             method_id="maximum_mean_discrepancy",
             variant_id="rbf_kernel",
-            library_id="alibi_detect"
+            library_id="alibi-detect"
         ),
         DetectorConfig(
             method_id="maximum_mean_discrepancy",  # Same method+variant
@@ -247,12 +247,12 @@ The benchmark uses TOML configuration files for reproducible experiments:
 # Dataset configurations
 [[datasets]]
 path = "datasets/normal_to_shifted.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[datasets]]
 path = "datasets/seasonal_data.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.7
 
 # Library comparison configurations
@@ -265,7 +265,7 @@ threshold = 0.05
 [[detectors]]
 method_id = "kolmogorov_smirnov"   # Same method+variant
 variant_id = "batch"
-library_id = "alibi_detect"        # Different library
+library_id = "alibi-detect"        # Different library
 threshold = 0.05
 
 [[detectors]]
@@ -288,7 +288,7 @@ library_id = "scipy"
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
 variant_id = "rbf_kernel"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 ```
 
 ### Configuration Validation
@@ -321,13 +321,13 @@ from drift_benchmark.models import DatasetConfig
 # Basic dataset configuration
 dataset_config = DatasetConfig(
     path="path/to/dataset.csv",
-    format="CSV",
+    format="csv",
     reference_split=0.5  # 50% for reference, 50% for test
 )
 
 # Validation rules:
 # - path: must be string pointing to existing file
-# - format: currently only "CSV" supported
+# - format: currently only "csv" supported
 # - reference_split: must be between 0.0 and 1.0 (exclusive)
 ```
 
@@ -577,7 +577,7 @@ Library Comparison Execution Flow:
    └── Ensure method+variant+library combination is registered
 
 2. Dataset Processing
-   ├── Load CSV files using pandas
+   ├── Load csv files using pandas
    ├── Split according to reference_split ratio
    ├── Create DatasetResult with X_ref and X_test DataFrames
    └── Generate dataset metadata (shape, types, etc.)
@@ -652,7 +652,7 @@ class DatasetConfig(BaseModel):
     """Configuration for individual dataset."""
 
     path: str = Field(..., description="Path to dataset file")
-    format: str = Field("CSV", description="Dataset file format")
+    format: str = Field("csv", description="Dataset file format")
     reference_split: float = Field(
         0.5,
         description="Ratio of data to use as reference (0.0 < value < 1.0)",
@@ -662,7 +662,7 @@ class DatasetConfig(BaseModel):
 
     # Validation rules:
     # - path: must point to existing readable file
-    # - format: currently only "CSV" supported
+    # - format: currently only "csv" supported
     # - reference_split: 0.0 < value < 1.0
 ```
 
@@ -849,7 +849,7 @@ for method_variant, variant_results in comparison_data.items():
 ```python
 # Filter results by library
 evidently_results = [r for r in results.detector_results if r.library_id == "evidently"]
-alibi_results = [r for r in results.detector_results if r.library_id == "alibi_detect"]
+alibi_results = [r for r in results.detector_results if r.library_id == "alibi-detect"]
 
 # Filter by method
 ks_results = [r for r in results.detector_results
@@ -921,7 +921,7 @@ with open("used_config.toml", "w") as f:
     import toml
     toml.dump(results.config.dict(), f)
 
-# Export library comparison summary to CSV
+# Export library comparison summary to csv
 import pandas as pd
 
 comparison_data = []
@@ -956,12 +956,12 @@ Compare how different libraries implement the same statistical test:
 
 [[datasets]]
 path = "datasets/normal_distribution.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[datasets]]
 path = "datasets/shifted_distribution.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 # Compare Kolmogorov-Smirnov implementations
@@ -980,7 +980,7 @@ threshold = 0.05
 [[detectors]]
 method_id = "kolmogorov_smirnov"
 variant_id = "batch"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 threshold = 0.05
 
 # Compare Anderson-Darling implementations
@@ -1008,14 +1008,14 @@ from drift_benchmark import BenchmarkRunner
 config_toml = """
 [[datasets]]
 path = "datasets/high_dimensional.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.6
 
 # Compare MMD implementations
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
 variant_id = "rbf_kernel"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 gamma = 1.0
 
 [[detectors]]
@@ -1027,7 +1027,7 @@ gamma = 1.0
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
 variant_id = "linear_kernel"
-library_id = "scikit_learn"
+library_id = "scikit-learn"
 """
 
 # Save config and run comparison
@@ -1063,7 +1063,7 @@ comparison_config = BenchmarkConfig(
         DetectorConfig(method_id="anderson_darling", variant_id="batch", library_id="scipy"),
 
         # Distance-based methods
-        DetectorConfig(method_id="maximum_mean_discrepancy", variant_id="rbf_kernel", library_id="alibi_detect"),
+        DetectorConfig(method_id="maximum_mean_discrepancy", variant_id="rbf_kernel", library_id="alibi-detect"),
         DetectorConfig(method_id="wasserstein_distance", variant_id="batch", library_id="scipy"),
 
         # Evidently methods
@@ -1266,7 +1266,7 @@ def test_performance_significance(results: BenchmarkResult,
     }
 
 # Compare Evidently vs Alibi-Detect
-significance_test = test_performance_significance(results, "evidently", "alibi_detect")
+significance_test = test_performance_significance(results, "evidently", "alibi-detect")
 print("Performance Significance Test:")
 print(f"Evidently: {significance_test['library1_mean_time']:.4f}s")
 print(f"Alibi-Detect: {significance_test['library2_mean_time']:.4f}s")
@@ -1351,22 +1351,22 @@ create_performance_visualization(results)
 # Test across different drift scenarios
 [[datasets]]
 path = "datasets/no_drift.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[datasets]]
 path = "datasets/gradual_drift.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[datasets]]
 path = "datasets/sudden_drift.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[datasets]]
 path = "datasets/seasonal_drift.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.7
 
 # Test all libraries on all datasets for comprehensive comparison
@@ -1383,7 +1383,7 @@ library_id = "evidently"
 [[detectors]]
 method_id = "kolmogorov_smirnov"
 variant_id = "batch"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 
 [[detectors]]
 method_id = "cramer_von_mises"
@@ -1398,7 +1398,7 @@ library_id = "scipy"
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
 variant_id = "rbf_kernel"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 ```
 
 ### Performance Benchmarking Configuration
@@ -1619,7 +1619,7 @@ for comparison, stats in agreement.items():
    comparable_detectors = [
        ("kolmogorov_smirnov", "batch", "scipy"),
        ("kolmogorov_smirnov", "batch", "evidently"),
-       ("kolmogorov_smirnov", "batch", "alibi_detect")
+       ("kolmogorov_smirnov", "batch", "alibi-detect")
    ]
    ```
 
@@ -1640,7 +1640,7 @@ for comparison, stats in agreement.items():
 
    # Use statistical tests for significance
    from scipy.stats import ttest_ind
-   t_stat, p_value = ttest_ind(library_times["evidently"], library_times["alibi_detect"])
+   t_stat, p_value = ttest_ind(library_times["evidently"], library_times["alibi-detect"])
    ```
 
 2. **Context-Aware Analysis**: Consider use case requirements
@@ -1751,9 +1751,9 @@ for comparison, stats in agreement.items():
 
        try:
            import alibi_detect
-           versions["alibi_detect"] = alibi_detect.__version__
+           versions["alibi-detect"] = alibi_detect.__version__
        except ImportError:
-           versions["alibi_detect"] = "not installed"
+           versions["alibi-detect"] = "not installed"
 
        # Add other libraries...
 

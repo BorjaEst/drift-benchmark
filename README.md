@@ -73,7 +73,7 @@ graph TD
 
 ### Data Format Support
 
-- **CSV Files**: Standard comma-separated values with automatic type inference
+- **csv Files**: Standard comma-separated values with automatic type inference
 - **Univariate & Multivariate**: Support for single and multiple feature scenarios
 - **Flexible Splits**: Configurable reference/test data splitting
 
@@ -102,7 +102,7 @@ Create a benchmark configuration file (`benchmark_config.toml`):
 ```toml
 [[datasets]]
 path = "datasets/example.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 # Compare different library implementations of the same method+variant
@@ -114,7 +114,7 @@ library_id = "evidently"
 [[detectors]]
 method_id = "kolmogorov_smirnov"
 variant_id = "batch"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 
 # Also compare different methods
 [[detectors]]
@@ -154,7 +154,7 @@ for result in results.detector_results:
 # Method+Variant: kolmogorov_smirnov_batch
 # Execution Time: 0.0234s
 # ---
-# Library: alibi_detect
+# Library: alibi-detect
 # Method+Variant: kolmogorov_smirnov_batch
 # Execution Time: 0.0156s  <- Alibi-Detect is faster!
 # ---
@@ -208,7 +208,7 @@ src/drift_benchmark/
 ### Data Flow Pipeline
 
 1. **Configuration Loading**: Parse TOML configuration files with validation
-2. **Dataset Loading**: Load CSV files and split into reference/test sets
+2. **Dataset Loading**: Load csv files and split into reference/test sets
 3. **Detector Setup**: Instantiate configured detectors from registry
 4. **Benchmark Execution**:
    - **Preprocessing**: Convert data to detector-specific formats
@@ -227,7 +227,7 @@ The power of drift-benchmark comes from comparing how different libraries implem
 from drift_benchmark.adapters import BaseDetector, register_detector
 import numpy as np
 from evidently.metrics import DataDriftPreset
-from alibi_detect.cd import KSDrift
+from alibi-detect.cd import KSDrift
 
 # Evidently's implementation of KS batch variant
 @register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="evidently")
@@ -254,7 +254,7 @@ class EvidentlyKSDetector(BaseDetector):
         return drift_detected
 
 # Alibi-Detect's implementation of the same KS batch variant
-@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi_detect")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi-detect")
 class AlibiDetectKSDetector(BaseDetector):
     """Alibi-Detect's implementation of Kolmogorov-Smirnov batch processing."""
 
@@ -287,16 +287,16 @@ Check that the method and variant are already defined in our standardized regist
 [methods.kolmogorov_smirnov]
 name = "Kolmogorov-Smirnov Test"
 description = "Two-sample test for equality of continuous distributions"
-drift_types = ["COVARIATE"]
-family = "STATISTICAL_TEST"
-data_dimension = "UNIVARIATE"
-data_types = ["CONTINUOUS"]
+drift_types = ["covariate"]
+family = "statistical-test"
+data_dimension = "univariate"
+data_types = ["continuous"]
 requires_labels = false
 references = ["https://doi.org/10.2307/2281868", "Massey Jr. (1951)"]
 
 [methods.kolmogorov_smirnov.variants.custom]
 name = "Custom Implementation Variant"
-execution_mode = "BATCH"
+execution_mode = "batch"
 hyperparameters = ["threshold"]
 references = ["Your implementation reference"]
 ```
@@ -338,7 +338,7 @@ All settings can be configured via environment variables with `DRIFT_BENCHMARK_`
 ```bash
 export DRIFT_BENCHMARK_DATASETS_DIR="./datasets"
 export DRIFT_BENCHMARK_RESULTS_DIR="./results"
-export DRIFT_BENCHMARK_LOG_LEVEL="INFO"
+export DRIFT_BENCHMARK_LOG_LEVEL="info"
 export DRIFT_BENCHMARK_RANDOM_SEED=42
 ```
 
@@ -349,7 +349,7 @@ export DRIFT_BENCHMARK_RANDOM_SEED=42
 | `datasets_dir`          | `"datasets"`                                   | Directory for dataset files                           |
 | `results_dir`           | `"results"`                                    | Directory for benchmark results                       |
 | `logs_dir`              | `"logs"`                                       | Directory for log files                               |
-| `log_level`             | `"INFO"`                                       | Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+| `log_level`             | `"info"`                                       | Logging level (debug, info, warning, error, critical) |
 | `random_seed`           | `42`                                           | Random seed for reproducibility                       |
 | `methods_registry_path` | `"src/drift_benchmark/detectors/methods.toml"` | Path to methods configuration                         |
 

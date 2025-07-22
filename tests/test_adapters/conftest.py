@@ -19,7 +19,7 @@ def sample_dataset_result():
         {"feature_1": [6.0, 7.0, 8.0, 9.0, 10.0], "feature_2": [0.6, 0.7, 0.8, 0.9, 1.0], "categorical": ["C", "A", "B", "C", "A"]}
     )
 
-    metadata = {"name": "adapter_test_dataset", "data_type": "MIXED", "dimension": "MULTIVARIATE", "n_samples_ref": 5, "n_samples_test": 5}
+    metadata = {"name": "adapter_test_dataset", "data_type": "mixed", "dimension": "multivariate", "n_samples_ref": 5, "n_samples_test": 5}
 
     # Mock DatasetResult class for testing
     class MockDatasetResult:

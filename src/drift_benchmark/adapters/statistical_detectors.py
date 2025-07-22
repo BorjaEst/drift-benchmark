@@ -20,7 +20,7 @@ from .registry import register_detector
 logger = get_logger(__name__)
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="SCIPY")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="scipy")
 class KolmogorovSmirnovDetector(BaseDetector):
     """
     Kolmogorov-Smirnov drift detector variant.
@@ -40,7 +40,7 @@ class KolmogorovSmirnovDetector(BaseDetector):
         Args:
             method_id: Must be "kolmogorov_smirnov"
             variant_id: Must be "ks_batch"
-            library_id: Must be "SCIPY"
+            library_id: Must be "scipy"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """
@@ -175,7 +175,7 @@ class KolmogorovSmirnovDetector(BaseDetector):
         return self._last_score
 
 
-@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="SCIPY")
+@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="scipy")
 class CramerVonMisesDetector(BaseDetector):
     """
     Cramér-von Mises drift detector variant.
@@ -194,7 +194,7 @@ class CramerVonMisesDetector(BaseDetector):
         Args:
             method_id: Must be "cramer_von_mises"
             variant_id: Must be "cvm_batch"
-            library_id: Must be "SCIPY"
+            library_id: Must be "scipy"
             **kwargs: Additional parameters including:
                 - threshold (float): P-value threshold for drift detection (default: 0.05)
         """

@@ -64,7 +64,7 @@ def test_should_define_dataset_config_model_when_imported(sample_dataset_config_
 
     # Assert - field values are correct
     assert config.path == "datasets/example.csv"
-    assert config.format == "CSV"
+    assert config.format == "csv"
     assert config.reference_split == 0.7
 
 
@@ -94,7 +94,7 @@ def test_should_define_detector_config_model_when_imported(sample_detector_confi
     # Assert - field values are correct
     assert config.method_id == "ks_test"
     assert config.variant_id == "scipy"
-    assert config.library_id == "SCIPY"
+    assert config.library_id == "scipy"
 
 
 def test_should_use_pydantic_v2_validation_when_created():
@@ -104,7 +104,7 @@ def test_should_use_pydantic_v2_validation_when_created():
         from drift_benchmark.models import DatasetConfig
 
         # Test valid configuration
-        valid_config = DatasetConfig(path="test.csv", format="CSV", reference_split=0.5)
+        valid_config = DatasetConfig(path="test.csv", format="csv", reference_split=0.5)
         assert valid_config.reference_split == 0.5
 
     except ImportError as e:
@@ -116,7 +116,7 @@ def test_should_use_pydantic_v2_validation_when_created():
 
         # Test invalid reference_split (should fail validation)
         with pytest.raises(Exception):  # Pydantic ValidationError
-            DatasetConfig(path="test.csv", format="CSV", reference_split=1.5)  # Invalid: > 1.0
+            DatasetConfig(path="test.csv", format="csv", reference_split=1.5)  # Invalid: > 1.0
 
     except ImportError:
         pytest.fail("DatasetConfig should validate reference_split constraints")
@@ -125,7 +125,7 @@ def test_should_use_pydantic_v2_validation_when_created():
 def test_should_support_model_serialization_when_used():
     """Test REQ-MOD-004: Models must support basic serialization/deserialization for JSON and TOML formats"""
     # Arrange
-    config_data = {"path": "test.csv", "format": "CSV", "reference_split": 0.6}
+    config_data = {"path": "test.csv", "format": "csv", "reference_split": 0.6}
 
     # Act
     try:
@@ -158,8 +158,8 @@ def test_should_use_literal_types_when_imported():
         from drift_benchmark.models import DatasetConfig
 
         # Test that format field uses literal types (should accept valid values)
-        valid_config = DatasetConfig(path="test.csv", format="CSV", reference_split=0.5)  # This should be a literal type
-        assert valid_config.format == "CSV"
+        valid_config = DatasetConfig(path="test.csv", format="csv", reference_split=0.5)  # This should be a literal type
+        assert valid_config.format == "csv"
 
     except ImportError as e:
         pytest.fail(f"Failed to import DatasetConfig for literal type test: {e}")
@@ -201,7 +201,7 @@ def test_should_provide_model_validation_errors_when_invalid():
         with pytest.raises(Exception) as exc_info:
             DatasetConfig(
                 # Missing path field
-                format="CSV",
+                format="csv",
                 reference_split=0.5,
             )
 

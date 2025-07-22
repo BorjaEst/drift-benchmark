@@ -277,7 +277,7 @@ class EvidentlyKSDetector(BaseDetector):
         return drift_detected
 
 # Alibi-Detect implementation
-@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi_detect")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi-detect")
 class AlibiDetectKSDetector(BaseDetector):
     def __init__(self, method_id: str, variant_id: str, **kwargs):
         super().__init__(method_id, variant_id)
@@ -345,7 +345,7 @@ class AlibiDetectMMDPyTorch(BaseDetector):
 ### Online Detection Example
 
 ```python
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="online", library_id="alibi_detect")
+@register_detector(method_id="maximum_mean_discrepancy", variant_id="online", library_id="alibi-detect")
 class AlibiDetectMMDOnline(BaseDetector):
     def __init__(self, method_id: str, variant_id: str, **kwargs):
         super().__init__(method_id, variant_id)
@@ -377,16 +377,16 @@ class AlibiDetectMMDOnline(BaseDetector):
 [methods.kolmogorov_smirnov]
 name = "Kolmogorov-Smirnov Test"
 description = "Two-sample test for equality of continuous distributions"
-drift_types = ["COVARIATE"]
-family = "STATISTICAL_TEST"
-data_dimension = "UNIVARIATE"
-data_types = ["CONTINUOUS"]
+drift_types = ["covariate"]
+family = "statistical-test"
+data_dimension = "univariate"
+data_types = ["continuous"]
 requires_labels = false
 references = ["https://doi.org/10.2307/2281868"]
 
 [methods.kolmogorov_smirnov.variants.batch]
 name = "Batch Processing"
-execution_mode = "BATCH"
+execution_mode = "batch"
 hyperparameters = ["threshold", "correction_method"]
 
 [methods.kolmogorov_smirnov.variants.online]
@@ -400,7 +400,7 @@ hyperparameters = ["ert", "window_size"]
 ```toml
 [[datasets]]
 path = "datasets/example.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[detectors]]
@@ -412,7 +412,7 @@ threshold = 0.05
 [[detectors]]
 method_id = "kolmogorov_smirnov"
 variant_id = "batch"
-library_id = "alibi_detect"
+library_id = "alibi-detect"
 threshold = 0.05
 
 [[detectors]]

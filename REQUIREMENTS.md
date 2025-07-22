@@ -2,7 +2,7 @@
 
 > **Note**: This document contains the BASIC/ESSENTIAL requirements needed to implement a minimal viable drift-benchmark software. Each requirement has a unique identifier (REQ-XXX-YYY) for easy reference and traceability in tests.
 
-## 🎯 **IMPLEMENTATION PRIORITY: MVP (Minimum Viable Product)**
+## 🎯 **IMPLEMENTATION priorITY: MVP (Minimum Viable Product)**
 
 These are the core requirements needed to implement a working drift detection benchmarking framework that standardizes method+variant definitions to enable fair comparison of library implementations. Advanced features like memory monitoring, resource management, statistical tests, and complex evaluation metrics have been excluded from this basic implementation.
 
@@ -65,16 +65,16 @@ This module defines architectural principles and dependency management for the d
 
 | ID              | Requirement                 | Description                                                                                                                                             |
 | --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **REQ-LIT-001** | **Drift Type Literals**     | Must define `DriftType` literal with values: "COVARIATE", "CONCEPT", "PRIOR"                                                                            |
-| **REQ-LIT-002** | **Data Type Literals**      | Must define `DataType` literal with values: "CONTINUOUS", "CATEGORICAL", "MIXED"                                                                        |
-| **REQ-LIT-003** | **Dimension Literals**      | Must define `DataDimension` literal with values: "UNIVARIATE", "MULTIVARIATE"                                                                           |
-| **REQ-LIT-004** | **Labeling Literals**       | Must define `DataLabeling` literal with values: "SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"                                                         |
-| **REQ-LIT-005** | **Execution Mode Literals** | Must define `ExecutionMode` literal with values: "BATCH", "STREAMING"                                                                                   |
-| **REQ-LIT-006** | **Method Family Literals**  | Must define `MethodFamily` literal with values: "STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED", "STATISTICAL_PROCESS_CONTROL" |
-| **REQ-LIT-007** | **Dataset Source Literals** | Must define `DatasetSource` literal with values: "FILE", "SYNTHETIC"                                                                                    |
-| **REQ-LIT-008** | **File Format Literals**    | Must define `FileFormat` literal with values: "CSV"                                                                                                     |
-| **REQ-LIT-009** | **Log Level Literals**      | Must define `LogLevel` literal with values: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"                                                             |
-| **REQ-LIT-010** | **Library ID Literals**     | Must define `LibraryId` literal with values: "EVIDENTLY", "ALIBI_DETECT", "SCIKIT_LEARN", "RIVER", "SCIPY", "CUSTOM"                                    |
+| **REQ-LIT-001** | **Drift Type Literals**     | Must define `DriftType` literal with values: "covariate", "concept", "prior"                                                                            |
+| **REQ-LIT-002** | **Data Type Literals**      | Must define `DataType` literal with values: "continuous", "categorical", "mixed"                                                                        |
+| **REQ-LIT-003** | **Dimension Literals**      | Must define `DataDimension` literal with values: "univariate", "multivariate"                                                                           |
+| **REQ-LIT-004** | **Labeling Literals**       | Must define `DataLabeling` literal with values: "supervised", "unsupervised", "semi-supervised"                                                         |
+| **REQ-LIT-005** | **Execution Mode Literals** | Must define `ExecutionMode` literal with values: "batch", "streaming"                                                                                   |
+| **REQ-LIT-006** | **Method Family Literals**  | Must define `MethodFamily` literal with values: "statistical-test", "distance-based", "change-detection", "window-based", "statistical-process-control" |
+| **REQ-LIT-007** | **Dataset Source Literals** | Must define `DatasetSource` literal with values: "file", "synthetic"                                                                                    |
+| **REQ-LIT-008** | **File Format Literals**    | Must define `FileFormat` literal with values: "csv"                                                                                                     |
+| **REQ-LIT-009** | **Log Level Literals**      | Must define `LogLevel` literal with values: "debug", "info", "warning", "error", "critical"                                                             |
+| **REQ-LIT-010** | **Library ID Literals**     | Must define `LibraryId` literal with values: "evidently", "alibi-detect", "scikit-learn", "river", "scipy", "custom"                                    |
 
 ---
 
@@ -118,7 +118,7 @@ This module provides basic configuration management for the drift-benchmark libr
 | **REQ-SET-101** | **Datasets Directory**    | Must provide `datasets_dir` setting (default: "datasets") for datasets directory                                                             |
 | **REQ-SET-102** | **Results Directory**     | Must provide `results_dir` setting (default: "results") for results output directory                                                         |
 | **REQ-SET-103** | **Logs Directory**        | Must provide `logs_dir` setting (default: "logs") for log files directory                                                                    |
-| **REQ-SET-104** | **Log Level Setting**     | Must provide `log_level` setting (default: "INFO") with enum validation                                                                      |
+| **REQ-SET-104** | **Log Level Setting**     | Must provide `log_level` setting (default: "info") with enum validation                                                                      |
 | **REQ-SET-105** | **Random Seed Setting**   | Must provide `random_seed` setting (default: 42) for reproducibility, optional int/None                                                      |
 | **REQ-SET-106** | **Methods Registry Path** | Must provide `methods_registry_path` setting (default: "src/drift_benchmark/detectors/methods.toml") for methods configuration file location |
 
@@ -132,7 +132,7 @@ This module defines how all components use the centralized logging system to pro
 | --------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **REQ-LOG-001** | **Centralized Logger Access**     | All modules must use `settings.get_logger(__name__)` to obtain properly configured logger instances                      |
 | **REQ-LOG-002** | **Consistent Log Formatting**     | All log messages must follow standard format: timestamp, level, module, message with structured context where applicable |
-| **REQ-LOG-003** | **Error Logging Standardization** | All error handling must log errors using appropriate levels: ERROR for failures, WARNING for recoverable issues          |
+| **REQ-LOG-003** | **Error Logging Standardization** | All error handling must log errors using appropriate levels: error for failures, warning for recoverable issues          |
 | **REQ-LOG-004** | **File and Console Output**       | Logging configuration must support both file output (benchmark.log) and console output based on settings                 |
 
 ---
@@ -200,7 +200,7 @@ This module provides a basic registry for drift detection methods through the `m
 | **REQ-DET-009** | **Method Required Fields**  | Each `[methods.{method_id}]` must have: name (string), description (string), drift_types (list of DriftType), family (MethodFamily enum), data_dimension (DataDimension enum), data_types (list of DataType), requires_labels (bool), references (list of string)     |
 | **REQ-DET-010** | **Variant Structure**       | Each method must have `[methods.{method_id}.variants.{variant_id}]` sub-tables for algorithmic variants                                                                                                                                                               |
 | **REQ-DET-011** | **Variant Required Fields** | Each variant must have: name (string), execution_mode (ExecutionMode enum value), hyperparameters (list of string), references (list of string)                                                                                                                       |
-| **REQ-DET-012** | **Schema Example**          | Example: `[methods.ks_test]` name="Kolmogorov-Smirnov Test", drift_types=["COVARIATE"], family="STATISTICAL_TEST", data_dimension="UNIVARIATE", `[methods.ks_test.variants.scipy]` name="SciPy Implementation", execution_mode="BATCH", hyperparameters=["threshold"] |
+| **REQ-DET-012** | **Schema Example**          | Example: `[methods.ks_test]` name="Kolmogorov-Smirnov Test", drift_types=["covariate"], family="statistical-test", data_dimension="univariate", `[methods.ks_test.variants.scipy]` name="SciPy Implementation", execution_mode="batch", hyperparameters=["threshold"] |
 
 ---
 
@@ -248,13 +248,13 @@ This module provides basic data loading utilities for the drift-benchmark librar
 | ID              | Requirement                       | Description                                                                                                                                     |
 | --------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-DAT-001** | **File Loading Interface**        | Data module must provide `load_dataset(config: DatasetConfig) -> DatasetResult` for loading datasets from files                                 |
-| **REQ-DAT-002** | **CSV Format Support**            | File loading must support CSV format using pandas.read_csv() with default parameters (comma delimiter, infer header, utf-8 encoding)            |
+| **REQ-DAT-002** | **csv Format Support**            | File loading must support csv format using pandas.read_csv() with default parameters (comma delimiter, infer header, utf-8 encoding)            |
 | **REQ-DAT-003** | **Split Configuration**           | File datasets must support reference_split ratio (0.0 to 1.0) for creating X_ref/X_test divisions                                               |
 | **REQ-DAT-004** | **Path Validation**               | File loading must validate file exists and is readable, raising DataLoadingError with descriptive message                                       |
-| **REQ-DAT-005** | **Data Type Inference**           | File loading must automatically infer data types and set appropriate DataType (CONTINUOUS/CATEGORICAL/MIXED) in metadata based on pandas dtypes |
+| **REQ-DAT-005** | **Data Type Inference**           | File loading must automatically infer data types and set appropriate DataType (continuous/categorical/mixed) in metadata based on pandas dtypes |
 | **REQ-DAT-006** | **DataFrame Output**              | All loaded datasets must return X_ref and X_test as pandas.DataFrame objects with preserved column names and index                              |
-| **REQ-DAT-007** | **Missing Data Handling**         | CSV loading must handle missing values using pandas defaults (empty strings become NaN), no additional preprocessing required for MVP           |
-| **REQ-DAT-008** | **Data Type Inference Algorithm** | CONTINUOUS: numeric dtypes (int, float), CATEGORICAL: object/string dtypes, MIXED: datasets with both numeric and object columns                |
+| **REQ-DAT-007** | **Missing Data Handling**         | csv loading must handle missing values using pandas defaults (empty strings become NaN), no additional preprocessing required for MVP           |
+| **REQ-DAT-008** | **Data Type Inference Algorithm** | continuous: numeric dtypes (int, float), categorical: object/string dtypes, mixed: datasets with both numeric and object columns                |
 
 ---
 
@@ -350,7 +350,7 @@ The following features from the full requirements are **EXCLUDED** from this bas
 - **Caching**: LRU caching, advanced optimization
 - **Parallel Execution**: Multi-threaded detector execution
 - **Advanced Configuration**: Template systems, complex validation
-- **Export Formats**: CSV exports, complex aggregations
+- **Export Formats**: csv exports, complex aggregations
 - **Utilities Module**: Advanced decorators, monitoring tools
 
 ### ✅ **What This Basic Implementation Provides:**
@@ -358,7 +358,7 @@ The following features from the full requirements are **EXCLUDED** from this bas
 - **Working benchmarking framework** with detector registration and execution
 - **Library comparison capability** to evaluate different implementations of the same method+variant
 - **Basic configuration management** with TOML loading and validation
-- **Simple data loading** from CSV files with basic preprocessing
+- **Simple data loading** from csv files with basic preprocessing
 - **Sequential detector execution** with error isolation
 - **Basic result storage** with JSON export and timestamped directories
 - **Centralized logging** system for debugging and monitoring

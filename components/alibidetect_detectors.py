@@ -73,7 +73,7 @@ class BaseAlibiDetectDetector(BaseDetector):
         Args:
             method_id: Method identifier from methods.toml
             variant_id: Variant identifier from methods.toml
-            library_id: Library identifier (should be "alibi_detect")
+            library_id: Library identifier (should be "alibi-detect")
             **kwargs: Additional parameters including:
                 - p_val (float): p-value threshold for drift detection (default: 0.05)
                 - backend (str): Backend to use ('tensorflow', 'pytorch', 'sklearn')
@@ -81,11 +81,11 @@ class BaseAlibiDetectDetector(BaseDetector):
                 - **detector_kwargs: Additional detector-specific parameters
 
         Raises:
-            ValueError: If library_id is not "alibi_detect"
+            ValueError: If library_id is not "alibi-detect"
         """
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
-        if library_id != "alibi_detect":
+        if library_id != "alibi-detect":
             raise ValueError(f"Expected library_id='alibi_detect', got '{library_id}'")
 
         # Standard Alibi-Detect parameters
@@ -277,7 +277,7 @@ class BaseAlibiDetectDetector(BaseDetector):
 # =============================================================================
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="alibi_detect")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="alibi-detect")
 class AlibiDetectKSDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of Kolmogorov-Smirnov batch processing."""
 
@@ -333,7 +333,7 @@ class AlibiDetectKSDetector(BaseAlibiDetectDetector):
             raise
 
 
-@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="alibi_detect")
+@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="alibi-detect")
 class AlibiDetectCVMDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of Cramér-von Mises batch processing."""
 
@@ -371,7 +371,7 @@ class AlibiDetectCVMDetector(BaseAlibiDetectDetector):
             raise
 
 
-@register_detector(method_id="chi_square", variant_id="chi_batch", library_id="alibi_detect")
+@register_detector(method_id="chi_square", variant_id="chi_batch", library_id="alibi-detect")
 class AlibiDetectChiSquareDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of Chi-Square test for categorical data."""
 
@@ -416,7 +416,7 @@ class AlibiDetectChiSquareDetector(BaseAlibiDetectDetector):
 # =============================================================================
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf", library_id="alibi_detect")
+@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf", library_id="alibi-detect")
 class AlibiDetectMMDDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of MMD with RBF kernel."""
 
@@ -463,7 +463,7 @@ class AlibiDetectMMDDetector(BaseAlibiDetectDetector):
             raise
 
 
-@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_batch", library_id="alibi_detect")
+@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_batch", library_id="alibi-detect")
 class AlibiDetectLSDDDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of Least-Squares Density Difference."""
 
@@ -508,7 +508,7 @@ class AlibiDetectLSDDDetector(BaseAlibiDetectDetector):
 # =============================================================================
 
 
-@register_detector(method_id="classifier_drift", variant_id="classifier_batch", library_id="alibi_detect")
+@register_detector(method_id="classifier_drift", variant_id="classifier_batch", library_id="alibi-detect")
 class AlibiDetectClassifierDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of classifier-based drift detection."""
 
@@ -612,7 +612,7 @@ class AlibiDetectClassifierDetector(BaseAlibiDetectDetector):
 # =============================================================================
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_online", library_id="alibi_detect")
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_online", library_id="alibi-detect")
 class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of online Kolmogorov-Smirnov detection."""
 
@@ -677,7 +677,7 @@ class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
             raise
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_online", library_id="alibi_detect")
+@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_online", library_id="alibi-detect")
 class AlibiDetectMMDOnlineDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of online MMD detection."""
 
@@ -742,7 +742,7 @@ class AlibiDetectMMDOnlineDetector(BaseAlibiDetectDetector):
 # =============================================================================
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_tensorflow", library_id="alibi_detect")
+@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_tensorflow", library_id="alibi-detect")
 class AlibiDetectMMDTensorFlowDetector(AlibiDetectMMDDetector):
     """Alibi-Detect MMD detector specifically using TensorFlow backend."""
 
@@ -751,7 +751,7 @@ class AlibiDetectMMDTensorFlowDetector(AlibiDetectMMDDetector):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_pytorch", library_id="alibi_detect")
+@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_pytorch", library_id="alibi-detect")
 class AlibiDetectMMDPyTorchDetector(AlibiDetectMMDDetector):
     """Alibi-Detect MMD detector specifically using PyTorch backend."""
 
@@ -760,7 +760,7 @@ class AlibiDetectMMDPyTorchDetector(AlibiDetectMMDDetector):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
 
-@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_tensorflow", library_id="alibi_detect")
+@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_tensorflow", library_id="alibi-detect")
 class AlibiDetectLSDDTensorFlowDetector(AlibiDetectLSDDDetector):
     """Alibi-Detect LSDD detector specifically using TensorFlow backend."""
 
@@ -769,7 +769,7 @@ class AlibiDetectLSDDTensorFlowDetector(AlibiDetectLSDDDetector):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
 
-@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_pytorch", library_id="alibi_detect")
+@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_pytorch", library_id="alibi-detect")
 class AlibiDetectLSDDPyTorchDetector(AlibiDetectLSDDDetector):
     """Alibi-Detect LSDD detector specifically using PyTorch backend."""
 
@@ -823,12 +823,12 @@ def check_alibi_detect_installation() -> Dict[str, bool]:
     Returns:
         Dict[str, bool]: Installation status for core library and backends
     """
-    status = {"alibi_detect": False, "tensorflow": False, "pytorch": False, "sklearn": False}
+    status = {"alibi-detect": False, "tensorflow": False, "pytorch": False, "sklearn": False}
 
     try:
         import alibi_detect
 
-        status["alibi_detect"] = True
+        status["alibi-detect"] = True
         logger.debug(f"Alibi-Detect version: {alibi_detect.__version__}")
     except ImportError:
         pass

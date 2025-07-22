@@ -8,31 +8,31 @@ the drift-benchmark library.
 from typing_extensions import Literal
 
 # REQ-LIT-001: Drift Type Literals
-DriftType = Literal["COVARIATE", "CONCEPT", "PRIOR"]
+DriftType = Literal["covariate", "concept", "prior"]
 
 # REQ-LIT-002: Data Type Literals
-DataType = Literal["CONTINUOUS", "CATEGORICAL", "MIXED"]
+DataType = Literal["continuous", "categorical", "mixed"]
 
 # REQ-LIT-003: Dimension Literals
-DataDimension = Literal["UNIVARIATE", "MULTIVARIATE"]
+DataDimension = Literal["univariate", "multivariate"]
 
 # REQ-LIT-004: Labeling Literals
-DataLabeling = Literal["SUPERVISED", "UNSUPERVISED", "SEMI_SUPERVISED"]
+DataLabeling = Literal["supervised", "unsupervised", "semi-supervised"]
 
 # REQ-LIT-005: Execution Mode Literals
-ExecutionMode = Literal["BATCH", "STREAMING"]
+ExecutionMode = Literal["batch", "streaming"]
 
 # REQ-LIT-006: Method Family Literals
-MethodFamily = Literal["STATISTICAL_TEST", "DISTANCE_BASED", "CHANGE_DETECTION", "WINDOW_BASED", "STATISTICAL_PROCESS_CONTROL"]
+MethodFamily = Literal["statistical-test", "distance-based", "change-detection", "window-based", "statistical-process-control"]
 
 # REQ-LIT-007: Dataset Source Literals
-DatasetSource = Literal["FILE", "SYNTHETIC"]
+DatasetSource = Literal["file", "synthetic"]
 
 # REQ-LIT-008: File Format Literals
-FileFormat = Literal["CSV"]
+FileFormat = Literal["csv"]
 
 # REQ-LIT-009: Log Level Literals
-LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+LogLevel = Literal["debug", "info", "warning", "error", "critical"]
 
 # REQ-LIT-010: Library ID Literals
-LibraryId = Literal["EVIDENTLY", "ALIBI_DETECT", "SCIKIT_LEARN", "RIVER", "SCIPY", "CUSTOM"]
+LibraryId = Literal["evidently", "alibi-detect", "scikit-learn", "river", "scipy", "custom"]

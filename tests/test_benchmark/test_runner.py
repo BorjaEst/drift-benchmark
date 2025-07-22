@@ -39,7 +39,7 @@ def test_should_load_configuration_from_toml_when_from_config(temp_workspace):
     config_content = """
 [[datasets]]
 path = "data/example.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[detectors]]
@@ -203,7 +203,7 @@ def test_should_support_path_objects_when_from_config(temp_workspace):
     config_content = """
 [[datasets]]
 path = "data/example.csv"
-format = "CSV"
+format = "csv"
 reference_split = 0.5
 
 [[detectors]]

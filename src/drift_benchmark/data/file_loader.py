@@ -31,8 +31,8 @@ def load_dataset(config: DatasetConfig) -> DatasetResult:
         raise DataLoadingError(f"Dataset path is not a file: {file_path}")
 
     try:
-        # REQ-DAT-002: Support CSV format using pandas.read_csv() with default parameters
-        if config.format == "CSV":
+        # REQ-DAT-002: Support csv format using pandas.read_csv() with default parameters
+        if config.format == "csv":
             df = pd.read_csv(file_path)
         else:
             raise DataLoadingError(f"Unsupported file format: {config.format}")
@@ -58,7 +58,7 @@ def load_dataset(config: DatasetConfig) -> DatasetResult:
         data_type = _infer_data_type(df)
 
         # Determine dimensionality
-        dimension: DataDimension = "MULTIVARIATE" if len(df.columns) > 1 else "UNIVARIATE"
+        dimension: DataDimension = "multivariate" if len(df.columns) > 1 else "univariate"
 
         # Create metadata
         metadata = DatasetMetadata(
@@ -74,7 +74,7 @@ def load_dataset(config: DatasetConfig) -> DatasetResult:
     except pd.errors.EmptyDataError:
         raise DataLoadingError(f"Dataset file is empty: {file_path}")
     except pd.errors.ParserError as e:
-        raise DataLoadingError(f"Failed to parse CSV file {file_path}: {e}")
+        raise DataLoadingError(f"Failed to parse csv file {file_path}: {e}")
     except Exception as e:
         raise DataLoadingError(f"Unexpected error loading dataset {file_path}: {e}")
 
@@ -84,9 +84,9 @@ def _infer_data_type(df: pd.DataFrame) -> DataType:
     Infer data type based on pandas dtypes.
 
     REQ-DAT-008: Data type inference algorithm
-    CONTINUOUS: numeric dtypes (int, float)
-    CATEGORICAL: object/string dtypes
-    MIXED: datasets with both numeric and object columns
+    continuous: numeric dtypes (int, float)
+    categorical: object/string dtypes
+    mixed: datasets with both numeric and object columns
     """
     numeric_cols = df.select_dtypes(include=["int64", "float64", "int32", "float32"]).columns
     object_cols = df.select_dtypes(include=["object", "string"]).columns
@@ -95,11 +95,11 @@ def _infer_data_type(df: pd.DataFrame) -> DataType:
     has_categorical = len(object_cols) > 0
 
     if has_numeric and has_categorical:
-        return "MIXED"
+        return "mixed"
     elif has_numeric:
-        return "CONTINUOUS"
+        return "continuous"
     elif has_categorical:
-        return "CATEGORICAL"
+        return "categorical"
     else:
         # Edge case: no recognized columns, default to continuous
-        return "CONTINUOUS"
+        return "continuous"
