@@ -12,7 +12,7 @@
 4. [Creating Library Adapters](#creating-library-adapters)
 5. [Registration System](#registration-system)
 6. [Data Flow and Lifecycle](#data-flow-and-lifecycle)
-7. [Library Comparison Examples](#library-comparison-examples)
+7. [Library Comparison Usage](#library-comparison-usage)
 8. [Type System and Error Handling](#type-system-and-error-handling)
 9. [Testing Adapters](#testing-adapters)
 10. [Best Practices](#best-practices)
@@ -21,22 +21,29 @@
 
 ## 📋 Overview
 
-The drift-benchmark framework enables **fair comparison of how different libraries implement the same mathematical drift detection methods**. This document shows how to create adapter classes that integrate your preferred libraries with our standardized interface.
+This document is for **developers who want to integrate new drift detection libraries** into the drift-benchmark framework. If you need to compare existing library implementations, see [BENCHMARK-API.md](BENCHMARK-API.md).
 
 ### 🎯 Primary Purpose
 
-**Compare library implementations** rather than just methods. For example:
+**Create adapter classes** that enable your preferred drift detection library to participate in benchmarks. This document shows how to:
 
-- How does **Evidently's** Kolmogorov-Smirnov implementation compare to **Alibi-Detect's**?
-- Which library provides better performance for Maximum Mean Discrepancy: **scikit-learn** or **River**?
-- Is **SciPy's** statistical tests faster than custom implementations?
+- **Extend BaseDetector**: Implement the required interface for your library
+- **Map Library APIs**: Bridge your library's specific API to our standardized interface
+- **Handle Data Formats**: Convert between pandas DataFrames and your library's expected format
+- **Register Adapters**: Make your adapters discoverable by the benchmark framework
 
-### Key Concepts
+### When to Use This Document
 
-- **Method+Variant Standardization**: We define consistent algorithmic approaches (variants) for each mathematical method
-- **Library-Agnostic Interface**: Compare implementations across Evidently, Alibi-Detect, scikit-learn, River, etc.
-- **Adapter Pattern**: Your code bridges library-specific APIs to our unified interface
-- **Performance Benchmarking**: Measure speed, accuracy, and resource usage across libraries
+Use this guide when:
+
+- ✅ You want to add support for a **new library** (e.g., custom implementation)
+- ✅ No existing adapter exists for your **method+variant+library** combination
+- ✅ You need to **implement BaseDetector** for your specific library
+- ✅ You want to **extend framework capabilities** with new libraries
+
+**Prerequisites**: Basic understanding of your target library's API and Python inheritance patterns.
+
+**Next Steps**: After creating adapters, use [BENCHMARK-API.md](BENCHMARK-API.md) to configure and run library comparisons.
 
 ---
 
@@ -216,212 +223,7 @@ def score(self) -> Optional[float]:
 
 ---
 
-## 🧬 BaseDetector Abstract Class
-
-### Class Definition
-
-```python
-from abc import ABC, abstractmethod
-from typing import Any, Optional
-from ..models.results import DatasetResult
-
-class BaseDetector(ABC):
-    """Abstract base class for all drift detectors."""
-
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
-        """Initialize base detector with identifiers and parameters."""
-
-    @property
-    def method_id(self) -> str:
-        """Get the drift detection method identifier."""
-
-    @property
-    def variant_id(self) -> str:
-        """Get the variants variant identifier."""
-
-    def preprocess(self, data: DatasetResult, **kwargs) -> Any:
-        """Convert pandas DataFrames to detector-specific format."""
-
-    @abstractmethod
-    def fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector":
-        """Train the detector on reference data."""
-
-    @abstractmethod
-    def detect(self, preprocessed_data: Any, **kwargs) -> bool:
-        """Perform drift detection and return boolean result."""
-
-    def score(self) -> Optional[float]:
-        """Return drift score after detection (if available)."""
-```
-
-### Method Specifications
-
-#### Constructor: `__init__(self, method_id: str, variant_id: str, **kwargs)`
-
-**Purpose**: Initialize detector with identifiers and optional parameters.
-
-**Parameters**:
-
-- `method_id` (str): Method identifier from `methods.toml` registry
-- `variant_id` (str): Variants variant identifier
-- `**kwargs`: Additional parameters (hyperparameters, configuration options)
-
-**Requirements**:
-
-- Store identifiers as read-only properties
-- Accept arbitrary keyword arguments for flexibility
-- Initialize drift score storage
-
-**Example**:
-
-```python
-def __init__(self, method_id: str, variant_id: str, **kwargs):
-    super().__init__(method_id, variant_id)
-    self.threshold = kwargs.get('threshold', 0.05)
-    self.alpha = kwargs.get('alpha', 0.01)
-    self._fitted = False
-```
-
-#### Properties: `method_id` and `variant_id`
-
-**Purpose**: Provide read-only access to detector identifiers.
-
-**Returns**: String identifiers used for registration and lookup.
-
-**Requirements**:
-
-- Must be read-only (no setters)
-- Must return the values passed during initialization
-- Used for result tracking and error reporting
-
-#### Data Preprocessing: `preprocess(self, data: DatasetResult, **kwargs) -> Any`
-
-**Purpose**: Convert pandas DataFrames to detector-specific format.
-
-**Parameters**:
-
-- `data` (DatasetResult): Contains X_ref, X_test DataFrames and metadata
-- `**kwargs`: Additional preprocessing parameters
-
-**Returns**: Any format required by the detector library
-
-**Default Behavior**: Returns dict with DataFrames for basic compatibility
-
-```python
-def preprocess(self, data: DatasetResult, **kwargs) -> Any:
-    return {"X_ref": data.X_ref, "X_test": data.X_test, "metadata": data.metadata}
-```
-
-**Common variants**:
-
-```python
-# For numpy-based libraries
-def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-    phase = kwargs.get('phase', 'train')  # 'train' or 'detect'
-    if phase == 'train':
-        return data.X_ref.values
-    else:
-        return data.X_test.values
-
-# For specific libraries with custom formats
-def preprocess(self, data: DatasetResult, **kwargs) -> CustomFormat:
-    return CustomFormat.from_pandas(data.X_ref)
-```
-
-#### Training: `fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector"`
-
-**Purpose**: Train the detector on reference data.
-
-**Parameters**:
-
-- `preprocessed_data` (Any): Data in detector-specific format from preprocess()
-- `**kwargs`: Additional training parameters
-
-**Returns**: Self (for method chaining)
-
-**Requirements**:
-
-- Must be abstract (implemented by subclasses)
-- Should store trained model/parameters internally
-- Must return self for fluent interface
-- Should handle training failures gracefully
-
-**Example**:
-
-```python
-@abstractmethod
-def fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector":
-    # Extract reference data based on preprocessing format
-    if isinstance(preprocessed_data, dict):
-        X_ref = preprocessed_data["X_ref"]
-    else:
-        X_ref = preprocessed_data
-
-    # Train the underlying detector
-    self._detector.fit(X_ref)
-    self._fitted = True
-    return self
-```
-
-#### Detection: `detect(self, preprocessed_data: Any, **kwargs) -> bool`
-
-**Purpose**: Perform drift detection and return boolean result.
-
-**Parameters**:
-
-- `preprocessed_data` (Any): Data in detector-specific format from preprocess()
-- `**kwargs**: Additional detection parameters
-
-**Returns**: Boolean indicating whether drift was detected
-
-**Requirements**:
-
-- Must be abstract (implemented by subclasses)
-- Should store drift score internally for score() method
-- Must return boolean (True = drift detected, False = no drift)
-- Should handle detection failures gracefully
-
-**Example**:
-
-```python
-@abstractmethod
-def detect(self, preprocessed_data: Any, **kwargs) -> bool:
-    if not self._fitted:
-        raise RuntimeError("Detector must be fitted before detection")
-
-    # Extract test data based on preprocessing format
-    if isinstance(preprocessed_data, dict):
-        X_test = preprocessed_data["X_test"]
-    else:
-        X_test = preprocessed_data
-
-    # Perform detection and store score
-    self._last_score = self._detector.score(X_test)
-    return self._last_score > self.threshold
-```
-
-#### Scoring: `score(self) -> Optional[float]`
-
-**Purpose**: Return drift score after detection (optional).
-
-**Returns**: Float score or None if not available
-
-**Requirements**:
-
-- Called after detect() to retrieve continuous score
-- Return None if detector doesn't provide scores
-- Should not perform detection itself
-
-**Default Variants**:
-
-```python
-def score(self) -> Optional[float]:
-    return getattr(self, "_last_score", None)
-```
-
----
-
-## � Creating Library Adapters
+## 🔌 Creating Library Adapters
 
 ### Step 1: Choose Method+Variant from Registry
 
@@ -457,32 +259,30 @@ class EvidentlyKSDetector(BaseDetector):
     """Evidently's implementation of Kolmogorov-Smirnov batch processing."""
 
     def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
-        super().__init__(method_id, variant_id, library_id, **kwargs)
+        super().__init__(method_id, variant_id, library_id)
         self.threshold = kwargs.get('threshold', 0.05)
         self._reference_data = None
+        self._last_score = None
 
-    def preprocess(self, data, **kwargs):
-        """Convert to Evidently's expected format."""
-        # Evidently typically expects pandas DataFrames
-        phase = kwargs.get('phase', 'detect')
-        if phase == 'train':
-            return data.X_ref
-        else:
-            return data.X_test
+    def preprocess(self, data: DatasetResult, **kwargs) -> Any:
+        """Evidently prefers pandas DataFrames."""
+        phase = kwargs.get('phase', 'train')
+        return data.X_ref if phase == 'train' else data.X_test
 
-    def fit(self, preprocessed_data, **kwargs):
+    def fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector":
         """Store reference data for Evidently."""
         self._reference_data = preprocessed_data
         return self
 
-    def detect(self, preprocessed_data, **kwargs):
-        """Use Evidently's drift detection."""
+    def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+        """Use Evidently's data drift detection."""
         from evidently.metrics import DataDriftPreset
 
-        # Evidently-specific implementation
-        # ... implementation details ...
+        report = DataDriftPreset().run(self._reference_data, preprocessed_data)
+        result = report.metrics[0].result
 
-        return drift_detected
+        self._last_score = result.drift_score
+        return result.dataset_drift
 
 # Alibi-Detect's implementation of the SAME method+variant
 @register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi_detect")
@@ -490,29 +290,31 @@ class AlibiDetectKSDetector(BaseDetector):
     """Alibi-Detect's implementation of Kolmogorov-Smirnov batch processing."""
 
     def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
-        super().__init__(method_id, variant_id, library_id, **kwargs)
+        super().__init__(method_id, variant_id, library_id)
         self.threshold = kwargs.get('threshold', 0.05)
         self._detector = None
+        self._last_score = None
 
-    def preprocess(self, data, **kwargs):
-        """Convert to Alibi-Detect's expected format."""
-        # Alibi-Detect typically expects numpy arrays
-        phase = kwargs.get('phase', 'detect')
-        if phase == 'train':
-            return data.X_ref.values
-        else:
-            return data.X_test.values
+    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
+        """Alibi-Detect prefers numpy arrays."""
+        phase = kwargs.get('phase', 'train')
+        df = data.X_ref if phase == 'train' else data.X_test
 
-    def fit(self, preprocessed_data, **kwargs):
-        """Initialize Alibi-Detect detector."""
+        # Convert to numeric and handle missing values
+        numeric_data = df.select_dtypes(include=[np.number])
+        return numeric_data.fillna(numeric_data.mean()).values.astype(np.float32)
+
+    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "BaseDetector":
+        """Initialize Alibi-Detect KS detector."""
         from alibi_detect.cd import KSDrift
 
         self._detector = KSDrift(preprocessed_data, p_val=self.threshold)
         return self
 
-    def detect(self, preprocessed_data, **kwargs):
-        """Use Alibi-Detect's drift detection."""
+    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
+        """Use Alibi-Detect's KS drift detection."""
         result = self._detector.predict(preprocessed_data)
+
         self._last_score = result['data']['p_val']
         return result['data']['is_drift']
 
@@ -522,173 +324,247 @@ class SciPyKSDetector(BaseDetector):
     """SciPy's implementation of Kolmogorov-Smirnov batch processing."""
 
     def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
-        super().__init__(method_id, variant_id, library_id, **kwargs)
+        super().__init__(method_id, variant_id, library_id)
         self.threshold = kwargs.get('threshold', 0.05)
         self._reference_data = None
+        self._last_score = None
 
-    def preprocess(self, data, **kwargs):
-        """Convert to SciPy's expected format."""
-        # SciPy expects 1D numpy arrays for KS test
-        phase = kwargs.get('phase', 'detect')
-        if phase == 'train':
-            return data.X_ref.iloc[:, 0].values  # First column only
-        else:
-            return data.X_test.iloc[:, 0].values
+    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
+        """SciPy works with numpy arrays."""
+        phase = kwargs.get('phase', 'train')
+        df = data.X_ref if phase == 'train' else data.X_test
 
-    def fit(self, preprocessed_data, **kwargs):
-        """Store reference data for SciPy."""
+        # Convert to numeric data for statistical tests
+        numeric_data = df.select_dtypes(include=[np.number])
+        return numeric_data.fillna(numeric_data.mean()).values
+
+    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "BaseDetector":
+        """Store reference data for SciPy comparison."""
         self._reference_data = preprocessed_data
         return self
 
-    def detect(self, preprocessed_data, **kwargs):
-        """Use SciPy's KS test."""
+    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
+        """Use SciPy's Kolmogorov-Smirnov test."""
         from scipy.stats import ks_2samp
 
-        statistic, p_value = ks_2samp(self._reference_data, preprocessed_data)
-        self._last_score = p_value
-        return p_value < self.threshold
+        # Compare each feature independently for multivariate data
+        p_values = []
+        for i in range(min(self._reference_data.shape[1], preprocessed_data.shape[1])):
+            _, p_val = ks_2samp(self._reference_data[:, i], preprocessed_data[:, i])
+            p_values.append(p_val)
+
+        # Use minimum p-value (most significant drift)
+        min_p_value = min(p_values)
+        self._last_score = min_p_value
+
+        return min_p_value < self.threshold
 ```
 
-### Step 3: Configure Benchmark to Compare Libraries
+### Step 3: Test Your Adapters
 
-```toml
-# benchmark_config.toml
-[[datasets]]
-path = "datasets/example.csv"
-format = "CSV"
-reference_split = 0.5
-
-# Compare the same method+variant across different libraries
-[[detectors]]
-method_id = "kolmogorov_smirnov"
-variant_id = "batch"
-library_id = "evidently"
-threshold = 0.05
-
-[[detectors]]
-method_id = "kolmogorov_smirnov"  # Same method
-variant_id = "batch"              # Same variant
-library_id = "alibi_detect"       # Different library
-threshold = 0.05
-
-[[detectors]]
-method_id = "kolmogorov_smirnov"  # Same method
-variant_id = "batch"              # Same variant
-library_id = "scipy"              # Different library
-threshold = 0.05
-```
-
-### Library-Specific Patterns
-
-#### Evidently Integration
+Before using your adapters in benchmarks, test them individually:
 
 ```python
-def preprocess(self, data, **kwargs):
-    """Evidently usually works with pandas DataFrames."""
-    return data.X_ref if kwargs.get('phase') == 'train' else data.X_test
+# Test your adapter implementation
+from drift_benchmark.data import DatasetResult
+import pandas as pd
 
-def detect(self, preprocessed_data, **kwargs):
-    """Use Evidently's built-in metrics."""
-    from evidently.report import Report
-    from evidently.metrics import DataDriftPreset
+# Create test data
+test_data = DatasetResult(
+    X_ref=pd.DataFrame({'feature1': [1, 2, 3, 4, 5]}),
+    X_test=pd.DataFrame({'feature1': [6, 7, 8, 9, 10]})
+)
 
-    report = Report(metrics=[DataDriftPreset()])
-    report.run(reference_data=self._reference_data, current_data=preprocessed_data)
-    result = report.as_dict()
-    return result['metrics'][0]['result']['dataset_drift']
+# Test your adapter
+detector = EvidentlyKSDetector(
+    method_id="kolmogorov_smirnov",
+    variant_id="batch",
+    library_id="evidently",
+    threshold=0.05
+)
+
+# Test preprocessing
+ref_data = detector.preprocess(test_data, phase='train')
+test_data_processed = detector.preprocess(test_data, phase='detect')
+
+# Test training and detection
+detector.fit(ref_data)
+drift_detected = detector.detect(test_data_processed)
+print(f"Drift detected: {drift_detected}")
 ```
 
-#### Alibi-Detect Integration
+### Step 4: Configure and Run Benchmarks
+
+Once your adapters are implemented and tested, configure comparative benchmarks using [BENCHMARK-API.md](BENCHMARK-API.md). The benchmark configuration will automatically discover your registered adapters and enable library comparison.
+
+For complete examples of configuring library comparisons, result analysis, and performance evaluation, see the [BENCHMARK-API documentation](BENCHMARK-API.md).
+
+---
+
+## 🔧 Library-Specific Integration Patterns
+
+### Evidently Integration
 
 ```python
-def preprocess(self, data, **kwargs):
-    """Alibi-Detect usually expects numpy arrays."""
-    data_array = data.X_ref.values if kwargs.get('phase') == 'train' else data.X_test.values
-    return data_array.astype(np.float32)
+class EvidentlyAdapter(BaseDetector):
+    def preprocess(self, data: DatasetResult, **kwargs) -> Any:
+        """Evidently usually works with pandas DataFrames."""
+        phase = kwargs.get('phase', 'train')
+        return data.X_ref if phase == 'train' else data.X_test
 
-def fit(self, preprocessed_data, **kwargs):
-    """Initialize Alibi-Detect detector with reference data."""
-    from alibi_detect.cd import MMDDrift
+    def fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector":
+        """Evidently often doesn't require explicit training."""
+        self._reference_data = preprocessed_data
+        return self
 
-    self._detector = MMDDrift(preprocessed_data, backend='pytorch')
-    return self
+    def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+        """Use Evidently's built-in metrics."""
+        from evidently.metrics import DataDriftPreset
+
+        report = DataDriftPreset().run(self._reference_data, preprocessed_data)
+        result = report.metrics[0].result
+
+        self._last_score = getattr(result, 'drift_score', None)
+        return result['metrics'][0]['result']['dataset_drift']
 ```
 
-#### SciPy/scikit-learn Integration
+### Alibi-Detect Integration
 
 ```python
-def preprocess(self, data, **kwargs):
-    """Convert to numpy arrays for scikit-learn/SciPy."""
-    df = data.X_ref if kwargs.get('phase') == 'train' else data.X_test
-    return df.select_dtypes(include=[np.number]).values
+class AlibiDetectAdapter(BaseDetector):
+    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
+        """Alibi-Detect usually expects numpy arrays."""
+        phase = kwargs.get('phase', 'train')
+        df = data.X_ref if phase == 'train' else data.X_test
 
-def detect(self, preprocessed_data, **kwargs):
-    """Use SciPy statistical tests."""
-    from scipy.stats import ks_2samp
+        # Convert to float32 for memory efficiency
+        numeric_data = df.select_dtypes(include=[np.number])
+        data_array = numeric_data.fillna(numeric_data.mean()).values
+        return data_array.astype(np.float32)
 
-    # For multivariate data, test each feature
-    p_values = []
-    for i in range(preprocessed_data.shape[1]):
-        _, p_val = ks_2samp(self._reference_data[:, i], preprocessed_data[:, i])
-        p_values.append(p_val)
+    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "BaseDetector":
+        """Initialize Alibi-Detect detector with reference data."""
+        from alibi_detect.cd import KSDrift  # or other detectors
 
-    # Combine p-values (simple minimum for this example)
-    combined_p = min(p_values)
-    self._last_score = combined_p
-    return combined_p < self.threshold
+        self._detector = KSDrift(
+            x_ref=preprocessed_data,
+            p_val=self.threshold,
+            **kwargs
+        )
+        return self
+
+    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
+        """Use Alibi-Detect's prediction interface."""
+        result = self._detector.predict(preprocessed_data)
+
+        self._last_score = result['data'].get('p_val')
+        return result['data']['is_drift']
 ```
 
-    numeric_data = df.select_dtypes(include=[np.number])
+### SciPy/scikit-learn Integration
+
+```python
+class SciPyAdapter(BaseDetector):
+    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
+        """Convert to numpy arrays for scikit-learn/SciPy."""
+        phase = kwargs.get('phase', 'train')
+        df = data.X_ref if phase == 'train' else data.X_test
+
+        # Handle categorical data with encoding if needed
+        numeric_data = df.select_dtypes(include=[np.number])
+        return numeric_data.fillna(numeric_data.mean()).values
+
+    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "BaseDetector":
+        """Store reference data for statistical tests."""
+        self._reference_data = preprocessed_data
+        return self
+
+    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
+        """Use SciPy statistical tests."""
+        from scipy.stats import ks_2samp
+
+        # Handle multivariate data
+        p_values = []
+        for i in range(min(self._reference_data.shape[1], preprocessed_data.shape[1])):
+            _, p_val = ks_2samp(
+                self._reference_data[:, i],
+                preprocessed_data[:, i]
+            )
+            p_values.append(p_val)
+
+        # Combine p-values (using minimum for conservative approach)
+        combined_p = min(p_values) if p_values else 1.0
+        self._last_score = combined_p
+
+        return combined_p < self.threshold
+```
+
+### Common Data Preprocessing Patterns
+
+#### Handling Mixed Data Types
+
+```python
+def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
+    """Handle mixed continuous/categorical data."""
+    phase = kwargs.get('phase', 'train')
+    df = data.X_ref if phase == 'train' else data.X_test
+
+    # Separate numeric and categorical columns
+    numeric_cols = df.select_dtypes(include=[np.number])
+    categorical_cols = df.select_dtypes(include=['object', 'category'])
+
+    # Handle numeric data
+    numeric_data = numeric_cols.fillna(numeric_cols.mean()).values
+
+    # Handle categorical data (simple label encoding)
+    if not categorical_cols.empty:
+        from sklearn.preprocessing import LabelEncoder
+        encoded_categorical = []
+        for col in categorical_cols.columns:
+            le = LabelEncoder()
+            encoded_col = le.fit_transform(categorical_cols[col].fillna('missing'))
+            encoded_categorical.append(encoded_col)
+
+        categorical_data = np.column_stack(encoded_categorical)
+        return np.column_stack([numeric_data, categorical_data])
+
     return numeric_data.fillna(numeric_data.mean()).values
-
-````
+```
 
 #### Categorical Data
 
 ```python
 def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
     """Handle categorical data with encoding."""
-    from sklearn.preprocessing import LabelEncoder
-
     phase = kwargs.get('phase', 'train')
     df = data.X_ref if phase == 'train' else data.X_test
 
-    # Encode categorical variables
-    categorical_cols = df.select_dtypes(include=['object', 'category']).columns
-    encoded_data = df.copy()
-
-    for col in categorical_cols:
-        if not hasattr(self, f'_encoder_{col}'):
-            encoder = LabelEncoder()
-            encoder.fit(data.X_ref[col].astype(str))
-            setattr(self, f'_encoder_{col}', encoder)
-
-        encoder = getattr(self, f'_encoder_{col}')
-        encoded_data[col] = encoder.transform(df[col].astype(str))
-
+    # Use pandas get_dummies for one-hot encoding
+    encoded_data = pd.get_dummies(df, dummy_na=True)
     return encoded_data.values
-````
+```
 
 #### Multivariate Data
 
 ```python
 def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
     """Handle multivariate drift detection."""
-    # Apply univariate test to each feature and combine results
+    # Example using multiple univariate tests
     p_values = []
 
-    for feature_idx in range(preprocessed_data.shape[1]):
-        ref_feature = self._reference_data[:, feature_idx]
-        test_feature = preprocessed_data[:, feature_idx]
+    for i in range(min(self._reference_data.shape[1], preprocessed_data.shape[1])):
+        _, p_val = self._statistical_test(
+            self._reference_data[:, i],
+            preprocessed_data[:, i]
+        )
+        p_values.append(p_val)
 
-        _, p_value = stats.ks_2samp(ref_feature, test_feature)
-        p_values.append(p_value)
-
-    # Combine p-values using Fisher's method
-    combined_statistic, combined_p_value = stats.combine_pvalues(p_values, method='fisher')
+    # Apply Bonferroni correction for multiple testing
+    corrected_threshold = self.threshold / len(p_values)
+    combined_p_value = min(p_values)
 
     self._last_score = combined_p_value
-    return combined_p_value < self.threshold
+    return combined_p_value < corrected_threshold
 ```
 
 ---
@@ -702,54 +578,62 @@ The framework uses decorator-based registration for automatic discovery:
 ```python
 from drift_benchmark.adapters import register_detector
 
-@register_detector(method_id="my_method", variant_id="my_impl")
+@register_detector(method_id="my_method", variant_id="my_impl", library_id="my_library")
 class MyDetector(BaseDetector):
-    # Variants here
+    # Implementation here
     pass
 ```
 
 ### Registration Requirements
 
 1. **Method ID**: Must exist in `methods.toml` registry
-2. **Variants ID**: Must be listed under the method in `methods.toml`
-3. **Class Inheritance**: Must inherit from `BaseDetector`
-4. **Import Side Effects**: Registration happens at import time
+2. **Variant ID**: Must be listed under the method in `methods.toml`
+3. **Library ID**: Must be a valid library identifier ("evidently", "alibi_detect", "scipy", etc.)
+4. **Class Inheritance**: Must inherit from `BaseDetector`
+5. **Import Side Effects**: Registration happens at import time
 
-### Registry Functions
+### Registry Validation
+
+```python
+# The registration system validates:
+# 1. Method exists in methods.toml
+# 2. Variant exists under the method
+# 3. No duplicate registrations for same method+variant+library combination
+# 4. BaseDetector inheritance
+
+from drift_benchmark.exceptions import (
+    MethodNotFoundError,
+    VariantNotFoundError,
+    DuplicateDetectorError
+)
+
+try:
+    @register_detector(method_id="nonexistent", variant_id="test", library_id="custom")
+    class BadDetector(BaseDetector):
+        pass
+except MethodNotFoundError:
+    print("Method 'nonexistent' not found in registry")
+```
+
+### Registry Lookup
 
 ```python
 from drift_benchmark.adapters import get_detector_class, list_detectors
 
 # Get specific detector class
-DetectorClass = get_detector_class("kolmogorov_smirnov", "ks_batch")
+DetectorClass = get_detector_class(
+    method_id="kolmogorov_smirnov",
+    variant_id="batch",
+    library_id="evidently"
+)
 
 # List all registered detectors
-available = list_detectors()  # Returns [(method_id, impl_id), ...]
+all_detectors = list_detectors()
+print(f"Available detectors: {len(all_detectors)}")
 
-# Instantiate detector
-detector = DetectorClass("kolmogorov_smirnov", "ks_batch", threshold=0.01)
-```
-
-### Method Registry Schema
-
-The `methods.toml` file defines available methods and variants:
-
-```toml
-[methods.my_method]
-name = "My Custom Method"
-description = "Description of the custom drift detection method"
-drift_types = ["COVARIATE"]  # COVARIATE, CONCEPT, PRIOR
-family = "STATISTICAL_TEST"  # See MethodFamily in literals.py
-data_dimension = "UNIVARIATE"  # UNIVARIATE, MULTIVARIATE
-data_types = ["CONTINUOUS"]  # CONTINUOUS, CATEGORICAL, MIXED
-requires_labels = false
-references = ["https://doi.org/example", "Author (Year)"]
-
-[methods.my_method.variants.my_impl]
-name = "My Variants"
-execution_mode = "BATCH"  # BATCH, STREAMING
-hyperparameters = ["threshold", "alpha"]
-references = ["Variants reference"]
+# Filter by method
+ks_detectors = [d for d in all_detectors if d[0] == "kolmogorov_smirnov"]
+print(f"KS implementations: {[d[2] for d in ks_detectors]}")  # Show library IDs
 ```
 
 ---
@@ -759,789 +643,690 @@ references = ["Variants reference"]
 ### Complete Execution Flow
 
 ```text
-1. Configuration Loading
-   ├── Parse TOML configuration
-   ├── Validate dataset and detector configurations
-   └── Load dataset files
-
-2. Detector Instantiation
-   ├── Registry lookup by (method_id, variant_id)
-   ├── Class instantiation with parameters
-   └── Validation of required methods
-
-3. Benchmark Execution (per dataset)
-   ├── Preprocessing Phase
-   │   ├── detector.preprocess(dataset, phase='train')
-   │   └── Return reference data in detector format
-   │
-   ├── Training Phase
-   │   ├── detector.fit(preprocessed_reference_data)
-   │   └── Store trained model/parameters
-   │
-   ├── Detection Phase
-   │   ├── detector.preprocess(dataset, phase='detect')
-   │   ├── detector.detect(preprocessed_test_data)
-   │   └── Return boolean drift result
-   │
-   └── Scoring Phase
-       ├── detector.score()
-       └── Return optional drift score
-
-4. Result Collection
-   ├── Aggregate all detector results
-   ├── Calculate summary statistics
-   └── Save results to timestamped directory
+1. BenchmarkRunner loads configuration
+2. For each detector config:
+   a. Lookup detector class by (method_id, variant_id, library_id)
+   b. Instantiate detector with hyperparameters
+3. For each dataset:
+   a. Load and split data into X_ref/X_test
+4. For each detector-dataset combination:
+   a. preprocess(dataset, phase='train') → ref_data
+   b. detector.fit(ref_data)
+   c. preprocess(dataset, phase='detect') → test_data
+   d. detector.detect(test_data) → drift_detected
+   e. detector.score() → drift_score
+   f. Record execution time and results
+5. Aggregate results and save to timestamped directory
 ```
 
-### Data Transformations
+### Preprocessing Phases
 
-```text
-CSV File → pandas.DataFrame → DatasetResult → Preprocessed Format → Library API
-    ↓              ↓              ↓               ↓               ↓
-file_loader   X_ref/X_test   preprocess()   fit()/detect()   External Lib
+The `preprocess()` method is called twice per detector-dataset pair:
+
+```python
+# Phase 1: Training data preparation
+reference_data = detector.preprocess(dataset_result, phase='train')
+detector.fit(reference_data)
+
+# Phase 2: Test data preparation
+test_data = detector.preprocess(dataset_result, phase='detect')
+drift_detected = detector.detect(test_data)
 ```
 
-### Error Handling Points
+### Error Handling Flow
 
-1. **Registration**: `DuplicateDetectorError`, `DetectorNotFoundError`
-2. **Instantiation**: `TypeError`, `ValueError`
-3. **Preprocessing**: Format conversion errors
-4. **Training**: Library-specific training errors
-5. **Detection**: Library-specific detection errors
+```python
+# Benchmark execution continues even if individual detectors fail
+for detector_config in benchmark_config.detectors:
+    try:
+        # Instantiate detector
+        detector = create_detector(detector_config)
+
+        for dataset in datasets:
+            try:
+                # Execute detector on dataset
+                result = run_detector(detector, dataset)
+                results.append(result)
+            except Exception as e:
+                # Log error and continue with next dataset
+                logger.error(f"Detector {detector.library_id} failed on {dataset.name}: {e}")
+                results.append(create_error_result(detector, dataset, e))
+
+    except Exception as e:
+        # Log error and continue with next detector
+        logger.error(f"Failed to create detector {detector_config.library_id}: {e}")
+```
 
 ---
 
-## 🏷️ Type System and Literals
+## 📊 Library Comparison Usage
 
-### Import Required Types
+Once you've created adapters for your libraries, you can use them in comparative benchmarks. For complete examples of:
 
-```python
-from drift_benchmark.literals import (
-    DriftType,      # "COVARIATE", "CONCEPT", "PRIOR"
-    MethodFamily,   # "STATISTICAL_TEST", "DISTANCE_BASED", etc.
-    DataType,       # "CONTINUOUS", "CATEGORICAL", "MIXED"
-    DataDimension,  # "UNIVARIATE", "MULTIVARIATE"
-    ExecutionMode,  # "BATCH", "STREAMING"
-)
-```
+- **Configuration Setup**: How to configure benchmarks to compare your adapters
+- **Performance Analysis**: Statistical comparison of library implementations
+- **Result Interpretation**: Understanding which library performs better
+- **Visualization**: Plotting comparative results
+
+See the [BENCHMARK-API documentation](BENCHMARK-API.md#library-comparison-examples).
+
+**Quick Reference**: Your registered adapters will automatically be discoverable by the benchmark framework when you specify the corresponding `method_id`, `variant_id`, and `library_id` in your benchmark configuration.
+
+---
+
+## 🧪 Type System and Error Handling
 
 ### Type Annotations
 
 ```python
-from typing import Optional, Union, Any, Dict, List
-import numpy as np
-import pandas as pd
+from typing import Any, Optional, Dict, List
+from drift_benchmark.models.results import DatasetResult
+from drift_benchmark.literals import LibraryId
 
-class MyDetector(BaseDetector):
-    def preprocess(self, data: DatasetResult, **kwargs) -> Union[np.ndarray, Dict[str, Any]]:
-        # Variants
+class LibraryAdapter(BaseDetector):
+    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
+        super().__init__(method_id, variant_id, library_id)
+
+    def preprocess(self, data: DatasetResult, **kwargs) -> Any:
+        # Return type depends on library requirements
         pass
 
-    def fit(self, preprocessed_data: Any, **kwargs) -> "MyDetector":
-        # Variants
+    def fit(self, preprocessed_data: Any, **kwargs) -> "LibraryAdapter":
+        # Always return self for chaining
         pass
 
     def detect(self, preprocessed_data: Any, **kwargs) -> bool:
-        # Variants
+        # Always return boolean
         pass
 
     def score(self) -> Optional[float]:
-        # Variants
+        # Return score or None
         pass
-```
-
----
-
-## ⚠️ Error Handling
-
-### Exception Hierarchy
-
-```python
-from drift_benchmark.exceptions import (
-    DriftBenchmarkError,        # Base exception
-    DetectorNotFoundError,      # Registry lookup failures
-    DuplicateDetectorError,     # Registration conflicts
-    BenchmarkExecutionError,    # Runtime execution errors
-)
 ```
 
 ### Error Handling Patterns
 
-#### Registration Errors
-
 ```python
-try:
-    detector_class = get_detector_class("unknown_method", "unknown_impl")
-except DetectorNotFoundError as e:
-    logger.error(f"Detector not found: {e}")
-    # Handle gracefully
+from drift_benchmark.exceptions import (
+    DetectorNotFoundError,
+    DataValidationError,
+    BenchmarkExecutionError
+)
+
+class RobustAdapter(BaseDetector):
+    def preprocess(self, data: DatasetResult, **kwargs) -> Any:
+        """Robust preprocessing with error handling."""
+        try:
+            phase = kwargs.get('phase', 'train')
+            df = data.X_ref if phase == 'train' else data.X_test
+
+            if df.empty:
+                raise DataValidationError(f"Empty dataset for phase '{phase}'")
+
+            # Convert to library format with validation
+            processed_data = self._convert_to_library_format(df)
+
+            if processed_data is None:
+                raise DataValidationError("Data conversion failed")
+
+            return processed_data
+
+        except Exception as e:
+            logger.error(f"Preprocessing failed for {self.library_id}: {e}")
+            raise DataValidationError(f"Preprocessing error: {e}") from e
+
+    def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+        """Detection with error handling and fallback."""
+        try:
+            # Primary detection logic
+            result = self._run_detection(preprocessed_data)
+            return result
+
+        except Exception as e:
+            logger.warning(f"Detection failed for {self.library_id}: {e}")
+
+            # Fallback: return conservative result
+            return False  # or True, depending on use case
+
+    def _convert_to_library_format(self, df):
+        """Library-specific conversion with validation."""
+        # Implementation depends on library requirements
+        pass
+
+    def _run_detection(self, data):
+        """Core detection logic with library-specific implementation."""
+        # Implementation depends on library
+        pass
 ```
 
-#### Runtime Errors
+### Validation Helpers
 
 ```python
-def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+def validate_data_shape(data: Any, expected_dims: int = 2) -> bool:
+    """Validate data has expected dimensions."""
+    if hasattr(data, 'shape'):
+        return len(data.shape) == expected_dims
+    return False
+
+def validate_library_availability(library_name: str) -> bool:
+    """Check if required library is available."""
     try:
-        # Perform detection
-        result = self._library_detect(preprocessed_data)
-        return result > self.threshold
-    except Exception as e:
-        # Log error and re-raise with context
-        logger.error(f"Detection failed in {self.method_id}.{self.variant_id}: {e}")
-        raise BenchmarkExecutionError(f"Detection failed: {e}") from e
-```
+        __import__(library_name)
+        return True
+    except ImportError:
+        return False
 
-#### Validation Errors
+class ValidationMixin:
+    """Mixin for common validation patterns."""
 
-```python
-def fit(self, preprocessed_data: Any, **kwargs) -> "MyDetector":
-    if preprocessed_data is None or len(preprocessed_data) == 0:
-        raise ValueError("Training data cannot be empty")
+    def validate_preprocessing_output(self, data: Any) -> bool:
+        """Validate preprocessed data format."""
+        return (data is not None and
+                hasattr(data, '__len__') and
+                len(data) > 0)
 
-    if not isinstance(preprocessed_data, np.ndarray):
-        raise TypeError(f"Expected numpy array, got {type(preprocessed_data)}")
-
-    # Proceed with training
-    return self
-```
-
----
-
-## 📋 Complete Examples
-
-### Example 1: Statistical Test Detector
-
-```python
-from drift_benchmark.adapters import BaseDetector, register_detector
-from drift_benchmark.models.results import DatasetResult
-import numpy as np
-from scipy import stats
-from typing import Optional
-
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch")
-class KolmogorovSmirnovDetector(BaseDetector):
-    """
-    Kolmogorov-Smirnov test for drift detection.
-
-    Tests whether two samples come from the same distribution.
-    """
-
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
-        super().__init__(method_id, variant_id)
-        self.threshold = kwargs.get('threshold', 0.05)
-        self._reference_data: Optional[np.ndarray] = None
-        self._last_score: Optional[float] = None
-
-    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-        """Convert DataFrame to numpy array for scipy functions."""
-        phase = kwargs.get('phase', 'train')
-
-        if phase == 'train':
-            return data.X_ref.values
-        else:
-            return data.X_test.values
-
-    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "KolmogorovSmirnovDetector":
-        """Store reference data for comparison."""
-        if preprocessed_data is None or len(preprocessed_data) == 0:
-            raise ValueError("Reference data cannot be empty")
-
-        self._reference_data = preprocessed_data.copy()
-        return self
-
-    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
-        """Perform KS test for drift detection."""
-        if self._reference_data is None:
-            raise RuntimeError("Detector must be fitted before detection")
-
-        if preprocessed_data is None or len(preprocessed_data) == 0:
-            raise ValueError("Test data cannot be empty")
-
-        # Flatten arrays for univariate test
-        ref_flat = self._reference_data.flatten()
-        test_flat = preprocessed_data.flatten()
-
-        # Perform two-sample Kolmogorov-Smirnov test
-        statistic, p_value = stats.ks_2samp(ref_flat, test_flat)
-
-        # Store p-value as drift score
-        self._last_score = p_value
-
-        # Drift detected if p-value < threshold
-        return p_value < self.threshold
-
-    def score(self) -> Optional[float]:
-        """Return p-value from last detection."""
-        return self._last_score
-```
-
-### Example 2: Distance-Based Detector
-
-```python
-from drift_benchmark.adapters import BaseDetector, register_detector
-from drift_benchmark.models.results import DatasetResult
-import numpy as np
-from sklearn.metrics.pairwise import euclidean_distances
-from typing import Optional
-
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf")
-class MaximumMeanDiscrepancyDetector(BaseDetector):
-    """
-    Maximum Mean Discrepancy with RBF kernel for drift detection.
-    """
-
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
-        super().__init__(method_id, variant_id)
-        self.threshold = kwargs.get('threshold', 0.1)
-        self.gamma = kwargs.get('gamma', 1.0)
-        self._reference_data: Optional[np.ndarray] = None
-        self._last_score: Optional[float] = None
-
-    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-        """Standardize data for distance calculations."""
-        phase = kwargs.get('phase', 'train')
-
-        if phase == 'train':
-            df = data.X_ref
-        else:
-            df = data.X_test
-
-        # Convert to numpy and handle missing values
-        numeric_data = df.select_dtypes(include=[np.number])
-        processed = numeric_data.fillna(numeric_data.mean()).values
-
-        # Standardize using reference statistics
-        if phase == 'train':
-            self._mean = processed.mean(axis=0)
-            self._std = processed.std(axis=0)
-            self._std[self._std == 0] = 1  # Avoid division by zero
-
-        # Apply standardization
-        if hasattr(self, '_mean') and hasattr(self, '_std'):
-            processed = (processed - self._mean) / self._std
-
-        return processed
-
-    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "MaximumMeanDiscrepancyDetector":
-        """Store reference data for MMD calculation."""
-        self._reference_data = preprocessed_data.copy()
-        return self
-
-    def _rbf_kernel(self, X: np.ndarray, Y: np.ndarray) -> np.ndarray:
-        """Compute RBF kernel matrix."""
-        distances = euclidean_distances(X, Y)
-        return np.exp(-self.gamma * distances ** 2)
-
-    def _compute_mmd(self, X: np.ndarray, Y: np.ndarray) -> float:
-        """Compute Maximum Mean Discrepancy."""
-        m, n = X.shape[0], Y.shape[0]
-
-        # Compute kernel matrices
-        K_XX = self._rbf_kernel(X, X)
-        K_YY = self._rbf_kernel(Y, Y)
-        K_XY = self._rbf_kernel(X, Y)
-
-        # Compute MMD^2
-        mmd_squared = (
-            K_XX.sum() / (m * m) +
-            K_YY.sum() / (n * n) -
-            2 * K_XY.sum() / (m * n)
-        )
-
-        return np.sqrt(max(mmd_squared, 0))  # Ensure non-negative
-
-    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
-        """Detect drift using MMD."""
-        if self._reference_data is None:
-            raise RuntimeError("Detector must be fitted before detection")
-
-        # Compute MMD between reference and test data
-        mmd_score = self._compute_mmd(self._reference_data, preprocessed_data)
-        self._last_score = mmd_score
-
-        return mmd_score > self.threshold
-
-    def score(self) -> Optional[float]:
-        """Return MMD score from last detection."""
-        return self._last_score
-```
-
-### Example 3: Library Integration (scikit-learn)
-
-```python
-from drift_benchmark.adapters import BaseDetector, register_detector
-from drift_benchmark.models.results import DatasetResult
-import numpy as np
-from sklearn.ensemble import IsolationForest
-from sklearn.metrics import roc_auc_score
-from typing import Optional
-
-@register_detector(method_id="isolation_forest", variant_id="sklearn")
-class IsolationForestDetector(BaseDetector):
-    """
-    Isolation Forest-based drift detector using scikit-learn.
-    """
-
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
-        super().__init__(method_id, variant_id)
-        self.contamination = kwargs.get('contamination', 0.1)
-        self.n_estimators = kwargs.get('n_estimators', 100)
-        self.random_state = kwargs.get('random_state', 42)
-
-        self._model = IsolationForest(
-            contamination=self.contamination,
-            n_estimators=self.n_estimators,
-            random_state=self.random_state
-        )
-        self._last_score: Optional[float] = None
-
-    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-        """Preprocess data for scikit-learn."""
-        phase = kwargs.get('phase', 'train')
-
-        if phase == 'train':
-            df = data.X_ref
-        else:
-            df = data.X_test
-
-        # Select numeric columns and handle missing values
-        numeric_data = df.select_dtypes(include=[np.number])
-        return numeric_data.fillna(numeric_data.mean()).values
-
-    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "IsolationForestDetector":
-        """Train Isolation Forest on reference data."""
-        self._model.fit(preprocessed_data)
-        return self
-
-    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
-        """Detect drift using anomaly scores."""
-        # Get anomaly scores for test data
-        test_scores = self._model.score_samples(preprocessed_data)
-
-        # Get anomaly scores for reference data (from training)
-        ref_scores = self._model.score_samples(
-            self._model._get_reference_data() if hasattr(self._model, '_get_reference_data')
-            else preprocessed_data  # Fallback
-        )
-
-        # Use mean score difference as drift indicator
-        mean_test_score = np.mean(test_scores)
-        mean_ref_score = np.mean(ref_scores) if len(ref_scores) > 0 else 0
-
-        score_diff = abs(mean_test_score - mean_ref_score)
-        self._last_score = score_diff
-
-        # Detect drift if score difference exceeds threshold
-        threshold = 0.1  # Can be made configurable
-        return score_diff > threshold
-
-    def score(self) -> Optional[float]:
-        """Return score difference from last detection."""
-        return self._last_score
+    def validate_threshold(self, threshold: float) -> bool:
+        """Validate threshold is in valid range."""
+        return 0.0 < threshold < 1.0
 ```
 
 ---
 
 ## 🧪 Testing Adapters
 
-### Unit Test Structure
+### Unit Testing Structure
 
 ```python
 import pytest
 import numpy as np
 import pandas as pd
-from drift_benchmark.adapters import register_detector
 from drift_benchmark.models.results import DatasetResult
-from drift_benchmark.models.metadata import DatasetMetadata
+from drift_benchmark.adapters import get_detector_class
 
-class TestMyDetector:
-    """Test suite for custom detector variants."""
+class TestLibraryAdapter:
+    """Test suite for library-specific adapters."""
 
     @pytest.fixture
-    def sample_data(self):
+    def sample_dataset(self):
         """Create sample dataset for testing."""
+        np.random.seed(42)
+
         # Reference data (normal distribution)
         X_ref = pd.DataFrame({
             'feature1': np.random.normal(0, 1, 100),
             'feature2': np.random.normal(0, 1, 100)
         })
 
-        # Test data (shifted distribution - drift)
+        # Test data (shifted distribution to simulate drift)
         X_test = pd.DataFrame({
-            'feature1': np.random.normal(2, 1, 100),  # Mean shift
-            'feature2': np.random.normal(0, 1, 100)
+            'feature1': np.random.normal(0.5, 1, 100),  # Mean shift
+            'feature2': np.random.normal(0, 1.2, 100)   # Variance change
         })
 
-        metadata = DatasetMetadata(
-            name="test_dataset",
-            data_type="CONTINUOUS",
-            dimension="MULTIVARIATE",
-            n_samples_ref=100,
-            n_samples_test=100
-        )
-
-        return DatasetResult(X_ref=X_ref, X_test=X_test, metadata=metadata)
+        return DatasetResult(X_ref=X_ref, X_test=X_test, metadata={})
 
     @pytest.fixture
-    def detector(self):
-        """Create detector instance."""
-        return MyDetector("my_method", "my_impl", threshold=0.05)
-
-    def test_initialization(self, detector):
-        """Test proper initialization."""
-        assert detector.method_id == "my_method"
-        assert detector.variant_id == "my_impl"
-        assert detector.threshold == 0.05
-
-    def test_preprocess(self, detector, sample_data):
-        """Test data preprocessing."""
-        # Test training preprocessing
-        train_data = detector.preprocess(sample_data, phase='train')
-        assert isinstance(train_data, np.ndarray)
-        assert train_data.shape[0] == 100
-
-        # Test detection preprocessing
-        test_data = detector.preprocess(sample_data, phase='detect')
-        assert isinstance(test_data, np.ndarray)
-        assert test_data.shape[0] == 100
-
-    def test_fit(self, detector, sample_data):
-        """Test detector training."""
-        train_data = detector.preprocess(sample_data, phase='train')
-        fitted_detector = detector.fit(train_data)
-
-        # Should return self
-        assert fitted_detector is detector
-
-        # Should store reference data
-        assert hasattr(detector, '_reference_data')
-        assert detector._reference_data is not None
-
-    def test_detect_drift(self, detector, sample_data):
-        """Test drift detection."""
-        # Train detector
-        train_data = detector.preprocess(sample_data, phase='train')
-        detector.fit(train_data)
-
-        # Detect on shifted data (should detect drift)
-        test_data = detector.preprocess(sample_data, phase='detect')
-        drift_detected = detector.detect(test_data)
-
-        assert isinstance(drift_detected, bool)
-        assert drift_detected is True  # Should detect drift in shifted data
-
-    def test_detect_no_drift(self, detector):
-        """Test no drift detection with same distribution."""
-        # Create data with no drift
-        X_same = pd.DataFrame({
-            'feature1': np.random.normal(0, 1, 100),
-            'feature2': np.random.normal(0, 1, 100)
-        })
-
-        metadata = DatasetMetadata(
-            name="no_drift_dataset",
-            data_type="CONTINUOUS",
-            dimension="MULTIVARIATE",
-            n_samples_ref=100,
-            n_samples_test=100
+    def detector_class(self):
+        """Get detector class for testing."""
+        return get_detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy"  # or whichever library you're testing
         )
 
-        no_drift_data = DatasetResult(X_ref=X_same, X_test=X_same, metadata=metadata)
+    def test_detector_initialization(self, detector_class):
+        """Test detector can be initialized correctly."""
+        detector = detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy",
+            threshold=0.05
+        )
 
-        # Train and detect
-        train_data = detector.preprocess(no_drift_data, phase='train')
-        detector.fit(train_data)
+        assert detector.method_id == "kolmogorov_smirnov"
+        assert detector.variant_id == "batch"
+        assert detector.library_id == "scipy"
 
-        test_data = detector.preprocess(no_drift_data, phase='detect')
+    def test_preprocessing(self, detector_class, sample_dataset):
+        """Test data preprocessing produces expected format."""
+        detector = detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy"
+        )
+
+        # Test training data preprocessing
+        ref_data = detector.preprocess(sample_dataset, phase='train')
+        assert ref_data is not None
+        assert len(ref_data) > 0
+
+        # Test detection data preprocessing
+        test_data = detector.preprocess(sample_dataset, phase='detect')
+        assert test_data is not None
+        assert len(test_data) > 0
+
+        # Data should have same shape for same dataset
+        if hasattr(ref_data, 'shape') and hasattr(test_data, 'shape'):
+            assert ref_data.shape[1] == test_data.shape[1]  # Same features
+
+    def test_training(self, detector_class, sample_dataset):
+        """Test detector training completes successfully."""
+        detector = detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy"
+        )
+
+        ref_data = detector.preprocess(sample_dataset, phase='train')
+        trained_detector = detector.fit(ref_data)
+
+        # Should return self for chaining
+        assert trained_detector is detector
+
+    def test_detection(self, detector_class, sample_dataset):
+        """Test drift detection produces boolean result."""
+        detector = detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy",
+            threshold=0.05
+        )
+
+        # Train detector
+        ref_data = detector.preprocess(sample_dataset, phase='train')
+        detector.fit(ref_data)
+
+        # Run detection
+        test_data = detector.preprocess(sample_dataset, phase='detect')
         drift_detected = detector.detect(test_data)
 
-        assert drift_detected is False  # Should not detect drift
+        # Should return boolean
+        assert isinstance(drift_detected, bool)
 
-    def test_score(self, detector, sample_data):
-        """Test drift score retrieval."""
-        # Train and detect first
-        train_data = detector.preprocess(sample_data, phase='train')
-        detector.fit(train_data)
+        # With shifted data, should likely detect drift
+        # (though this depends on random seed and threshold)
 
-        test_data = detector.preprocess(sample_data, phase='detect')
+    def test_scoring(self, detector_class, sample_dataset):
+        """Test drift scoring after detection."""
+        detector = detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy"
+        )
+
+        # Train and detect
+        ref_data = detector.preprocess(sample_dataset, phase='train')
+        detector.fit(ref_data)
+
+        test_data = detector.preprocess(sample_dataset, phase='detect')
         detector.detect(test_data)
 
         # Get score
         score = detector.score()
-        assert score is not None
-        assert isinstance(score, float)
-        assert 0 <= score <= 1  # Assuming normalized score
 
-    def test_error_handling(self, detector, sample_data):
-        """Test error handling."""
-        # Test detection without fitting
+        # Score should be float or None
+        assert score is None or isinstance(score, (int, float))
+
+        if score is not None:
+            assert 0.0 <= score <= 1.0  # Assuming p-value or similar
+
+    def test_error_handling(self, detector_class):
+        """Test detector handles errors gracefully."""
+        detector = detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy"
+        )
+
+        # Test with empty data
+        empty_data = pd.DataFrame()
+        empty_dataset = DatasetResult(X_ref=empty_data, X_test=empty_data, metadata={})
+
+        with pytest.raises((ValueError, IndexError, Exception)):
+            ref_data = detector.preprocess(empty_dataset, phase='train')
+            detector.fit(ref_data)
+```
+
+### Integration Testing
+
+```python
+class TestLibraryComparison:
+    """Integration tests for comparing different library implementations."""
+
+    @pytest.fixture
+    def drift_dataset(self):
+        """Create dataset with known drift for comparison testing."""
+        np.random.seed(42)
+
+        # Clear distribution shift
+        X_ref = pd.DataFrame({'x': np.random.normal(0, 1, 200)})
+        X_test = pd.DataFrame({'x': np.random.normal(2, 1, 200)})  # Mean shift of 2
+
+        return DatasetResult(X_ref=X_ref, X_test=X_test, metadata={})
+
+    def test_library_consistency(self, drift_dataset):
+        """Test that different libraries detect the same obvious drift."""
+        libraries = ["scipy", "evidently", "alibi_detect"]  # Available libraries
+        results = {}
+
+        for library_id in libraries:
+            try:
+                detector_class = get_detector_class(
+                    method_id="kolmogorov_smirnov",
+                    variant_id="batch",
+                    library_id=library_id
+                )
+
+                detector = detector_class(
+                    method_id="kolmogorov_smirnov",
+                    variant_id="batch",
+                    library_id=library_id,
+                    threshold=0.05
+                )
+
+                # Run detection
+                ref_data = detector.preprocess(drift_dataset, phase='train')
+                detector.fit(ref_data)
+
+                test_data = detector.preprocess(drift_dataset, phase='detect')
+                drift_detected = detector.detect(test_data)
+
+                results[library_id] = {
+                    'drift_detected': drift_detected,
+                    'score': detector.score()
+                }
+
+            except DetectorNotFoundError:
+                # Library not available, skip
+                continue
+
+        # All available libraries should detect this obvious drift
+        detected_counts = sum(1 for r in results.values() if r['drift_detected'])
+        assert detected_counts >= len(results) * 0.8  # At least 80% should detect
+
+    def test_performance_comparison(self, drift_dataset):
+        """Test relative performance of different libraries."""
+        import time
+
+        libraries = ["scipy", "evidently"]  # Fast libraries
+        timings = {}
+
+        for library_id in libraries:
+            try:
+                detector_class = get_detector_class(
+                    method_id="kolmogorov_smirnov",
+                    variant_id="batch",
+                    library_id=library_id
+                )
+
+                detector = detector_class(
+                    method_id="kolmogorov_smirnov",
+                    variant_id="batch",
+                    library_id=library_id
+                )
+
+                # Measure execution time
+                start_time = time.perf_counter()
+
+                ref_data = detector.preprocess(drift_dataset, phase='train')
+                detector.fit(ref_data)
+
+                test_data = detector.preprocess(drift_dataset, phase='detect')
+                detector.detect(test_data)
+
+                end_time = time.perf_counter()
+
+                timings[library_id] = end_time - start_time
+
+            except DetectorNotFoundError:
+                continue
+
+        # Basic performance sanity check
+        for library_id, timing in timings.items():
+            assert timing < 1.0  # Should complete within 1 second
+
+        print(f"Performance comparison: {timings}")
+```
+
+### Mock Testing for Library Dependencies
+
+```python
+from unittest.mock import Mock, patch
+
+class TestWithMockedLibraries:
+    """Test adapters without requiring actual library installations."""
+
+    @patch('scipy.stats.ks_2samp')
+    def test_scipy_adapter_mocked(self, mock_ks_2samp):
+        """Test SciPy adapter with mocked scipy."""
+        # Mock scipy function
+        mock_ks_2samp.return_value = (0.5, 0.03)  # statistic, p_value
+
+        detector_class = get_detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy"
+        )
+
+        detector = detector_class(
+            method_id="kolmogorov_smirnov",
+            variant_id="batch",
+            library_id="scipy",
+            threshold=0.05
+        )
+
+        # Create sample data
+        sample_data = DatasetResult(
+            X_ref=pd.DataFrame({'x': [1, 2, 3]}),
+            X_test=pd.DataFrame({'x': [4, 5, 6]}),
+            metadata={}
+        )
+
+        # Run detection
+        ref_data = detector.preprocess(sample_data, phase='train')
+        detector.fit(ref_data)
+
         test_data = detector.preprocess(sample_data, phase='detect')
+        drift_detected = detector.detect(test_data)
 
-        with pytest.raises(RuntimeError, match="must be fitted"):
-            detector.detect(test_data)
+        # With p_value=0.03 < threshold=0.05, should detect drift
+        assert drift_detected is True
+        assert detector.score() == 0.03
 
-        # Test fitting with invalid data
-        with pytest.raises(ValueError):
-            detector.fit(None)
-
-    def test_registration(self):
-        """Test detector registration."""
-        from drift_benchmark.adapters import get_detector_class, list_detectors
-
-        # Should be able to retrieve registered detector
-        DetectorClass = get_detector_class("my_method", "my_impl")
-        assert DetectorClass is MyDetector
-
-        # Should appear in detector list
-        detectors = list_detectors()
-        assert ("my_method", "my_impl") in detectors
-```
-
-### Integration Test
-
-```python
-def test_full_integration():
-    """Test complete benchmark integration."""
-    from drift_benchmark import BenchmarkRunner
-    import tempfile
-    import os
-
-    # Create temporary configuration
-    config_content = """
-    [[datasets]]
-    path = "test_data.csv"
-    format = "CSV"
-    reference_split = 0.5
-
-    [[detectors]]
-    method_id = "my_method"
-    variant_id = "my_impl"
-    """
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Write config file
-        config_path = os.path.join(tmpdir, "config.toml")
-        with open(config_path, 'w') as f:
-            f.write(config_content)
-
-        # Create test data
-        data_path = os.path.join(tmpdir, "test_data.csv")
-        test_df = pd.DataFrame({
-            'feature1': np.random.normal(0, 1, 200),
-            'feature2': np.random.normal(0, 1, 200)
-        })
-        test_df.to_csv(data_path, index=False)
-
-        # Run benchmark
-        runner = BenchmarkRunner.from_config_file(config_path)
-        results = runner.run()
-
-        # Verify results
-        assert len(results.detector_results) == 1
-        result = results.detector_results[0]
-        assert result.detector_id == "my_method.my_impl"
-        assert isinstance(result.drift_detected, bool)
-        assert result.execution_time > 0
+        # Verify scipy was called
+        mock_ks_2samp.assert_called()
 ```
 
 ---
 
-## 📖 Best Practices
+## 🏆 Best Practices
 
-### 1. Error Handling and Logging
+### Adapter Design Guidelines
 
-```python
-from drift_benchmark.settings import get_logger
+1. **Library-Specific Optimization**: Leverage each library's strengths
 
-logger = get_logger(__name__)
+   ```python
+   # Good: Use library's preferred data format
+   def preprocess(self, data, **kwargs):
+       # For evidently: keep as pandas
+       if self.library_id == "evidently":
+           return data.X_ref if kwargs.get('phase') == 'train' else data.X_test
 
-class MyDetector(BaseDetector):
-    def detect(self, preprocessed_data: Any, **kwargs) -> bool:
-        try:
-            # Detection logic
-            logger.info(f"Starting detection with {self.method_id}.{self.variant_id}")
-            result = self._perform_detection(preprocessed_data)
-            logger.info(f"Detection completed: drift_detected={result}")
-            return result
+       # For alibi-detect: convert to numpy
+       elif self.library_id == "alibi_detect":
+           df = data.X_ref if kwargs.get('phase') == 'train' else data.X_test
+           return df.values.astype(np.float32)
+   ```
 
-        except Exception as e:
-            logger.error(f"Detection failed: {e}")
-            raise  # Re-raise for framework handling
-```
+2. **Consistent Interface**: Maintain same behavior across libraries
 
-### 2. Parameter Validation
+   ```python
+   # Good: Consistent boolean output
+   def detect(self, preprocessed_data, **kwargs) -> bool:
+       # All libraries should return boolean, regardless of internal format
+       result = self._library_specific_detection(preprocessed_data)
+       return bool(result)  # Ensure boolean conversion
+   ```
 
-```python
-def __init__(self, method_id: str, variant_id: str, **kwargs):
-    super().__init__(method_id, variant_id)
+3. **Error Isolation**: Don't let library-specific errors break the benchmark
+   ```python
+   def detect(self, preprocessed_data, **kwargs) -> bool:
+       try:
+           return self._run_library_detection(preprocessed_data)
+       except ImportError:
+           raise DetectorNotFoundError(f"Library {self.library_id} not available")
+       except Exception as e:
+           logger.error(f"Detection failed for {self.library_id}: {e}")
+           # Return conservative result instead of crashing
+           return False
+   ```
 
-    # Validate parameters
-    self.threshold = kwargs.get('threshold', 0.05)
-    if not 0 < self.threshold < 1:
-        raise ValueError(f"threshold must be between 0 and 1, got {self.threshold}")
+### Performance Optimization
 
-    self.window_size = kwargs.get('window_size', 100)
-    if self.window_size <= 0:
-        raise ValueError(f"window_size must be positive, got {self.window_size}")
-```
+1. **Lazy Imports**: Only import heavy libraries when needed
 
-### 3. Resource Management
+   ```python
+   def fit(self, preprocessed_data, **kwargs):
+       # Import only when method is called
+       from alibi_detect.cd import KSDrift
 
-```python
-class ResourceAwareDetector(BaseDetector):
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
-        super().__init__(method_id, variant_id)
-        self._model = None
-        self._fitted = False
+       self._detector = KSDrift(preprocessed_data, p_val=self.threshold)
+       return self
+   ```
 
-    def fit(self, preprocessed_data: Any, **kwargs) -> "ResourceAwareDetector":
-        # Clean up previous model if exists
-        if self._model is not None:
-            del self._model
+2. **Data Format Efficiency**: Minimize conversions
 
-        # Create new model
-        self._model = SomeHeavyModel()
-        self._model.fit(preprocessed_data)
-        self._fitted = True
-        return self
+   ```python
+   def preprocess(self, data, **kwargs):
+       # Avoid multiple conversions
+       df = data.X_ref if kwargs.get('phase') == 'train' else data.X_test
 
-    def __del__(self):
-        """Clean up resources."""
-        if hasattr(self, '_model') and self._model is not None:
-            del self._model
-```
+       # Convert once to most efficient format for library
+       if self.library_id == "alibi_detect":
+           return df.values.astype(np.float32)  # Memory efficient
 
-### 4. Reproducibility
+       return df  # Keep as pandas if library prefers it
+   ```
 
-```python
-def __init__(self, method_id: str, variant_id: str, **kwargs):
-    super().__init__(method_id, variant_id)
+3. **Caching Reference Data**: Avoid reprocessing
 
-    # Use consistent random seed
-    self.random_state = kwargs.get('random_state', 42)
-    np.random.seed(self.random_state)
+   ```python
+   def fit(self, preprocessed_data, **kwargs):
+       # Cache expensive computations
+       if not hasattr(self, '_reference_statistics'):
+           self._reference_statistics = self._compute_statistics(preprocessed_data)
 
-    # Initialize with deterministic parameters
-    self.threshold = kwargs.get('threshold', 0.05)
-```
+       self._reference_data = preprocessed_data
+       return self
+   ```
 
-### 5. Performance Optimization
+### Library Comparison Strategies
 
-```python
-def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-    """Optimized preprocessing with caching."""
-    phase = kwargs.get('phase', 'train')
+1. **Fair Benchmarking**: Ensure identical conditions
 
-    # Cache preprocessing results to avoid recomputation
-    cache_key = f"{phase}_{id(data)}"
-    if hasattr(self, '_preprocess_cache') and cache_key in self._preprocess_cache:
-        return self._preprocess_cache[cache_key]
+   ```python
+   # Configure all libraries with equivalent parameters
+   detectors_config = [
+       {
+           "method_id": "kolmogorov_smirnov",
+           "variant_id": "batch",
+           "library_id": "scipy",
+           "threshold": 0.05
+       },
+       {
+           "method_id": "kolmogorov_smirnov",
+           "variant_id": "batch",
+           "library_id": "evidently",
+           "threshold": 0.05  # Same threshold
+       }
+   ]
+   ```
 
-    # Perform preprocessing
-    if phase == 'train':
-        result = self._preprocess_training_data(data.X_ref)
-    else:
-        result = self._preprocess_test_data(data.X_test)
+2. **Meaningful Metrics**: Track relevant performance indicators
 
-    # Cache result
-    if not hasattr(self, '_preprocess_cache'):
-        self._preprocess_cache = {}
-    self._preprocess_cache[cache_key] = result
+   ```python
+   # After benchmark execution
+   for result in results.detector_results:
+       print(f"Library: {result.library_id}")
+       print(f"Accuracy: {result.accuracy:.3f}")
+       print(f"Speed: {result.execution_time:.4f}s")
+       print(f"Memory: {result.memory_usage:.1f}MB")  # If available
+   ```
 
-    return result
-```
+3. **Statistical Significance**: Consider multiple runs
 
-### 6. Documentation and Type Hints
+   ```python
+   # Run benchmark multiple times for stable comparisons
+   import statistics
 
-```python
-from typing import Any, Optional, Union
-import numpy as np
+   timings_by_library = defaultdict(list)
 
-class WellDocumentedDetector(BaseDetector):
-    """
-    A well-documented drift detector variants.
+   for _ in range(10):  # Multiple runs
+       results = runner.run()
+       for result in results.detector_results:
+           timings_by_library[result.library_id].append(result.execution_time)
 
-    This detector uses [algorithm name] to detect [drift type] in [data type].
+   # Report mean and standard deviation
+   for library_id, timings in timings_by_library.items():
+       mean_time = statistics.mean(timings)
+       std_time = statistics.stdev(timings)
+       print(f"{library_id}: {mean_time:.4f}s ± {std_time:.4f}s")
+   ```
 
-    Parameters:
-        threshold (float): Detection threshold (default: 0.05)
-        window_size (int): Rolling window size for streaming mode (default: 100)
+### Documentation and Maintenance
 
-    References:
-        - Author et al. (Year). "Paper Title". Journal Name.
-        - https://doi.org/example
-    """
+1. **Clear Library Dependencies**: Document requirements
 
-    def __init__(self, method_id: str, variant_id: str, **kwargs):
-        """Initialize detector with parameters."""
-        super().__init__(method_id, variant_id)
-        self.threshold: float = kwargs.get('threshold', 0.05)
-        self.window_size: int = kwargs.get('window_size', 100)
+   ```python
+   class EvidentlyKSDetector(BaseDetector):
+       """
+       Evidently's implementation of Kolmogorov-Smirnov batch processing.
 
-    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
-        """
-        Preprocess data for detection algorithm.
+       Requirements:
+           - evidently >= 0.3.0
+           - pandas >= 1.3.0
 
-        Args:
-            data: Dataset containing reference and test data
-            **kwargs: Additional preprocessing parameters
-                - phase (str): 'train' or 'detect'
+       Strengths:
+           - Excellent pandas integration
+           - Rich visualization capabilities
+           - Easy configuration
 
-        Returns:
-            Preprocessed data as numpy array
+       Limitations:
+           - Slower on large datasets
+           - Limited to pandas DataFrames
+       """
+   ```
 
-        Raises:
-            ValueError: If data is empty or invalid format
-        """
-        # Variants with clear steps
-        pass
+2. **Version Compatibility**: Handle library updates
 
-    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "WellDocumentedDetector":
-        """
-        Train the detector on reference data.
+   ```python
+   def _get_evidently_version(self):
+       import evidently
+       return evidently.__version__
 
-        Args:
-            preprocessed_data: Reference data in detector format
-            **kwargs: Additional training parameters
+   def detect(self, preprocessed_data, **kwargs):
+       version = self._get_evidently_version()
 
-        Returns:
-            Self for method chaining
+       if version >= "0.4.0":
+           # Use new API
+           return self._detect_v4(preprocessed_data)
+       else:
+           # Use legacy API
+           return self._detect_legacy(preprocessed_data)
+   ```
 
-        Raises:
-            ValueError: If training data is invalid
-            RuntimeError: If training fails
-        """
-        # Variants
-        return self
+3. **Comprehensive Examples**: Show library-specific usage
 
-    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
-        """
-        Detect drift in test data.
+   ```python
+   # examples/evidently_vs_alibi_detect.py
+   """
+   Compare Evidently and Alibi-Detect implementations of KS test.
 
-        Args:
-            preprocessed_data: Test data in detector format
-            **kwargs: Additional detection parameters
+   This example shows:
+   1. How to set up identical configurations
+   2. Performance comparison methodology
+   3. Result interpretation guidelines
+   """
+   ```
 
-        Returns:
-            True if drift is detected, False otherwise
-
-        Raises:
-            RuntimeError: If detector not fitted or detection fails
-        """
-        # Variants
-        pass
-
-    def score(self) -> Optional[float]:
-        """
-        Return drift score from last detection.
-
-        Returns:
-            Drift score in range [0, 1] or None if not available
-            Higher scores indicate stronger drift evidence
-        """
-        return self._last_score
-```
-
----
-
-This completes the comprehensive Adapter API documentation. The framework provides a flexible, extensible system for integrating various drift detection libraries while maintaining consistency and ease of use.
+This comprehensive adapter API documentation provides everything needed to create library-specific adapters that enable fair comparison of drift detection implementations across different libraries. The focus is on enabling researchers and practitioners to choose the best library for their specific use case based on empirical performance data.

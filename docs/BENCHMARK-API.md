@@ -15,7 +15,8 @@
 7. [Result Management](#result-management)
 8. [Library Comparison Examples](#library-comparison-examples)
 9. [Performance Analysis](#performance-analysis)
-10. [Best Practices](#best-practices)
+10. [Detailed Library Comparison Analysis](#detailed-library-comparison-analysis)
+11. [Best Practices](#best-practices)
 
 ---
 
@@ -30,6 +31,16 @@ The drift-benchmark framework provides a comprehensive system for **comparing ho
 - **Performance Comparison**: Which library is faster - Evidently or Alibi-Detect?
 - **Accuracy Analysis**: Which implementation provides better drift detection accuracy?
 - **Resource Efficiency**: Which library uses less memory or computational resources?
+
+### Prerequisites
+
+Before using this API, ensure you have:
+
+- ✅ **Existing adapter implementations** for the libraries you want to compare
+- ✅ **Registered detectors** using the `@register_detector` decorator
+- ✅ **Understanding of method+variant combinations** available in your setup
+
+**Need to create adapters?** See [ADAPTER-API.md](ADAPTER-API.md) for complete instructions on implementing `BaseDetector` adapters for your preferred libraries.
 
 ### Key Features
 
@@ -64,6 +75,27 @@ The drift-benchmark framework provides a comprehensive system for **comparing ho
 ---
 
 ## 🚀 Quick Start
+
+### Prerequisites Check
+
+Ensure your desired adapters are already registered. You can check available detectors:
+
+```python
+from drift_benchmark.adapters import list_registered_detectors
+
+# List all available method+variant+library combinations
+detectors = list_registered_detectors()
+for detector in detectors:
+    print(f"{detector.method_id}.{detector.variant_id}.{detector.library_id}")
+
+# Example output:
+# kolmogorov_smirnov.batch.evidently
+# kolmogorov_smirnov.batch.alibi_detect
+# kolmogorov_smirnov.batch.scipy
+# maximum_mean_discrepancy.rbf_kernel.alibi_detect
+```
+
+**Missing adapters?** See [ADAPTER-API.md](ADAPTER-API.md) for creating new library integrations.
 
 ### Library Comparison Setup
 
@@ -169,7 +201,7 @@ config = BenchmarkConfig(
         )
     ],
     detectors=[
-        # Compare Evidently vs Alibi-Detect for KS test
+        # Compare Evidently vs Alibi-Detect for same method+variant
         DetectorConfig(
             method_id="kolmogorov_smirnov",
             variant_id="batch",
@@ -177,10 +209,21 @@ config = BenchmarkConfig(
             threshold=0.05
         ),
         DetectorConfig(
-            method_id="kolmogorov_smirnov",
+            method_id="kolmogorov_smirnov",  # Same method+variant
             variant_id="batch",
-            library_id="alibi_detect",
+            library_id="alibi_detect",      # Different library
             threshold=0.05
+        ),
+        # Compare different libraries for MMD
+        DetectorConfig(
+            method_id="maximum_mean_discrepancy",
+            variant_id="rbf_kernel",
+            library_id="alibi_detect"
+        ),
+        DetectorConfig(
+            method_id="maximum_mean_discrepancy",  # Same method+variant
+            variant_id="rbf_kernel",
+            library_id="custom"                   # Different library
         )
     ]
 )
@@ -212,22 +255,40 @@ path = "datasets/seasonal_data.csv"
 format = "CSV"
 reference_split = 0.7
 
-# Detector configurations
+# Library comparison configurations
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-variant_id = "ks_batch"
+variant_id = "batch"
+library_id = "evidently"
+threshold = 0.05
 
 [[detectors]]
+method_id = "kolmogorov_smirnov"   # Same method+variant
+variant_id = "batch"
+library_id = "alibi_detect"        # Different library
+threshold = 0.05
+
+[[detectors]]
+method_id = "kolmogorov_smirnov"   # Same method+variant
+variant_id = "batch"
+library_id = "scipy"               # Different library
+threshold = 0.05
+
+# Cross-library method comparison
+[[detectors]]
 method_id = "cramer_von_mises"
-variant_id = "cvm_batch"
+variant_id = "batch"
+library_id = "scipy"
 
 [[detectors]]
 method_id = "anderson_darling"
-variant_id = "ad_batch"
+variant_id = "batch"
+library_id = "scipy"
 
 [[detectors]]
 method_id = "maximum_mean_discrepancy"
-variant_id = "mmd_rbf"
+variant_id = "rbf_kernel"
+library_id = "alibi_detect"
 ```
 
 ### Configuration Validation
@@ -241,6 +302,11 @@ from drift_benchmark.exceptions import ConfigurationError
 try:
     config = load_config("benchmark_config.toml")
     print("Configuration valid!")
+
+    # Validate library combinations exist
+    for detector in config.detectors:
+        print(f"Validated: {detector.method_id}+{detector.variant_id}+{detector.library_id}")
+
 except ConfigurationError as e:
     print(f"Configuration error: {e}")
 except FileNotFoundError as e:
@@ -270,15 +336,18 @@ dataset_config = DatasetConfig(
 ```python
 from drift_benchmark.models import DetectorConfig
 
-# Basic detector configuration
+# Library comparison detector configuration
 detector_config = DetectorConfig(
     method_id="kolmogorov_smirnov",      # Must exist in methods.toml
-    variant_id="ks_batch"         # Must exist under method
+    variant_id="batch",                  # Must exist under method
+    library_id="evidently",              # Must exist in adapter registry
+    threshold=0.05                       # Library-specific hyperparameter
 )
 
 # Validation rules:
 # - method_id: must exist in detector registry
 # - variant_id: must exist under specified method
+# - library_id: must exist in adapter registry for method+variant combination
 # - Registry automatically validates during benchmark execution
 ```
 
@@ -290,17 +359,17 @@ detector_config = DetectorConfig(
 
 ```python
 class BenchmarkRunner:
-    """High-level interface for running benchmarks."""
+    """High-level interface for running library comparison benchmarks."""
 
-    def __init__(self, config: BenchmarkConfig)
+    def __init__(self, config: BenchmarkConfig):
+        """Initialize with validated benchmark configuration."""
+
+    def run(self) -> BenchmarkResult:
+        """Execute benchmark and return comprehensive results."""
 
     @classmethod
-    def from_config_file(cls, path: str) -> "BenchmarkRunner"
-
-    @classmethod
-    def from_config(cls, path: str) -> "BenchmarkRunner"  # Alias
-
-    def run(self) -> BenchmarkResult
+    def from_config_file(cls, path: str) -> "BenchmarkRunner":
+        """Create runner from TOML configuration file."""
 ```
 
 ### Constructor
@@ -308,14 +377,18 @@ class BenchmarkRunner:
 ```python
 def __init__(self, config: BenchmarkConfig):
     """
-    Initialize BenchmarkRunner with configuration.
+    Initialize BenchmarkRunner with validated configuration.
 
     Args:
-        config: BenchmarkConfig containing datasets and detectors
+        config: Complete benchmark configuration including datasets and detectors
 
     Raises:
         ConfigurationError: If configuration is invalid
-        DetectorNotFoundError: If detector not in registry
+        DetectorNotFoundError: If any detector combination doesn't exist
+
+    Example:
+        config = BenchmarkConfig(datasets=[...], detectors=[...])
+        runner = BenchmarkRunner(config)
     """
 ```
 
@@ -342,11 +415,14 @@ def from_config_file(cls, path: str) -> "BenchmarkRunner":
         path: Path to TOML configuration file
 
     Returns:
-        BenchmarkRunner instance
+        Configured BenchmarkRunner instance
 
     Raises:
         FileNotFoundError: If configuration file doesn't exist
-        ConfigurationError: If TOML is invalid or validation fails
+        ConfigurationError: If configuration is invalid
+
+    Example:
+        runner = BenchmarkRunner.from_config_file("benchmark_config.toml")
     """
 ```
 
@@ -380,21 +456,27 @@ def from_config(cls, path: str) -> "BenchmarkRunner":
 ```python
 def run(self) -> BenchmarkResult:
     """
-    Execute benchmark and return results.
+    Execute complete library comparison benchmark.
 
     Returns:
-        BenchmarkResult containing all detector results and summary
+        BenchmarkResult with all detector results and summary statistics
 
     Raises:
-        BenchmarkExecutionError: If critical benchmark failures occur
-        DataLoadingError: If dataset loading fails
+        BenchmarkExecutionError: If benchmark execution fails
 
-    Execution Flow:
-        1. Load and validate datasets
-        2. Instantiate all detectors
-        3. Execute detectors on each dataset
-        4. Collect results and generate summary
-        5. Save results to timestamped directory
+    Process:
+        1. Load all configured datasets
+        2. For each dataset-detector combination:
+           a. Preprocess data for library format
+           b. Train detector on reference data
+           c. Run detection on test data
+           d. Collect performance metrics
+        3. Aggregate results and compute summary statistics
+        4. Save results to timestamped directory
+
+    Example:
+        results = runner.run()
+        print(f"Benchmark completed: {len(results.detector_results)} results")
     """
 ```
 
@@ -405,8 +487,11 @@ runner = BenchmarkRunner.from_config_file("config.toml")
 
 try:
     results = runner.run()
-    print(f"Benchmark completed successfully!")
     print(f"Results saved to: {results.output_directory}")
+
+    # Analyze library performance
+    for result in results.detector_results:
+        print(f"{result.library_id}: {result.execution_time:.4f}s")
 
 except BenchmarkExecutionError as e:
     print(f"Benchmark failed: {e}")
@@ -420,14 +505,17 @@ except BenchmarkExecutionError as e:
 
 ```python
 class Benchmark:
-    """Core benchmark execution engine."""
+    """Core benchmark execution engine for library comparison."""
 
-    def __init__(self, config: BenchmarkConfig)
-    def run(self) -> BenchmarkResult
+    def __init__(self, config: BenchmarkConfig):
+        """Initialize benchmark with configuration and load datasets."""
 
-    # Internal properties
-    datasets: List[DatasetResult]
-    detectors: List[BaseDetector]
+    def run(self) -> BenchmarkResult:
+        """Execute all detector-dataset combinations."""
+
+    @property
+    def detectors(self) -> List[BaseDetector]:
+        """List of instantiated detector instances."""
 ```
 
 ### Constructor
@@ -435,21 +523,19 @@ class Benchmark:
 ```python
 def __init__(self, config: BenchmarkConfig):
     """
-    Initialize benchmark with configuration.
-
-    Initialization Process:
-        1. Validate detector configurations exist in registry
-        2. Load all datasets specified in config
-        3. Instantiate all configured detectors
-        4. Prepare for execution
+    Initialize benchmark execution engine.
 
     Args:
-        config: BenchmarkConfig containing datasets and detectors
+        config: Validated benchmark configuration
+
+    Process:
+        1. Load and validate all datasets
+        2. Instantiate all configured detectors
+        3. Validate detector-dataset compatibility
 
     Raises:
-        BenchmarkExecutionError: If dataset loading or detector instantiation fails
-        DetectorNotFoundError: If detector not found in registry
         DataLoadingError: If dataset loading fails
+        DetectorNotFoundError: If detector instantiation fails
     """
 ```
 
@@ -458,51 +544,73 @@ def __init__(self, config: BenchmarkConfig):
 ```python
 def run(self) -> BenchmarkResult:
     """
-    Execute benchmark on all detector-dataset combinations.
-
-    Execution Process:
-        1. Sequential execution across all datasets
-        2. For each dataset, run all detectors
-        3. Measure execution time for each detector
-        4. Handle errors gracefully and continue execution
-        5. Collect results and generate summary statistics
+    Execute comprehensive library comparison benchmark.
 
     Returns:
-        BenchmarkResult with detector results and summary
+        Complete benchmark results with library performance metrics
 
-    Error Handling:
-        - Individual detector failures are logged and skipped
-        - Execution continues with remaining detectors
-        - Failed runs are counted in summary statistics
+    Process:
+        For each dataset:
+            Load dataset → Split into reference/test → Create DatasetResult
+            For each detector:
+                1. Preprocess reference data for library format
+                2. Train detector: detector.fit(reference_data)
+                3. Preprocess test data for library format
+                4. Detect drift: detector.detect(test_data) → boolean
+                5. Collect score: detector.score() → Optional[float]
+                6. Measure execution time with time.perf_counter()
+                7. Create DetectorResult with library_id for comparison
+        Aggregate all results → Create BenchmarkSummary
+        Save results to timestamped directory → Return BenchmarkResult
     """
 ```
 
 ### Execution Flow Detail
 
 ```text
-For each dataset in config.datasets:
-    Load dataset → Split into reference/test → Create DatasetResult
+Library Comparison Execution Flow:
 
-    For each detector in config.detectors:
-        Start timing
-        Try:
-            1. detector.preprocess(dataset, phase='train')
-            2. detector.fit(preprocessed_reference_data)
-            3. detector.preprocess(dataset, phase='detect')
-            4. detector.detect(preprocessed_test_data)
-            5. detector.score()
+1. Configuration Validation
+   ├── Validate method_id exists in methods.toml
+   ├── Validate variant_id exists under method
+   ├── Validate library_id exists in adapter registry
+   └── Ensure method+variant+library combination is registered
 
-            Create DetectorResult with success metrics
+2. Dataset Processing
+   ├── Load CSV files using pandas
+   ├── Split according to reference_split ratio
+   ├── Create DatasetResult with X_ref and X_test DataFrames
+   └── Generate dataset metadata (shape, types, etc.)
 
-        Catch Exception:
-            Log error and continue with next detector
-            Increment failed_runs counter
+3. Detector Instantiation
+   ├── Lookup detector class by (method_id, variant_id, library_id)
+   ├── Instantiate with hyperparameters from configuration
+   └── Validate detector implements BaseDetector interface
 
-        End timing
+4. Library Comparison Execution
+   For each dataset in config.datasets:
+       For each detector in config.detectors:
+           ├── detector.preprocess(dataset, phase='train') → ref_data
+           ├── detector.fit(ref_data) → trained_detector
+           ├── detector.preprocess(dataset, phase='detect') → test_data
+           ├── Start timer: time.perf_counter()
+           ├── detector.detect(test_data) → drift_detected (bool)
+           ├── End timer: execution_time = time.perf_counter() - start
+           ├── detector.score() → drift_score (Optional[float])
+           └── Create DetectorResult with library_id for comparison
 
-    Aggregate all results
-    Calculate summary statistics
-    Return BenchmarkResult
+5. Results Aggregation
+   ├── Compute summary statistics across all detectors
+   ├── Group results by method+variant for library comparison
+   ├── Calculate performance metrics (mean time, success rate, etc.)
+   └── Create timestamped output directory
+
+6. Result Storage
+   ├── Save BenchmarkResult to benchmark_results.json
+   ├── Copy configuration to config_info.toml for reproducibility
+   └── Export execution log to benchmark.log
+
+Return BenchmarkResult with library comparison data
 ```
 
 ---
@@ -516,20 +624,25 @@ from pydantic import BaseModel, Field
 from typing import List
 
 class BenchmarkConfig(BaseModel):
-    """Configuration for complete benchmark."""
+    """Configuration for complete library comparison benchmark."""
 
     datasets: List[DatasetConfig] = Field(
         ...,
-        description="List of datasets to benchmark"
+        description="List of datasets to use in benchmark",
+        min_items=1
     )
+
     detectors: List[DetectorConfig] = Field(
         ...,
-        description="List of detectors to evaluate"
+        description="List of detector configurations for library comparison",
+        min_items=1
     )
 
     # Validation rules:
     # - datasets: must not be empty
     # - detectors: must not be empty
+    # - All detector method+variant combinations must exist in registry
+    # - All detector method+variant+library combinations must have adapters
 ```
 
 ### DatasetConfig
@@ -539,13 +652,17 @@ class DatasetConfig(BaseModel):
     """Configuration for individual dataset."""
 
     path: str = Field(..., description="Path to dataset file")
-    format: FileFormat = Field(default="CSV", description="Dataset file format")
+    format: str = Field("CSV", description="Dataset file format")
     reference_split: float = Field(
-        ...,
-        description="Ratio for reference/test split (0.0 to 1.0)"
+        0.5,
+        description="Ratio of data to use as reference (0.0 < value < 1.0)",
+        gt=0.0,
+        lt=1.0
     )
 
-    # Validation:
+    # Validation rules:
+    # - path: must point to existing readable file
+    # - format: currently only "CSV" supported
     # - reference_split: 0.0 < value < 1.0
 ```
 
@@ -553,13 +670,20 @@ class DatasetConfig(BaseModel):
 
 ```python
 class DetectorConfig(BaseModel):
-    """Configuration for individual detector."""
+    """Configuration for individual detector with library identification."""
 
-    method_id: str = Field(..., description="Method identifier from registry")
-    variant_id: str = Field(
-        ...,
-        description="Variants variant identifier"
-    )
+    method_id: str = Field(..., description="Method identifier from methods.toml")
+    variant_id: str = Field(..., description="Variant identifier from methods.toml")
+    library_id: str = Field(..., description="Library implementation identifier")
+    threshold: Optional[float] = Field(0.05, description="Detection threshold")
+
+    # Additional hyperparameters can be added as **kwargs
+
+    # Validation rules:
+    # - method_id: must exist in methods.toml registry
+    # - variant_id: must exist under specified method
+    # - library_id: must have registered adapter for method+variant
+    # - threshold: must be appropriate for detection method
 ```
 
 ### DatasetResult
@@ -568,9 +692,9 @@ class DetectorConfig(BaseModel):
 class DatasetResult(BaseModel):
     """Result of dataset loading with reference and test data."""
 
-    X_ref: pd.DataFrame = Field(..., description="Reference dataset for training")
-    X_test: pd.DataFrame = Field(..., description="Test dataset for drift detection")
-    metadata: DatasetMetadata = Field(..., description="Dataset metadata information")
+    X_ref: pd.DataFrame = Field(..., description="Reference data for training")
+    X_test: pd.DataFrame = Field(..., description="Test data for drift detection")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Dataset metadata")
 
     class Config:
         arbitrary_types_allowed = True  # Allow pandas DataFrames
@@ -580,16 +704,22 @@ class DatasetResult(BaseModel):
 
 ```python
 class DetectorResult(BaseModel):
-    """Result of running a single detector on a dataset."""
+    """Result of running a single detector on a dataset with library identification."""
 
-    detector_id: str = Field(..., description="Unique identifier for detector")
-    dataset_name: str = Field(..., description="Name of dataset processed")
+    detector_id: str = Field(..., description="Unique detector identifier")
+    method_id: str = Field(..., description="Method identifier")
+    variant_id: str = Field(..., description="Variant identifier")
+    library_id: str = Field(..., description="Library implementation identifier")
+    dataset_name: str = Field(..., description="Dataset name")
     drift_detected: bool = Field(..., description="Whether drift was detected")
     execution_time: float = Field(..., description="Execution time in seconds")
-    drift_score: Optional[float] = Field(
-        None,
-        description="Numeric drift score if available"
-    )
+    drift_score: Optional[float] = Field(None, description="Drift score if available")
+    error_message: Optional[str] = Field(None, description="Error message if failed")
+
+    # Library comparison fields
+    preprocessing_time: Optional[float] = Field(None, description="Data preprocessing time")
+    training_time: Optional[float] = Field(None, description="Model training time")
+    detection_time: Optional[float] = Field(None, description="Drift detection time")
 ```
 
 ### BenchmarkResult
@@ -598,39 +728,53 @@ class DetectorResult(BaseModel):
 class BenchmarkResult(BaseModel):
     """Complete benchmark result containing all detector results and summary."""
 
-    config: Union[BenchmarkConfig, Any] = Field(
-        ...,
-        description="Configuration used for benchmark"
-    )
-    detector_results: List[DetectorResult] = Field(
-        ...,
-        description="Results from all detectors"
-    )
-    summary: BenchmarkSummary = Field(
-        ...,
-        description="Aggregate statistics and metrics"
-    )
-    output_directory: Optional[str] = Field(
-        None,
-        description="Directory where results were saved"
-    )
+    config: BenchmarkConfig = Field(..., description="Configuration used for benchmark")
+    detector_results: List[DetectorResult] = Field(..., description="Individual detector results")
+    summary: BenchmarkSummary = Field(..., description="Aggregate statistics")
+    output_directory: str = Field(..., description="Directory where results are saved")
+    execution_start: datetime = Field(..., description="Benchmark start time")
+    execution_end: datetime = Field(..., description="Benchmark end time")
+
+    @property
+    def library_comparison(self) -> Dict[str, List[DetectorResult]]:
+        """Group results by method+variant for library comparison."""
+        from collections import defaultdict
+
+        comparison = defaultdict(list)
+        for result in self.detector_results:
+            key = f"{result.method_id}_{result.variant_id}"
+            comparison[key].append(result)
+
+        return dict(comparison)
 ```
 
 ### BenchmarkSummary
 
 ```python
 class BenchmarkSummary(BaseModel):
-    """Aggregate statistics and performance metrics."""
+    """Aggregate statistics and performance metrics for library comparison."""
 
-    total_detectors: int = Field(..., description="Total detector-dataset combinations")
+    total_detectors: int = Field(..., description="Total number of detector configurations")
     successful_runs: int = Field(..., description="Number of successful detector runs")
     failed_runs: int = Field(..., description="Number of failed detector runs")
-    avg_execution_time: float = Field(..., description="Average execution time in seconds")
+    avg_execution_time: float = Field(..., description="Average execution time across all detectors")
+    total_execution_time: float = Field(..., description="Total benchmark execution time")
 
-    # Optional metrics (computed when ground truth available)
+    # Library comparison metrics
+    fastest_library: Optional[str] = Field(None, description="Fastest library overall")
+    slowest_library: Optional[str] = Field(None, description="Slowest library overall")
+    most_accurate_library: Optional[str] = Field(None, description="Most accurate library")
+
+    # Detection performance metrics (when ground truth available)
     accuracy: Optional[float] = Field(None, description="Overall accuracy")
     precision: Optional[float] = Field(None, description="Overall precision")
     recall: Optional[float] = Field(None, description="Overall recall")
+
+    # Library-specific summaries
+    library_stats: Dict[str, Dict[str, float]] = Field(
+        default_factory=dict,
+        description="Per-library performance statistics"
+    )
 ```
 
 ---
@@ -646,7 +790,7 @@ results/
 └── 20250721_143022/
     ├── benchmark_results.json    # Complete results in JSON format
     ├── config_info.toml         # Configuration used for reproducibility
-    └── benchmark.log            # Execution log
+    └── benchmark.log            # Execution log with library comparison details
 ```
 
 ### Result Access
@@ -656,44 +800,107 @@ results/
 results = runner.run()
 summary = results.summary
 
-print(f"Total combinations: {summary.total_detectors}")
+print(f"Total library combinations: {summary.total_detectors}")
 print(f"Success rate: {summary.successful_runs / summary.total_detectors * 100:.1f}%")
 print(f"Average time: {summary.avg_execution_time:.4f}s")
+print(f"Fastest library: {summary.fastest_library}")
+print(f"Most accurate library: {summary.most_accurate_library}")
 
-# Access individual results
+# Access individual results for library comparison
 for result in results.detector_results:
-    print(f"Detector: {result.detector_id}")
+    print(f"Library: {result.library_id}")
+    print(f"Method+Variant: {result.method_id}_{result.variant_id}")
     print(f"Dataset: {result.dataset_name}")
-    print(f"Drift detected: {result.drift_detected}")
-    print(f"Execution time: {result.execution_time:.4f}s")
-
-    if result.drift_score is not None:
-        print(f"Drift score: {result.drift_score:.6f}")
+    print(f"Drift Detected: {result.drift_detected}")
+    print(f"Execution Time: {result.execution_time:.4f}s")
+    print(f"Drift Score: {result.drift_score}")
     print("---")
+```
+
+### Library Comparison Analysis
+
+```python
+# Compare library implementations of the same method+variant
+comparison_data = results.library_comparison
+
+for method_variant, variant_results in comparison_data.items():
+    print(f"\n=== {method_variant} Library Comparison ===")
+
+    # Sort by execution time for performance comparison
+    variant_results.sort(key=lambda r: r.execution_time)
+
+    for result in variant_results:
+        print(f"Library: {result.library_id:<15} "
+              f"Time: {result.execution_time:.4f}s "
+              f"Detected: {result.drift_detected} "
+              f"Score: {result.drift_score:.4f}")
+
+    # Calculate performance insights
+    if len(variant_results) > 1:
+        fastest = variant_results[0]
+        slowest = variant_results[-1]
+        speedup = slowest.execution_time / fastest.execution_time
+
+        print(f"Performance: {fastest.library_id} is {speedup:.2f}x faster than {slowest.library_id}")
 ```
 
 ### Result Filtering and Analysis
 
 ```python
-# Filter results by detector
+# Filter results by library
+evidently_results = [r for r in results.detector_results if r.library_id == "evidently"]
+alibi_results = [r for r in results.detector_results if r.library_id == "alibi_detect"]
+
+# Filter by method
 ks_results = [r for r in results.detector_results
-              if r.detector_id.startswith("kolmogorov_smirnov")]
+              if r.method_id == "kolmogorov_smirnov"]
 
 # Filter by dataset
 dataset1_results = [r for r in results.detector_results
                     if r.dataset_name == "dataset1"]
 
-# Calculate statistics
-drift_detected_count = sum(1 for r in results.detector_results if r.drift_detected)
-average_score = sum(r.drift_score for r in results.detector_results
-                   if r.drift_score is not None) / len(results.detector_results)
+# Calculate library-specific statistics
+def calculate_library_stats(library_results):
+    """Calculate performance statistics for a specific library."""
+    if not library_results:
+        return {}
 
-# Performance analysis
-fastest_detector = min(results.detector_results, key=lambda r: r.execution_time)
-slowest_detector = max(results.detector_results, key=lambda r: r.execution_time)
+    execution_times = [r.execution_time for r in library_results]
+    drift_detected_count = sum(1 for r in library_results if r.drift_detected)
 
-print(f"Fastest: {fastest_detector.detector_id} ({fastest_detector.execution_time:.4f}s)")
-print(f"Slowest: {slowest_detector.detector_id} ({slowest_detector.execution_time:.4f}s)")
+    return {
+        "avg_execution_time": sum(execution_times) / len(execution_times),
+        "min_execution_time": min(execution_times),
+        "max_execution_time": max(execution_times),
+        "detection_rate": drift_detected_count / len(library_results),
+        "total_runs": len(library_results)
+    }
+
+# Compare library statistics
+evidently_stats = calculate_library_stats(evidently_results)
+alibi_stats = calculate_library_stats(alibi_results)
+
+print("Library Performance Comparison:")
+print(f"Evidently - Avg Time: {evidently_stats.get('avg_execution_time', 0):.4f}s")
+print(f"Alibi-Detect - Avg Time: {alibi_stats.get('avg_execution_time', 0):.4f}s")
+
+# Find fastest and slowest libraries overall
+all_results_by_library = {}
+for result in results.detector_results:
+    if result.library_id not in all_results_by_library:
+        all_results_by_library[result.library_id] = []
+    all_results_by_library[result.library_id].append(result)
+
+library_avg_times = {}
+for library_id, library_results in all_results_by_library.items():
+    avg_time = sum(r.execution_time for r in library_results) / len(library_results)
+    library_avg_times[library_id] = avg_time
+
+fastest_library = min(library_avg_times.items(), key=lambda x: x[1])
+slowest_library = max(library_avg_times.items(), key=lambda x: x[1])
+
+print(f"Overall fastest library: {fastest_library[0]} ({fastest_library[1]:.4f}s avg)")
+print(f"Overall slowest library: {slowest_library[0]} ({slowest_library[1]:.4f}s avg)")
 ```
 
 ### Manual Result Storage
@@ -705,7 +912,7 @@ from drift_benchmark.results import save_results
 custom_output_dir = save_results(results, output_dir="custom_results")
 print(f"Results saved to: {custom_output_dir}")
 
-# Export to different formats
+# Export library comparison to different formats
 results_dict = results.dict()  # Convert to dictionary
 results_json = results.json()  # Convert to JSON string
 
@@ -713,17 +920,435 @@ results_json = results.json()  # Convert to JSON string
 with open("used_config.toml", "w") as f:
     import toml
     toml.dump(results.config.dict(), f)
+
+# Export library comparison summary to CSV
+import pandas as pd
+
+comparison_data = []
+for result in results.detector_results:
+    comparison_data.append({
+        "library_id": result.library_id,
+        "method_id": result.method_id,
+        "variant_id": result.variant_id,
+        "dataset_name": result.dataset_name,
+        "execution_time": result.execution_time,
+        "drift_detected": result.drift_detected,
+        "drift_score": result.drift_score
+    })
+
+comparison_df = pd.DataFrame(comparison_data)
+comparison_df.to_csv("library_comparison.csv", index=False)
+print("Library comparison exported to library_comparison.csv")
+```
+
+---
+
+## 🔧 Library Comparison Examples
+
+These examples assume you already have adapters registered for the libraries you want to compare. If you need to create adapters first, see [ADAPTER-API.md](ADAPTER-API.md).
+
+### Example 1: Statistical Test Library Comparison
+
+Compare how different libraries implement the same statistical test:
+
+```toml
+# statistical_test_comparison.toml
+
+[[datasets]]
+path = "datasets/normal_distribution.csv"
+format = "CSV"
+reference_split = 0.5
+
+[[datasets]]
+path = "datasets/shifted_distribution.csv"
+format = "CSV"
+reference_split = 0.5
+
+# Compare Kolmogorov-Smirnov implementations
+[[detectors]]
+method_id = "kolmogorov_smirnov"
+variant_id = "batch"
+library_id = "scipy"
+threshold = 0.05
+
+[[detectors]]
+method_id = "kolmogorov_smirnov"
+variant_id = "batch"
+library_id = "evidently"
+threshold = 0.05
+
+[[detectors]]
+method_id = "kolmogorov_smirnov"
+variant_id = "batch"
+library_id = "alibi_detect"
+threshold = 0.05
+
+# Compare Anderson-Darling implementations
+[[detectors]]
+method_id = "anderson_darling"
+variant_id = "batch"
+library_id = "scipy"
+threshold = 0.05
+
+[[detectors]]
+method_id = "anderson_darling"
+variant_id = "batch"
+library_id = "custom"
+threshold = 0.05
+```
+
+### Example 2: Distance-Based Method Comparison
+
+Compare Maximum Mean Discrepancy across libraries:
+
+```python
+from drift_benchmark import BenchmarkRunner
+
+# Configure MMD library comparison
+config_toml = """
+[[datasets]]
+path = "datasets/high_dimensional.csv"
+format = "CSV"
+reference_split = 0.6
+
+# Compare MMD implementations
+[[detectors]]
+method_id = "maximum_mean_discrepancy"
+variant_id = "rbf_kernel"
+library_id = "alibi_detect"
+gamma = 1.0
+
+[[detectors]]
+method_id = "maximum_mean_discrepancy"
+variant_id = "rbf_kernel"
+library_id = "custom"
+gamma = 1.0
+
+[[detectors]]
+method_id = "maximum_mean_discrepancy"
+variant_id = "linear_kernel"
+library_id = "scikit_learn"
+"""
+
+# Save config and run comparison
+with open("mmd_comparison.toml", "w") as f:
+    f.write(config_toml)
+
+runner = BenchmarkRunner.from_config_file("mmd_comparison.toml")
+results = runner.run()
+
+# Analyze MMD library performance
+mmd_results = [r for r in results.detector_results
+               if r.method_id == "maximum_mean_discrepancy"]
+
+print("MMD Library Comparison:")
+for result in sorted(mmd_results, key=lambda r: r.execution_time):
+    print(f"{result.library_id} ({result.variant_id}): {result.execution_time:.4f}s")
+```
+
+### Example 3: Cross-Library Method Comparison
+
+Compare different methods across different libraries:
+
+```python
+# Configure cross-method comparison
+comparison_config = BenchmarkConfig(
+    datasets=[
+        DatasetConfig(path="datasets/multivariate_drift.csv", reference_split=0.5)
+    ],
+    detectors=[
+        # Statistical tests
+        DetectorConfig(method_id="kolmogorov_smirnov", variant_id="batch", library_id="scipy"),
+        DetectorConfig(method_id="cramer_von_mises", variant_id="batch", library_id="scipy"),
+        DetectorConfig(method_id="anderson_darling", variant_id="batch", library_id="scipy"),
+
+        # Distance-based methods
+        DetectorConfig(method_id="maximum_mean_discrepancy", variant_id="rbf_kernel", library_id="alibi_detect"),
+        DetectorConfig(method_id="wasserstein_distance", variant_id="batch", library_id="scipy"),
+
+        # Evidently methods
+        DetectorConfig(method_id="data_drift_suite", variant_id="default", library_id="evidently"),
+        DetectorConfig(method_id="target_drift", variant_id="default", library_id="evidently")
+    ]
+)
+
+runner = BenchmarkRunner(comparison_config)
+results = runner.run()
+
+# Group by library for cross-method analysis
+library_performance = {}
+for result in results.detector_results:
+    if result.library_id not in library_performance:
+        library_performance[result.library_id] = []
+    library_performance[result.library_id].append(result)
+
+print("Cross-Library Method Comparison:")
+for library_id, library_results in library_performance.items():
+    avg_time = sum(r.execution_time for r in library_results) / len(library_results)
+    detection_rate = sum(1 for r in library_results if r.drift_detected) / len(library_results)
+
+    print(f"{library_id}:")
+    print(f"  Average Time: {avg_time:.4f}s")
+    print(f"  Detection Rate: {detection_rate:.2%}")
+    print(f"  Methods Tested: {len(library_results)}")
+    print()
+```
+
+---
+
+## 📈 Performance Analysis
+
+### Library Performance Metrics
+
+```python
+class LibraryPerformanceAnalyzer:
+    """Analyze library performance from benchmark results."""
+
+    def __init__(self, results: BenchmarkResult):
+        self.results = results
+        self.library_groups = self._group_by_library()
+
+    def _group_by_library(self) -> Dict[str, List[DetectorResult]]:
+        """Group results by library for comparison."""
+        groups = {}
+        for result in self.results.detector_results:
+            if result.library_id not in groups:
+                groups[result.library_id] = []
+            groups[result.library_id].append(result)
+        return groups
+
+    def execution_time_comparison(self) -> Dict[str, Dict[str, float]]:
+        """Compare execution times across libraries."""
+        time_stats = {}
+
+        for library_id, library_results in self.library_groups.items():
+            times = [r.execution_time for r in library_results]
+
+            time_stats[library_id] = {
+                "mean": sum(times) / len(times),
+                "min": min(times),
+                "max": max(times),
+                "median": sorted(times)[len(times) // 2],
+                "std": (sum((t - sum(times)/len(times))**2 for t in times) / len(times))**0.5
+            }
+
+        return time_stats
+
+    def accuracy_comparison(self) -> Dict[str, float]:
+        """Compare accuracy across libraries (requires ground truth)."""
+        # This would require ground truth labels in the data
+        # For now, return detection rates as proxy
+        accuracy_stats = {}
+
+        for library_id, library_results in self.library_groups.items():
+            detection_rate = sum(1 for r in library_results if r.drift_detected) / len(library_results)
+            accuracy_stats[library_id] = detection_rate
+
+        return accuracy_stats
+
+    def method_coverage_comparison(self) -> Dict[str, int]:
+        """Compare number of methods supported by each library."""
+        coverage = {}
+
+        for library_id, library_results in self.library_groups.items():
+            unique_methods = set(r.method_id for r in library_results)
+            coverage[library_id] = len(unique_methods)
+
+        return coverage
+
+    def reliability_comparison(self) -> Dict[str, float]:
+        """Compare reliability (success rate) across libraries."""
+        reliability = {}
+
+        for library_id, library_results in self.library_groups.items():
+            successful_runs = sum(1 for r in library_results if r.error_message is None)
+            reliability[library_id] = successful_runs / len(library_results)
+
+        return reliability
+
+    def generate_report(self) -> str:
+        """Generate comprehensive library comparison report."""
+        time_stats = self.execution_time_comparison()
+        accuracy_stats = self.accuracy_comparison()
+        coverage_stats = self.method_coverage_comparison()
+        reliability_stats = self.reliability_comparison()
+
+        report = "Library Performance Comparison Report\n"
+        report += "=" * 50 + "\n\n"
+
+        # Execution time comparison
+        report += "Execution Time Comparison:\n"
+        report += "-" * 30 + "\n"
+        sorted_libraries = sorted(time_stats.items(), key=lambda x: x[1]["mean"])
+
+        for i, (library_id, stats) in enumerate(sorted_libraries):
+            rank = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"{i+1}."
+            report += f"{rank} {library_id}: {stats['mean']:.4f}s (±{stats['std']:.4f}s)\n"
+
+        report += "\n"
+
+        # Accuracy comparison
+        report += "Detection Rate Comparison:\n"
+        report += "-" * 30 + "\n"
+        sorted_accuracy = sorted(accuracy_stats.items(), key=lambda x: x[1], reverse=True)
+
+        for i, (library_id, detection_rate) in enumerate(sorted_accuracy):
+            rank = "🎯" if i == 0 else f"{i+1}."
+            report += f"{rank} {library_id}: {detection_rate:.1%}\n"
+
+        report += "\n"
+
+        # Method coverage
+        report += "Method Coverage:\n"
+        report += "-" * 20 + "\n"
+        for library_id, method_count in sorted(coverage_stats.items(), key=lambda x: x[1], reverse=True):
+            report += f"{library_id}: {method_count} methods\n"
+
+        report += "\n"
+
+        # Reliability
+        report += "Reliability (Success Rate):\n"
+        report += "-" * 30 + "\n"
+        for library_id, success_rate in sorted(reliability_stats.items(), key=lambda x: x[1], reverse=True):
+            report += f"{library_id}: {success_rate:.1%}\n"
+
+        return report
+
+# Usage example
+analyzer = LibraryPerformanceAnalyzer(results)
+performance_report = analyzer.generate_report()
+print(performance_report)
+
+# Save report to file
+with open("library_performance_report.txt", "w") as f:
+    f.write(performance_report)
+```
+
+### Statistical Significance Testing
+
+```python
+import scipy.stats as stats
+
+def test_performance_significance(results: BenchmarkResult,
+                                library1: str,
+                                library2: str) -> Dict[str, Any]:
+    """Test if performance difference between two libraries is statistically significant."""
+
+    # Filter results for each library
+    lib1_results = [r for r in results.detector_results if r.library_id == library1]
+    lib2_results = [r for r in results.detector_results if r.library_id == library2]
+
+    if not lib1_results or not lib2_results:
+        return {"error": "One or both libraries not found in results"}
+
+    # Extract execution times
+    lib1_times = [r.execution_time for r in lib1_results]
+    lib2_times = [r.execution_time for r in lib2_results]
+
+    # Perform t-test
+    t_stat, p_value = stats.ttest_ind(lib1_times, lib2_times)
+
+    # Calculate effect size (Cohen's d)
+    pooled_std = ((len(lib1_times) - 1) * np.std(lib1_times)**2 +
+                  (len(lib2_times) - 1) * np.std(lib2_times)**2) / (len(lib1_times) + len(lib2_times) - 2)
+    cohens_d = (np.mean(lib1_times) - np.mean(lib2_times)) / np.sqrt(pooled_std)
+
+    return {
+        "library1": library1,
+        "library2": library2,
+        "library1_mean_time": np.mean(lib1_times),
+        "library2_mean_time": np.mean(lib2_times),
+        "t_statistic": t_stat,
+        "p_value": p_value,
+        "cohens_d": cohens_d,
+        "significant": p_value < 0.05,
+        "effect_size": "small" if abs(cohens_d) < 0.5 else "medium" if abs(cohens_d) < 0.8 else "large"
+    }
+
+# Compare Evidently vs Alibi-Detect
+significance_test = test_performance_significance(results, "evidently", "alibi_detect")
+print("Performance Significance Test:")
+print(f"Evidently: {significance_test['library1_mean_time']:.4f}s")
+print(f"Alibi-Detect: {significance_test['library2_mean_time']:.4f}s")
+print(f"P-value: {significance_test['p_value']:.4f}")
+print(f"Significant difference: {significance_test['significant']}")
+print(f"Effect size: {significance_test['effect_size']}")
+```
+
+### Visualization Support
+
+```python
+def create_performance_visualization(results: BenchmarkResult):
+    """Create visualizations for library performance comparison."""
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import pandas as pd
+
+    # Prepare data for visualization
+    plot_data = []
+    for result in results.detector_results:
+        plot_data.append({
+            "Library": result.library_id,
+            "Method": result.method_id,
+            "Execution Time": result.execution_time,
+            "Drift Detected": result.drift_detected
+        })
+
+    df = pd.DataFrame(plot_data)
+
+    # Create subplot layout
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
+
+    # 1. Execution time comparison boxplot
+    sns.boxplot(data=df, x="Library", y="Execution Time", ax=ax1)
+    ax1.set_title("Execution Time by Library")
+    ax1.tick_params(axis='x', rotation=45)
+
+    # 2. Detection rate by library
+    detection_rates = df.groupby("Library")["Drift Detected"].mean()
+    detection_rates.plot(kind="bar", ax=ax2)
+    ax2.set_title("Detection Rate by Library")
+    ax2.set_ylabel("Detection Rate")
+    ax2.tick_params(axis='x', rotation=45)
+
+    # 3. Method coverage heatmap
+    method_coverage = df.groupby(["Library", "Method"]).size().unstack(fill_value=0)
+    sns.heatmap(method_coverage, annot=True, fmt="d", ax=ax3)
+    ax3.set_title("Method Coverage by Library")
+
+    # 4. Execution time vs detection rate scatter
+    library_stats = df.groupby("Library").agg({
+        "Execution Time": "mean",
+        "Drift Detected": "mean"
+    })
+
+    ax4.scatter(library_stats["Execution Time"], library_stats["Drift Detected"])
+    for i, library in enumerate(library_stats.index):
+        ax4.annotate(library,
+                    (library_stats.iloc[i]["Execution Time"],
+                     library_stats.iloc[i]["Drift Detected"]))
+    ax4.set_xlabel("Average Execution Time (s)")
+    ax4.set_ylabel("Detection Rate")
+    ax4.set_title("Performance vs Accuracy Trade-off")
+
+    plt.tight_layout()
+    plt.savefig("library_performance_comparison.png", dpi=300, bbox_inches="tight")
+    plt.show()
+
+# Generate visualizations
+create_performance_visualization(results)
 ```
 
 ---
 
 ## 🔧 Advanced Configuration
 
-### Multi-Dataset Benchmarking
+### Multi-Dataset Library Benchmarking
 
 ```toml
-# Compare detectors across different drift scenarios
+# comprehensive_library_comparison.toml
 
+# Test across different drift scenarios
 [[datasets]]
 path = "datasets/no_drift.csv"
 format = "CSV"
@@ -744,737 +1369,446 @@ path = "datasets/seasonal_drift.csv"
 format = "CSV"
 reference_split = 0.7
 
-# Test all detectors on all datasets
+# Test all libraries on all datasets for comprehensive comparison
 [[detectors]]
 method_id = "kolmogorov_smirnov"
-variant_id = "ks_batch"
+variant_id = "batch"
+library_id = "scipy"
+
+[[detectors]]
+method_id = "kolmogorov_smirnov"
+variant_id = "batch"
+library_id = "evidently"
+
+[[detectors]]
+method_id = "kolmogorov_smirnov"
+variant_id = "batch"
+library_id = "alibi_detect"
 
 [[detectors]]
 method_id = "cramer_von_mises"
-variant_id = "cvm_batch"
+variant_id = "batch"
+library_id = "scipy"
 
 [[detectors]]
 method_id = "anderson_darling"
-variant_id = "ad_batch"
+variant_id = "batch"
+library_id = "scipy"
+
+[[detectors]]
+method_id = "maximum_mean_discrepancy"
+variant_id = "rbf_kernel"
+library_id = "alibi_detect"
 ```
 
-### Performance Comparison Setup
+### Performance Benchmarking Configuration
 
 ```python
 from drift_benchmark import BenchmarkRunner
+import time
+import psutil
 import pandas as pd
-import matplotlib.pyplot as plt
 
-# Define comparison experiment
-comparison_config = """
-[[datasets]]
-path = "datasets/benchmark_data.csv"
-format = "CSV"
-reference_split = 0.5
+class PerformanceBenchmarkRunner:
+    """Enhanced benchmark runner with detailed performance monitoring."""
 
-# Statistical tests
-[[detectors]]
-method_id = "kolmogorov_smirnov"
-variant_id = "ks_batch"
+    def __init__(self, config_path: str):
+        self.runner = BenchmarkRunner.from_config_file(config_path)
+        self.performance_data = []
 
-[[detectors]]
-method_id = "cramer_von_mises"
-variant_id = "cvm_batch"
+    def run_with_monitoring(self, iterations: int = 3) -> pd.DataFrame:
+        """Run benchmark multiple times with performance monitoring."""
 
-[[detectors]]
-method_id = "anderson_darling"
-variant_id = "ad_batch"
+        for iteration in range(iterations):
+            print(f"Running iteration {iteration + 1}/{iterations}...")
 
-# Distance-based methods
-[[detectors]]
-method_id = "maximum_mean_discrepancy"
-variant_id = "mmd_rbf"
+            # Monitor system resources before benchmark
+            initial_memory = psutil.virtual_memory().used
+            initial_cpu = psutil.cpu_percent()
 
-[[detectors]]
-method_id = "wasserstein_distance"
-variant_id = "wasserstein_1d"
-"""
+            start_time = time.perf_counter()
+            results = self.runner.run()
+            end_time = time.perf_counter()
 
-# Run comparison
-with open("comparison_config.toml", "w") as f:
-    f.write(comparison_config)
+            # Monitor system resources after benchmark
+            final_memory = psutil.virtual_memory().used
+            final_cpu = psutil.cpu_percent()
 
-runner = BenchmarkRunner.from_config_file("comparison_config.toml")
-results = runner.run()
+            # Record performance data
+            for result in results.detector_results:
+                self.performance_data.append({
+                    "iteration": iteration + 1,
+                    "library_id": result.library_id,
+                    "method_id": result.method_id,
+                    "variant_id": result.variant_id,
+                    "dataset_name": result.dataset_name,
+                    "execution_time": result.execution_time,
+                    "drift_detected": result.drift_detected,
+                    "drift_score": result.drift_score,
+                    "memory_delta": final_memory - initial_memory,
+                    "cpu_usage": final_cpu,
+                    "total_benchmark_time": end_time - start_time
+                })
 
-# Analyze results
-performance_data = []
-for result in results.detector_results:
-    performance_data.append({
-        'detector': result.detector_id,
-        'execution_time': result.execution_time,
-        'drift_detected': result.drift_detected,
-        'drift_score': result.drift_score
-    })
+        return pd.DataFrame(self.performance_data)
 
-df = pd.DataFrame(performance_data)
-print(df.groupby('detector')['execution_time'].describe())
-```
+    def analyze_stability(self) -> Dict[str, Any]:
+        """Analyze performance stability across iterations."""
+        df = pd.DataFrame(self.performance_data)
 
-### Environment Configuration
+        stability_analysis = {}
+        for library_id in df["library_id"].unique():
+            library_data = df[df["library_id"] == library_id]
 
-```python
-import os
+            stability_analysis[library_id] = {
+                "execution_time_cv": library_data["execution_time"].std() / library_data["execution_time"].mean(),
+                "detection_consistency": library_data["drift_detected"].std(),
+                "avg_execution_time": library_data["execution_time"].mean(),
+                "avg_memory_usage": library_data["memory_delta"].mean()
+            }
 
-# Configure benchmark environment
-os.environ['DRIFT_BENCHMARK_DATASETS_DIR'] = '/path/to/datasets'
-os.environ['DRIFT_BENCHMARK_RESULTS_DIR'] = '/path/to/results'
-os.environ['DRIFT_BENCHMARK_LOG_LEVEL'] = 'DEBUG'
-os.environ['DRIFT_BENCHMARK_RANDOM_SEED'] = '12345'
-
-# Settings are automatically loaded
-from drift_benchmark import settings
-print(f"Datasets directory: {settings.datasets_dir}")
-print(f"Results directory: {settings.results_dir}")
-print(f"Log level: {settings.log_level}")
-```
-
----
-
-## 🧪 Integration Examples
-
-### Complete Workflow Example
-
-```python
-"""
-Complete drift detection benchmarking workflow.
-"""
-
-import os
-import pandas as pd
-import numpy as np
-from drift_benchmark import BenchmarkRunner, BenchmarkConfig, DatasetConfig, DetectorConfig
-
-def create_synthetic_datasets():
-    """Create synthetic datasets with different drift patterns."""
-
-    # No drift dataset
-    np.random.seed(42)
-    no_drift_data = pd.DataFrame({
-        'feature1': np.random.normal(0, 1, 1000),
-        'feature2': np.random.normal(0, 1, 1000)
-    })
-    no_drift_data.to_csv('datasets/no_drift.csv', index=False)
-
-    # Gradual drift dataset
-    gradual_drift_data = pd.DataFrame({
-        'feature1': np.concatenate([
-            np.random.normal(0, 1, 500),      # Reference period
-            np.random.normal(0.5, 1, 500)    # Gradual shift
-        ]),
-        'feature2': np.random.normal(0, 1, 1000)
-    })
-    gradual_drift_data.to_csv('datasets/gradual_drift.csv', index=False)
-
-    # Sudden drift dataset
-    sudden_drift_data = pd.DataFrame({
-        'feature1': np.concatenate([
-            np.random.normal(0, 1, 500),      # Reference period
-            np.random.normal(2, 1, 500)      # Sudden shift
-        ]),
-        'feature2': np.random.normal(0, 1, 1000)
-    })
-    sudden_drift_data.to_csv('datasets/sudden_drift.csv', index=False)
-
-def run_comprehensive_benchmark():
-    """Run comprehensive benchmark across multiple scenarios."""
-
-    # Ensure datasets directory exists
-    os.makedirs('datasets', exist_ok=True)
-    create_synthetic_datasets()
-
-    # Create comprehensive configuration
-    config = BenchmarkConfig(
-        datasets=[
-            DatasetConfig(path="datasets/no_drift.csv", format="CSV", reference_split=0.5),
-            DatasetConfig(path="datasets/gradual_drift.csv", format="CSV", reference_split=0.5),
-            DatasetConfig(path="datasets/sudden_drift.csv", format="CSV", reference_split=0.5),
-        ],
-        detectors=[
-            DetectorConfig(method_id="kolmogorov_smirnov", variant_id="ks_batch"),
-            DetectorConfig(method_id="cramer_von_mises", variant_id="cvm_batch"),
-            DetectorConfig(method_id="anderson_darling", variant_id="ad_batch"),
-        ]
-    )
-
-    # Run benchmark
-    runner = BenchmarkRunner(config)
-    results = runner.run()
-
-    return results
-
-def analyze_results(results):
-    """Analyze and visualize benchmark results."""
-
-    print("=== Benchmark Summary ===")
-    print(f"Total detector-dataset combinations: {results.summary.total_detectors}")
-    print(f"Successful runs: {results.summary.successful_runs}")
-    print(f"Failed runs: {results.summary.failed_runs}")
-    print(f"Average execution time: {results.summary.avg_execution_time:.4f}s")
-    print()
-
-    # Group results by dataset
-    datasets = {}
-    for result in results.detector_results:
-        if result.dataset_name not in datasets:
-            datasets[result.dataset_name] = []
-        datasets[result.dataset_name].append(result)
-
-    # Analyze each dataset
-    for dataset_name, dataset_results in datasets.items():
-        print(f"=== {dataset_name} ===")
-
-        for result in dataset_results:
-            status = "DRIFT" if result.drift_detected else "NO DRIFT"
-            score_str = f", score={result.drift_score:.6f}" if result.drift_score else ""
-            print(f"  {result.detector_id}: {status} "
-                  f"(time={result.execution_time:.4f}s{score_str})")
-        print()
-
-    # Performance comparison
-    print("=== Performance Analysis ===")
-    detector_times = {}
-    for result in results.detector_results:
-        if result.detector_id not in detector_times:
-            detector_times[result.detector_id] = []
-        detector_times[result.detector_id].append(result.execution_time)
-
-    for detector_id, times in detector_times.items():
-        avg_time = sum(times) / len(times)
-        min_time = min(times)
-        max_time = max(times)
-        print(f"  {detector_id}: avg={avg_time:.4f}s, "
-              f"min={min_time:.4f}s, max={max_time:.4f}s")
-
-if __name__ == "__main__":
-    # Run complete workflow
-    results = run_comprehensive_benchmark()
-    analyze_results(results)
-
-    print(f"\nResults saved to: {results.output_directory}")
-```
-
-### Automated Testing Pipeline
-
-```python
-"""
-Automated testing pipeline for drift detection methods.
-"""
-
-import os
-import json
-from typing import List, Dict, Any
-from drift_benchmark import BenchmarkRunner, BenchmarkConfig
-
-class BenchmarkPipeline:
-    """Automated benchmark pipeline for systematic evaluation."""
-
-    def __init__(self, datasets_dir: str, results_dir: str):
-        self.datasets_dir = datasets_dir
-        self.results_dir = results_dir
-        os.makedirs(results_dir, exist_ok=True)
-
-    def discover_datasets(self) -> List[str]:
-        """Auto-discover CSV datasets."""
-        datasets = []
-        for file in os.listdir(self.datasets_dir):
-            if file.endswith('.csv'):
-                datasets.append(os.path.join(self.datasets_dir, file))
-        return datasets
-
-    def get_available_detectors(self) -> List[tuple]:
-        """Get all registered detectors."""
-        from drift_benchmark.adapters import list_detectors
-        return list_detectors()
-
-    def create_full_benchmark_config(self) -> BenchmarkConfig:
-        """Create configuration testing all detectors on all datasets."""
-
-        # Discover datasets
-        dataset_paths = self.discover_datasets()
-        datasets = [
-            DatasetConfig(
-                path=path,
-                format="CSV",
-                reference_split=0.5
-            ) for path in dataset_paths
-        ]
-
-        # Get all detectors
-        detector_pairs = self.get_available_detectors()
-        detectors = [
-            DetectorConfig(
-                method_id=method_id,
-                variant_id=impl_id
-            ) for method_id, impl_id in detector_pairs
-        ]
-
-        return BenchmarkConfig(datasets=datasets, detectors=detectors)
-
-    def run_benchmark_suite(self) -> Dict[str, Any]:
-        """Run complete benchmark suite."""
-
-        print("Creating comprehensive benchmark configuration...")
-        config = self.create_full_benchmark_config()
-
-        print(f"Testing {len(config.detectors)} detectors on {len(config.datasets)} datasets")
-        print(f"Total combinations: {len(config.detectors) * len(config.datasets)}")
-
-        # Run benchmark
-        runner = BenchmarkRunner(config)
-        results = runner.run()
-
-        # Generate summary report
-        report = self.generate_report(results)
-
-        # Save report
-        report_path = os.path.join(results.output_directory, "benchmark_report.json")
-        with open(report_path, 'w') as f:
-            json.dump(report, f, indent=2)
-
-        print(f"Complete results saved to: {results.output_directory}")
-        return report
-
-    def generate_report(self, results) -> Dict[str, Any]:
-        """Generate comprehensive benchmark report."""
-
-        # Overall statistics
-        total_combinations = len(results.detector_results)
-        successful_runs = results.summary.successful_runs
-        failed_runs = results.summary.failed_runs
-
-        # Group by detector
-        detector_performance = {}
-        for result in results.detector_results:
-            if result.detector_id not in detector_performance:
-                detector_performance[result.detector_id] = {
-                    'runs': [],
-                    'drift_detected_count': 0,
-                    'total_time': 0,
-                    'success_count': 0
-                }
-
-            perf = detector_performance[result.detector_id]
-            perf['runs'].append({
-                'dataset': result.dataset_name,
-                'drift_detected': result.drift_detected,
-                'execution_time': result.execution_time,
-                'drift_score': result.drift_score
-            })
-
-            if result.drift_detected:
-                perf['drift_detected_count'] += 1
-            perf['total_time'] += result.execution_time
-            perf['success_count'] += 1
-
-        # Calculate averages
-        for detector_id, perf in detector_performance.items():
-            perf['avg_execution_time'] = perf['total_time'] / perf['success_count']
-            perf['drift_detection_rate'] = perf['drift_detected_count'] / perf['success_count']
-
-        return {
-            'summary': {
-                'total_combinations': total_combinations,
-                'successful_runs': successful_runs,
-                'failed_runs': failed_runs,
-                'success_rate': successful_runs / total_combinations,
-                'avg_execution_time': results.summary.avg_execution_time
-            },
-            'detector_performance': detector_performance,
-            'timestamp': results.output_directory.split('/')[-1] if results.output_directory else None
-        }
+        return stability_analysis
 
 # Usage
-if __name__ == "__main__":
-    pipeline = BenchmarkPipeline("datasets", "results")
-    report = pipeline.run_benchmark_suite()
+performance_runner = PerformanceBenchmarkRunner("comprehensive_library_comparison.toml")
+performance_df = performance_runner.run_with_monitoring(iterations=5)
+stability_analysis = performance_runner.analyze_stability()
 
-    # Print summary
-    print("\n=== Pipeline Results ===")
-    print(f"Success rate: {report['summary']['success_rate']*100:.1f}%")
-    print(f"Average execution time: {report['summary']['avg_execution_time']:.4f}s")
-
-    print("\n=== Top Performers (by speed) ===")
-    sorted_detectors = sorted(
-        report['detector_performance'].items(),
-        key=lambda x: x[1]['avg_execution_time']
-    )
-
-    for detector_id, perf in sorted_detectors[:5]:
-        print(f"{detector_id}: {perf['avg_execution_time']:.4f}s avg, "
-              f"{perf['drift_detection_rate']*100:.1f}% drift rate")
+print("Library Stability Analysis:")
+for library_id, stats in stability_analysis.items():
+    print(f"{library_id}:")
+    print(f"  Execution Time CV: {stats['execution_time_cv']:.3f}")
+    print(f"  Detection Consistency: {stats['detection_consistency']:.3f}")
+    print(f"  Average Memory Usage: {stats['avg_memory_usage']/1024/1024:.1f} MB")
 ```
 
 ---
 
-## 📈 Performance Analysis
+## 🔍 Detailed Library Comparison Analysis
 
-### Execution Time Analysis
+### Comprehensive Performance Analysis
+
+After running benchmarks, use these patterns to analyze library performance in detail:
 
 ```python
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+# After running benchmark with multiple library implementations
+results = runner.run()
 
-def analyze_performance(results):
-    """Detailed performance analysis of benchmark results."""
+# Group results by method+variant for comparison
+from collections import defaultdict
+comparisons = defaultdict(list)
 
-    # Convert results to DataFrame for analysis
-    data = []
-    for result in results.detector_results:
-        data.append({
-            'detector_id': result.detector_id,
-            'dataset_name': result.dataset_name,
-            'execution_time': result.execution_time,
-            'drift_detected': result.drift_detected,
-            'drift_score': result.drift_score
-        })
+for result in results.detector_results:
+    key = f"{result.method_id}_{result.variant_id}"
+    comparisons[key].append(result)
 
-    df = pd.DataFrame(data)
+# Analyze performance differences
+for method_variant, variant_results in comparisons.items():
+    print(f"\n=== {method_variant} Comparison ===")
 
-    # Execution time statistics
-    print("=== Execution Time Analysis ===")
-    time_stats = df.groupby('detector_id')['execution_time'].describe()
-    print(time_stats)
+    # Sort by execution time
+    variant_results.sort(key=lambda r: r.execution_time)
 
-    # Drift detection rates
-    print("\n=== Drift Detection Rates ===")
-    detection_rates = df.groupby('detector_id')['drift_detected'].mean()
-    print(detection_rates)
+    for result in variant_results:
+        print(f"Library: {result.library_id:<15} "
+              f"Time: {result.execution_time:.4f}s "
+              f"Drift: {result.drift_detected} "
+              f"Score: {result.drift_score:.4f}")
 
-    # Visualization
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+    # Performance insights
+    fastest = variant_results[0]
+    slowest = variant_results[-1]
+    speedup = slowest.execution_time / fastest.execution_time
 
-    # Execution time by detector
-    sns.boxplot(data=df, x='detector_id', y='execution_time', ax=ax1)
-    ax1.set_title('Execution Time by Detector')
-    ax1.tick_params(axis='x', rotation=45)
-
-    # Drift detection rates
-    detection_rates.plot(kind='bar', ax=ax2)
-    ax2.set_title('Drift Detection Rates')
-    ax2.tick_params(axis='x', rotation=45)
-
-    # Execution time vs drift score
-    df_with_scores = df.dropna(subset=['drift_score'])
-    if not df_with_scores.empty:
-        sns.scatterplot(data=df_with_scores, x='execution_time',
-                       y='drift_score', hue='detector_id', ax=ax3)
-        ax3.set_title('Execution Time vs Drift Score')
-
-    # Performance by dataset
-    sns.boxplot(data=df, x='dataset_name', y='execution_time', ax=ax4)
-    ax4.set_title('Execution Time by Dataset')
-    ax4.tick_params(axis='x', rotation=45)
-
-    plt.tight_layout()
-    plt.show()
-
-    return df
+    print(f"Fastest: {fastest.library_id} ({fastest.execution_time:.4f}s)")
+    print(f"Slowest: {slowest.library_id} ({slowest.execution_time:.4f}s)")
+    print(f"Speedup: {speedup:.2f}x")
 ```
 
-### Statistical Comparison
+### Library Agreement Analysis
+
+Check how often different libraries agree on drift detection:
 
 ```python
-from scipy import stats
-import numpy as np
+def analyze_library_agreement(results: BenchmarkResult):
+    """Analyze agreement between library implementations."""
+    from collections import defaultdict
 
-def compare_detectors_statistically(results):
-    """Statistical comparison of detector performance."""
+    # Group by dataset and method+variant
+    dataset_groups = defaultdict(lambda: defaultdict(list))
 
-    # Group execution times by detector
-    detector_times = {}
     for result in results.detector_results:
-        if result.detector_id not in detector_times:
-            detector_times[result.detector_id] = []
-        detector_times[result.detector_id].append(result.execution_time)
+        dataset_key = result.dataset_name
+        method_key = f"{result.method_id}_{result.variant_id}"
+        dataset_groups[dataset_key][method_key].append(result)
 
-    # Pairwise comparisons
-    detector_ids = list(detector_times.keys())
-    comparison_results = {}
+    agreement_stats = {}
 
-    for i, detector1 in enumerate(detector_ids):
-        for j, detector2 in enumerate(detector_ids):
-            if i < j:  # Avoid duplicate comparisons
-                times1 = detector_times[detector1]
-                times2 = detector_times[detector2]
+    for dataset, methods in dataset_groups.items():
+        for method, detections in methods.items():
+            if len(detections) < 2:
+                continue  # Need at least 2 libraries to compare
 
-                # Perform t-test
-                statistic, p_value = stats.ttest_ind(times1, times2)
-
-                comparison_results[f"{detector1}_vs_{detector2}"] = {
-                    'statistic': statistic,
-                    'p_value': p_value,
-                    'significant': p_value < 0.05,
-                    'faster_detector': detector1 if statistic < 0 else detector2
-                }
-
-    print("=== Statistical Comparisons (Execution Time) ===")
-    for comparison, result in comparison_results.items():
-        significance = "SIGNIFICANT" if result['significant'] else "not significant"
-        print(f"{comparison}: p={result['p_value']:.6f} ({significance})")
-        if result['significant']:
-            print(f"  → {result['faster_detector']} is significantly faster")
-
-    return comparison_results
-```
-
----
-
-## 📋 Best Practices
-
-### 1. Configuration Management
-
-```python
-# Use environment-specific configurations
-import os
-
-def get_config_for_environment():
-    """Get configuration based on environment."""
-
-    env = os.getenv('BENCHMARK_ENV', 'development')
-
-    if env == 'production':
-        return BenchmarkConfig(
-            datasets=[
-                DatasetConfig(path="production/dataset1.csv", format="CSV", reference_split=0.5),
-                DatasetConfig(path="production/dataset2.csv", format="CSV", reference_split=0.5),
-            ],
-            detectors=[
-                DetectorConfig(method_id="kolmogorov_smirnov", variant_id="ks_batch"),
-                DetectorConfig(method_id="cramer_von_mises", variant_id="cvm_batch"),
-            ]
-        )
-    else:  # development/testing
-        return BenchmarkConfig(
-            datasets=[
-                DatasetConfig(path="test/small_dataset.csv", format="CSV", reference_split=0.5),
-            ],
-            detectors=[
-                DetectorConfig(method_id="kolmogorov_smirnov", variant_id="ks_batch"),
-            ]
-        )
-
-# Use configuration templates
-def create_template_config(datasets_dir: str, detectors: List[str]):
-    """Create configuration template."""
-
-    dataset_configs = []
-    for csv_file in os.listdir(datasets_dir):
-        if csv_file.endswith('.csv'):
-            dataset_configs.append(
-                DatasetConfig(
-                    path=os.path.join(datasets_dir, csv_file),
-                    format="CSV",
-                    reference_split=0.5
-                )
+            # Calculate agreement rate
+            drift_decisions = [r.drift_detected for r in detections]
+            agreement_rate = (
+                sum(drift_decisions) == len(drift_decisions) or
+                sum(drift_decisions) == 0
             )
 
-    detector_configs = []
-    for detector_spec in detectors:
-        method_id, impl_id = detector_spec.split('.')
-        detector_configs.append(
-            DetectorConfig(method_id=method_id, variant_id=impl_id)
-        )
+            libraries = [r.library_id for r in detections]
 
-    return BenchmarkConfig(datasets=dataset_configs, detectors=detector_configs)
-```
+            agreement_stats[f"{dataset}_{method}"] = {
+                "libraries": libraries,
+                "decisions": drift_decisions,
+                "agreement": agreement_rate,
+                "drift_scores": [r.drift_score for r in detections]
+            }
 
-### 2. Error Handling and Logging
+    return agreement_stats
 
-```python
-import logging
-from drift_benchmark.settings import get_logger
-
-logger = get_logger(__name__)
-
-def robust_benchmark_execution(config_path: str):
-    """Robust benchmark execution with comprehensive error handling."""
-
-    try:
-        # Load configuration with validation
-        runner = BenchmarkRunner.from_config_file(config_path)
-        logger.info(f"Configuration loaded successfully from {config_path}")
-
-        # Execute benchmark
-        results = runner.run()
-        logger.info(f"Benchmark completed successfully")
-
-        # Validate results
-        if results.summary.failed_runs > 0:
-            logger.warning(f"{results.summary.failed_runs} detector runs failed")
-
-        if results.summary.successful_runs == 0:
-            logger.error("No successful detector runs - check configuration")
-            return None
-
-        return results
-
-    except FileNotFoundError as e:
-        logger.error(f"Configuration file not found: {e}")
-        return None
-
-    except ConfigurationError as e:
-        logger.error(f"Configuration error: {e}")
-        return None
-
-    except BenchmarkExecutionError as e:
-        logger.error(f"Benchmark execution failed: {e}")
-        return None
-
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        return None
-
-# Usage with retry logic
-def benchmark_with_retry(config_path: str, max_retries: int = 3):
-    """Execute benchmark with retry logic."""
-
-    for attempt in range(max_retries):
-        logger.info(f"Benchmark attempt {attempt + 1}/{max_retries}")
-
-        results = robust_benchmark_execution(config_path)
-        if results is not None:
-            return results
-
-        if attempt < max_retries - 1:
-            logger.info("Retrying benchmark execution...")
-
-    logger.error("All benchmark attempts failed")
-    return None
-```
-
-### 3. Resource Management
-
-```python
-import psutil
-import time
-from typing import Optional
-
-class ResourceMonitor:
-    """Monitor system resources during benchmark execution."""
-
-    def __init__(self):
-        self.start_time: Optional[float] = None
-        self.peak_memory: float = 0
-        self.start_memory: float = 0
-
-    def start_monitoring(self):
-        """Start resource monitoring."""
-        self.start_time = time.time()
-        self.start_memory = psutil.virtual_memory().used / 1024 / 1024  # MB
-        self.peak_memory = self.start_memory
-
-    def update_peak_memory(self):
-        """Update peak memory usage."""
-        current_memory = psutil.virtual_memory().used / 1024 / 1024  # MB
-        if current_memory > self.peak_memory:
-            self.peak_memory = current_memory
-
-    def get_report(self) -> dict:
-        """Get resource usage report."""
-        if self.start_time is None:
-            return {}
-
-        duration = time.time() - self.start_time
-        memory_increase = self.peak_memory - self.start_memory
-
-        return {
-            'duration_seconds': duration,
-            'start_memory_mb': self.start_memory,
-            'peak_memory_mb': self.peak_memory,
-            'memory_increase_mb': memory_increase,
-            'cpu_percent': psutil.cpu_percent(interval=1)
-        }
-
-def monitored_benchmark(config_path: str):
-    """Run benchmark with resource monitoring."""
-
-    monitor = ResourceMonitor()
-    monitor.start_monitoring()
-
-    try:
-        runner = BenchmarkRunner.from_config_file(config_path)
-        results = runner.run()
-
-        # Add resource information to results
-        resource_report = monitor.get_report()
-        logger.info(f"Resource usage: {resource_report}")
-
-        return results, resource_report
-
-    finally:
-        # Clean up resources
-        import gc
-        gc.collect()
-```
-
-### 4. Result Validation and Quality Assurance
-
-```python
-def validate_benchmark_results(results: BenchmarkResult) -> bool:
-    """Validate benchmark results for quality assurance."""
-
-    # Check basic integrity
-    if not results.detector_results:
-        logger.error("No detector results found")
-        return False
-
-    # Validate execution times
-    for result in results.detector_results:
-        if result.execution_time <= 0:
-            logger.warning(f"Invalid execution time for {result.detector_id}: {result.execution_time}")
-
-        if result.execution_time > 300:  # 5 minutes
-            logger.warning(f"Unusually long execution time for {result.detector_id}: {result.execution_time}s")
-
-    # Check for consistent detector behavior
-    detector_groups = {}
-    for result in results.detector_results:
-        if result.detector_id not in detector_groups:
-            detector_groups[result.detector_id] = []
-        detector_groups[result.detector_id].append(result)
-
-    for detector_id, group_results in detector_groups.items():
-        # Check for consistently failing detector
-        if all(r.drift_score is None for r in group_results):
-            logger.warning(f"Detector {detector_id} never provides drift scores")
-
-        # Check for unrealistic drift detection rates
-        drift_rate = sum(1 for r in group_results if r.drift_detected) / len(group_results)
-        if drift_rate == 0 or drift_rate == 1:
-            logger.warning(f"Detector {detector_id} has extreme drift detection rate: {drift_rate*100:.1f}%")
-
-    # Validate summary statistics
-    expected_total = len(results.detector_results)
-    actual_total = results.summary.successful_runs + results.summary.failed_runs
-
-    if expected_total != actual_total:
-        logger.error(f"Summary statistics mismatch: expected {expected_total}, got {actual_total}")
-        return False
-
-    return True
-
-def quality_assured_benchmark(config_path: str):
-    """Run benchmark with quality assurance checks."""
-
-    results = robust_benchmark_execution(config_path)
-    if results is None:
-        return None
-
-    if not validate_benchmark_results(results):
-        logger.error("Benchmark results failed validation")
-        return None
-
-    logger.info("Benchmark results passed quality assurance")
-    return results
+# Analyze agreement
+agreement = analyze_library_agreement(results)
+for comparison, stats in agreement.items():
+    print(f"\n{comparison}:")
+    for lib, decision, score in zip(stats["libraries"], stats["decisions"], stats["drift_scores"]):
+        print(f"  {lib}: {decision} (score: {score:.4f})")
+    print(f"  Agreement: {'✅ Yes' if stats['agreement'] else '❌ No'}")
 ```
 
 ---
 
-This completes the comprehensive Benchmarking API documentation. The framework provides a complete system for systematically evaluating drift detection methods across multiple datasets with robust error handling, performance monitoring, and result analysis capabilities.
+## 🏆 Best Practices
+
+### Configuration Design
+
+1. **Fair Comparison Setup**: Ensure equivalent conditions
+
+   ```toml
+   # Good: Same hyperparameters for all libraries
+   [[detectors]]
+   method_id = "kolmogorov_smirnov"
+   variant_id = "batch"
+   library_id = "scipy"
+   threshold = 0.05
+
+   [[detectors]]
+   method_id = "kolmogorov_smirnov"  # Same method+variant
+   variant_id = "batch"
+   library_id = "evidently"           # Different library
+   threshold = 0.05                   # Same threshold
+   ```
+
+2. **Comprehensive Testing**: Include multiple datasets
+
+   ```toml
+   # Test on different drift types to assess library robustness
+   [[datasets]]
+   path = "datasets/gradual_drift.csv"
+
+   [[datasets]]
+   path = "datasets/sudden_drift.csv"
+
+   [[datasets]]
+   path = "datasets/no_drift.csv"
+   ```
+
+3. **Meaningful Library Combinations**: Focus on comparable implementations
+   ```python
+   # Compare libraries implementing the same mathematical method
+   comparable_detectors = [
+       ("kolmogorov_smirnov", "batch", "scipy"),
+       ("kolmogorov_smirnov", "batch", "evidently"),
+       ("kolmogorov_smirnov", "batch", "alibi_detect")
+   ]
+   ```
+
+### Result Interpretation
+
+1. **Statistical Significance**: Consider sample size and variance
+
+   ```python
+   # Don't conclude based on single runs
+   # Run multiple iterations for reliable comparisons
+   iterations = 10
+   library_times = {lib: [] for lib in libraries}
+
+   for _ in range(iterations):
+       results = runner.run()
+       for result in results.detector_results:
+           library_times[result.library_id].append(result.execution_time)
+
+   # Use statistical tests for significance
+   from scipy.stats import ttest_ind
+   t_stat, p_value = ttest_ind(library_times["evidently"], library_times["alibi_detect"])
+   ```
+
+2. **Context-Aware Analysis**: Consider use case requirements
+
+   ```python
+   def choose_best_library(results: BenchmarkResult, priority: str = "speed") -> str:
+       """Choose best library based on specific criteria."""
+
+       if priority == "speed":
+           # Find fastest average execution time
+           library_times = {}
+           for result in results.detector_results:
+               if result.library_id not in library_times:
+                   library_times[result.library_id] = []
+               library_times[result.library_id].append(result.execution_time)
+
+           avg_times = {lib: sum(times)/len(times) for lib, times in library_times.items()}
+           return min(avg_times.items(), key=lambda x: x[1])[0]
+
+       elif priority == "accuracy":
+           # Find highest detection rate (requires ground truth)
+           library_accuracy = {}
+           for result in results.detector_results:
+               if result.library_id not in library_accuracy:
+                   library_accuracy[result.library_id] = []
+               library_accuracy[result.library_id].append(result.drift_detected)
+
+           avg_accuracy = {lib: sum(detections)/len(detections)
+                          for lib, detections in library_accuracy.items()}
+           return max(avg_accuracy.items(), key=lambda x: x[1])[0]
+
+       elif priority == "reliability":
+           # Find highest success rate
+           library_success = {}
+           for result in results.detector_results:
+               if result.library_id not in library_success:
+                   library_success[result.library_id] = []
+               library_success[result.library_id].append(result.error_message is None)
+
+           success_rates = {lib: sum(successes)/len(successes)
+                           for lib, successes in library_success.items()}
+           return max(success_rates.items(), key=lambda x: x[1])[0]
+
+   # Choose based on your priorities
+   fastest_lib = choose_best_library(results, priority="speed")
+   most_accurate_lib = choose_best_library(results, priority="accuracy")
+   most_reliable_lib = choose_best_library(results, priority="reliability")
+   ```
+
+3. **Trade-off Analysis**: Balance multiple factors
+
+   ```python
+   def analyze_library_tradeoffs(results: BenchmarkResult) -> pd.DataFrame:
+       """Analyze trade-offs between speed, accuracy, and reliability."""
+
+       tradeoff_data = []
+       libraries = set(r.library_id for r in results.detector_results)
+
+       for library_id in libraries:
+           library_results = [r for r in results.detector_results if r.library_id == library_id]
+
+           avg_time = sum(r.execution_time for r in library_results) / len(library_results)
+           detection_rate = sum(1 for r in library_results if r.drift_detected) / len(library_results)
+           success_rate = sum(1 for r in library_results if r.error_message is None) / len(library_results)
+
+           tradeoff_data.append({
+               "Library": library_id,
+               "Avg_Execution_Time": avg_time,
+               "Detection_Rate": detection_rate,
+               "Success_Rate": success_rate,
+               "Speed_Rank": None,  # Will be filled below
+               "Accuracy_Rank": None,
+               "Reliability_Rank": None
+           })
+
+       df = pd.DataFrame(tradeoff_data)
+
+       # Add rankings
+       df["Speed_Rank"] = df["Avg_Execution_Time"].rank()  # Lower is better
+       df["Accuracy_Rank"] = df["Detection_Rate"].rank(ascending=False)  # Higher is better
+       df["Reliability_Rank"] = df["Success_Rate"].rank(ascending=False)  # Higher is better
+
+       # Calculate overall score (equal weights)
+       df["Overall_Score"] = df[["Speed_Rank", "Accuracy_Rank", "Reliability_Rank"]].mean(axis=1)
+       df = df.sort_values("Overall_Score")
+
+       return df
+
+   tradeoff_analysis = analyze_library_tradeoffs(results)
+   print("Library Trade-off Analysis:")
+   print(tradeoff_analysis)
+   ```
+
+### Reproducibility and Documentation
+
+1. **Version Tracking**: Record library versions
+
+   ```python
+   def record_library_versions() -> Dict[str, str]:
+       """Record versions of all libraries used in comparison."""
+       versions = {}
+
+       try:
+           import evidently
+           versions["evidently"] = evidently.__version__
+       except ImportError:
+           versions["evidently"] = "not installed"
+
+       try:
+           import alibi_detect
+           versions["alibi_detect"] = alibi_detect.__version__
+       except ImportError:
+           versions["alibi_detect"] = "not installed"
+
+       # Add other libraries...
+
+       return versions
+
+   # Save with results
+   library_versions = record_library_versions()
+   print("Library versions used in comparison:")
+   for lib, version in library_versions.items():
+       print(f"{lib}: {version}")
+   ```
+
+2. **Configuration Validation**: Ensure reproducible setups
+
+   ```python
+   def validate_benchmark_config(config: BenchmarkConfig) -> List[str]:
+       """Validate configuration for fair library comparison."""
+       issues = []
+
+       # Check for same method+variant combinations across libraries
+       method_variants = set()
+       library_combinations = {}
+
+       for detector in config.detectors:
+           method_variant = (detector.method_id, detector.variant_id)
+           method_variants.add(method_variant)
+
+           if method_variant not in library_combinations:
+               library_combinations[method_variant] = []
+           library_combinations[method_variant].append(detector.library_id)
+
+       # Warn if method+variant only tested with one library
+       for method_variant, libraries in library_combinations.items():
+           if len(libraries) == 1:
+               issues.append(f"Method {method_variant[0]}+{method_variant[1]} only tested with {libraries[0]}")
+
+       # Check for consistent hyperparameters
+       for method_variant, libraries in library_combinations.items():
+           if len(libraries) > 1:
+               # Check if all detectors for this method+variant have same hyperparameters
+               method_detectors = [d for d in config.detectors
+                                 if (d.method_id, d.variant_id) == method_variant]
+
+               thresholds = set(getattr(d, 'threshold', None) for d in method_detectors)
+               if len(thresholds) > 1:
+                   issues.append(f"Inconsistent thresholds for {method_variant[0]}+{method_variant[1]}: {thresholds}")
+
+       return issues
+
+   # Validate before running
+   config_issues = validate_benchmark_config(config)
+   if config_issues:
+       print("Configuration issues found:")
+       for issue in config_issues:
+           print(f"- {issue}")
+   ```
+
+This comprehensive benchmarking API documentation provides everything needed to compare drift detection library implementations effectively. The focus is on enabling fair, statistically sound comparisons that help users choose the best library for their specific requirements based on empirical performance data.
