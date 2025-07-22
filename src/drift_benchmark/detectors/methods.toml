@@ -17,7 +17,7 @@
         hyperparameters = ["threshold"]
         references      = []
 
-    [methods.kolmogorov_smirnov.variants.ks_incremental]
+    [methods.kolmogorov_smirnov.variants.ks_online]
         name            = "Incremental Kolmogorov-Smirnov"
         execution_mode  = "STREAMING"
         hyperparameters = ["threshold", "window_size"]
