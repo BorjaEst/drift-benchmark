@@ -1,8 +1,8 @@
 """
 Test suite for models.metadata module - REQ-MET-XXX
 
-This module tests the basic metadata models used throughout the drift-benchmark
-library for storing information about datasets, detectors, and benchmark summaries.
+This module tests the scenario-based metadata models used throughout the drift-benchmark
+library for storing information about scenarios, detectors, and benchmark summaries.
 """
 
 from typing import Optional
@@ -11,7 +11,7 @@ import pytest
 
 
 def test_should_define_dataset_metadata_model_when_imported(sample_dataset_metadata_data):
-    """Test REQ-MET-001: Must define DatasetMetadata with fields: name (str), data_type (DataType), dimension (DataDimension), n_samples_ref (int), n_samples_test (int) for basic info"""
+    """Test REQ-MET-001: Must define DatasetMetadata with fields: name (str), data_type (DataType), dimension (DataDimension), n_samples_ref (int), n_samples_test (int) for describing a source dataset from which a scenario can be generated"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DatasetMetadata
@@ -41,11 +41,54 @@ def test_should_define_dataset_metadata_model_when_imported(sample_dataset_metad
     assert isinstance(metadata.n_samples_test, int), "n_samples_test must be integer"
 
     # Assert - specific values from test data
-    assert metadata.name == "test_dataset"
+    assert metadata.name == "sklearn_classification_source"
     assert metadata.data_type == "continuous"
     assert metadata.dimension == "multivariate"
     assert metadata.n_samples_ref == 1000
     assert metadata.n_samples_test == 500
+
+
+def test_should_define_scenario_definition_model_when_imported(sample_scenario_definition_data):
+    """Test REQ-MET-004: Must define ScenarioDefinition to model the structure of a scenario .toml file. Required fields: description: str, source_type: ScenarioSourceType, source_name: str, target_column: str, drift_types: List[DriftType], ref_filter: Dict, test_filter: Dict"""
+    # Arrange & Act
+    try:
+        from drift_benchmark.models import ScenarioDefinition
+
+        definition = ScenarioDefinition(**sample_scenario_definition_data)
+    except ImportError as e:
+        pytest.fail(f"Failed to import ScenarioDefinition from models: {e}")
+
+    # Assert - is Pydantic model
+    try:
+        from pydantic import BaseModel
+
+        assert issubclass(ScenarioDefinition, BaseModel), "ScenarioDefinition must inherit from Pydantic BaseModel"
+    except ImportError:
+        pytest.fail("ScenarioDefinition must use Pydantic v2 BaseModel")
+
+    # Assert - has required fields
+    assert hasattr(definition, "description"), "ScenarioDefinition must have description field"
+    assert hasattr(definition, "source_type"), "ScenarioDefinition must have source_type field"
+    assert hasattr(definition, "source_name"), "ScenarioDefinition must have source_name field"
+    assert hasattr(definition, "target_column"), "ScenarioDefinition must have target_column field"
+    assert hasattr(definition, "drift_types"), "ScenarioDefinition must have drift_types field"
+    assert hasattr(definition, "ref_filter"), "ScenarioDefinition must have ref_filter field"
+    assert hasattr(definition, "test_filter"), "ScenarioDefinition must have test_filter field"
+
+    # Assert - field types and values are correct
+    assert isinstance(definition.description, str), "description must be string"
+    assert isinstance(definition.source_name, str), "source_name must be string"
+    assert isinstance(definition.target_column, str), "target_column must be string"
+    assert isinstance(definition.drift_types, list), "drift_types must be list"
+    assert isinstance(definition.ref_filter, dict), "ref_filter must be dict"
+    assert isinstance(definition.test_filter, dict), "test_filter must be dict"
+
+    # Assert - specific values from test data
+    assert definition.description == "Covariate drift scenario with known ground truth"
+    assert definition.source_type == "sklearn"
+    assert definition.source_name == "make_classification"
+    assert definition.target_column == "target"
+    assert definition.drift_types == ["covariate"]
 
 
 def test_should_define_detector_metadata_model_when_imported(sample_detector_metadata_data):

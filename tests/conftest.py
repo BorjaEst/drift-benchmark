@@ -163,11 +163,9 @@ def mock_detector_variants():
 def mock_benchmark_config():
     """Provide mock BenchmarkConfig for testing"""
 
-    class MockDatasetConfig:
-        def __init__(self, path, format, reference_split):
-            self.path = path
-            self.format = format
-            self.reference_split = reference_split
+    class MockScenarioConfig:
+        def __init__(self, id):
+            self.id = id
 
     class MockDetectorConfig:
         def __init__(self, method_id, variant_id, library_id):
@@ -177,9 +175,9 @@ def mock_benchmark_config():
 
     class MockBenchmarkConfig:
         def __init__(self):
-            self.datasets = [
-                MockDatasetConfig("tests/assets/datasets/test1.csv", "csv", 0.6),
-                MockDatasetConfig("tests/assets/datasets/test2.csv", "csv", 0.7),
+            self.scenarios = [
+                MockScenarioConfig("test_scenario_1"),
+                MockScenarioConfig("test_scenario_2"),
             ]
             self.detectors = [
                 MockDetectorConfig("ks_test", "scipy", "scipy"),
@@ -292,3 +290,139 @@ def mock_failing_detector():
             return None
 
     return FailingDetector
+
+
+# Scenario-based fixtures for the new requirements
+@pytest.fixture
+def sample_scenario_config_data():
+    """Provide sample ScenarioConfig data for testing"""
+    return {"id": "covariate_drift_example"}
+
+
+@pytest.fixture
+def sample_scenario_result_data():
+    """Provide sample ScenarioResult data for testing"""
+    import numpy as np
+
+    # Create scenario-based data with ref_data and test_data fields
+    ref_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0, 1, 100),
+            "feature_2": np.random.normal(0, 1, 100),
+            "target": np.random.choice([0, 1], 100),
+        }
+    )
+
+    test_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
+            "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
+            "target": np.random.choice([0, 1], 50),
+        }
+    )
+
+    metadata = {
+        "description": "Sample covariate drift scenario",
+        "source_type": "sklearn",
+        "source_name": "make_classification",
+        "target_column": "target",
+        "drift_types": ["covariate"],
+    }
+
+    return {
+        "name": "covariate_drift_example",
+        "ref_data": ref_data,
+        "test_data": test_data,
+        "metadata": metadata,
+    }
+
+
+@pytest.fixture
+def sample_scenario_definition_data():
+    """Provide sample ScenarioDefinition data for testing"""
+    return {
+        "description": "Covariate drift scenario with known ground truth",
+        "source_type": "sklearn",
+        "source_name": "make_classification",
+        "target_column": "target",
+        "drift_types": ["covariate"],
+        "ref_filter": {"sample_indices": "range(0, 1000)"},
+        "test_filter": {"sample_indices": "range(1000, 1500)"},
+    }
+
+
+@pytest.fixture
+def sample_dataset_metadata_data():
+    """Provide sample DatasetMetadata data for testing - describes source dataset from which scenarios are generated"""
+    return {
+        "name": "sklearn_classification_source",
+        "data_type": "continuous",
+        "dimension": "multivariate",
+        "n_samples_ref": 1000,
+        "n_samples_test": 500,
+    }
+
+
+@pytest.fixture
+def sample_detector_metadata_data():
+    """Provide sample DetectorMetadata data for testing"""
+    return {
+        "method_id": "ks_test",
+        "variant_id": "scipy",
+        "library_id": "scipy",
+        "name": "Kolmogorov-Smirnov Test",
+        "family": "statistical-test",
+    }
+
+
+@pytest.fixture
+def sample_benchmark_summary_data():
+    """Provide sample BenchmarkSummary data for testing"""
+    return {
+        "total_detectors": 5,
+        "successful_runs": 4,
+        "failed_runs": 1,
+        "avg_execution_time": 0.125,
+        "accuracy": 0.8,
+        "precision": 0.75,
+        "recall": 0.9,
+    }
+
+
+@pytest.fixture
+def mock_scenario_result():
+    """Provide mock ScenarioResult for testing"""
+    import numpy as np
+
+    ref_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0, 1, 100),
+            "feature_2": np.random.normal(0, 1, 100),
+            "target": np.random.choice([0, 1], 100),
+        }
+    )
+
+    test_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
+            "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
+            "target": np.random.choice([0, 1], 50),
+        }
+    )
+
+    metadata = {
+        "description": "Mock scenario with covariate drift",
+        "source_type": "sklearn",
+        "source_name": "make_classification",
+        "target_column": "target",
+        "drift_types": ["covariate"],
+    }
+
+    class MockScenarioResult:
+        def __init__(self, name, ref_data, test_data, metadata):
+            self.name = name
+            self.ref_data = ref_data
+            self.test_data = test_data
+            self.metadata = metadata
+
+    return MockScenarioResult("mock_covariate_scenario", ref_data, test_data, metadata)

@@ -10,7 +10,7 @@ import pytest
 def sample_benchmark_config_data():
     """Provide sample data for BenchmarkConfig testing"""
     return {
-        "datasets": [{"path": "datasets/test_data.csv", "format": "csv", "reference_split": 0.6}],
+        "scenarios": [{"id": "covariate_drift_example"}],
         "detectors": [
             {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"},
             {"method_id": "drift_detector", "variant_id": "custom", "library_id": "custom"},
@@ -47,7 +47,7 @@ def sample_detector_result_data():
     return {
         "detector_id": "ks_test_scipy",
         "library_id": "scipy",
-        "dataset_name": "test_dataset",
+        "dataset_name": "covariate_drift_example",
         "drift_detected": True,
         "execution_time": 0.0123,
         "drift_score": 0.85,
@@ -57,7 +57,13 @@ def sample_detector_result_data():
 @pytest.fixture
 def sample_dataset_metadata_data():
     """Provide sample data for DatasetMetadata testing"""
-    return {"name": "test_dataset", "data_type": "continuous", "dimension": "multivariate", "n_samples_ref": 1000, "n_samples_test": 500}
+    return {
+        "name": "sklearn_classification_source",
+        "data_type": "continuous",
+        "dimension": "multivariate",
+        "n_samples_ref": 1000,
+        "n_samples_test": 500,
+    }
 
 
 @pytest.fixture

@@ -144,8 +144,8 @@ def test_should_have_library_id_property_when_created():
         pass
 
 
-def test_should_have_preprocess_method_when_created(sample_dataset_result):
-    """Test REQ-ADP-004: BaseDetector.preprocess(data: DatasetResult, **kwargs) -> Any must handle data format conversion from pandas DataFrames to detector-specific format"""
+def test_should_have_preprocess_method_when_created(sample_scenario_result):
+    """Test REQ-ADP-004: BaseDetector.preprocess(data: ScenarioResult, **kwargs) -> Any must handle data format conversion from pandas DataFrames to detector-specific format"""
     # Arrange
     try:
         from drift_benchmark.adapters import BaseDetector
@@ -167,12 +167,12 @@ def test_should_have_preprocess_method_when_created(sample_dataset_result):
     assert hasattr(detector, "preprocess"), "BaseDetector must have preprocess() method"
     assert callable(detector.preprocess), "preprocess() must be callable"
 
-    # Assert - method accepts DatasetResult and returns data
+    # Assert - method accepts ScenarioResult and returns data
     try:
-        result = detector.preprocess(sample_dataset_result)
+        result = detector.preprocess(sample_scenario_result)
         assert result is not None, "preprocess() must return data"
     except Exception as e:
-        pytest.fail(f"preprocess() method should handle DatasetResult: {e}")
+        pytest.fail(f"preprocess() method should handle ScenarioResult: {e}")
 
 
 def test_should_have_abstract_fit_method_when_subclassed():
@@ -314,8 +314,8 @@ def test_should_accept_initialization_parameters_when_created():
     assert detector2.library_id == "custom"
 
 
-def test_should_handle_data_flow_in_preprocess_when_called(sample_dataset_result):
-    """Test REQ-ADP-009: preprocess() must extract appropriate data from DatasetResult: X_ref for training phase, X_test for detection phase"""
+def test_should_handle_data_flow_in_preprocess_when_called(sample_scenario_result):
+    """Test REQ-ADP-009: preprocess() must extract appropriate data from ScenarioResult: ref_data for training phase, test_data for detection phase"""
     # Arrange
     try:
         from drift_benchmark.adapters import BaseDetector
@@ -328,13 +328,13 @@ def test_should_handle_data_flow_in_preprocess_when_called(sample_dataset_result
 
             def preprocess(self, data, **kwargs):
                 # Override to track what data is being processed
-                if hasattr(data, "X_ref"):
-                    result = data.X_ref.select_dtypes(include=[np.number]).values
-                    self.preprocessed_data_log.append(("X_ref", result.shape))
+                if hasattr(data, "ref_data"):
+                    result = data.ref_data.select_dtypes(include=[np.number]).values
+                    self.preprocessed_data_log.append(("ref_data", result.shape))
                     return result
-                elif hasattr(data, "X_test"):
-                    result = data.X_test.select_dtypes(include=[np.number]).values
-                    self.preprocessed_data_log.append(("X_test", result.shape))
+                elif hasattr(data, "test_data"):
+                    result = data.test_data.select_dtypes(include=[np.number]).values
+                    self.preprocessed_data_log.append(("test_data", result.shape))
                     return result
                 return data
 
@@ -349,13 +349,13 @@ def test_should_handle_data_flow_in_preprocess_when_called(sample_dataset_result
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for data flow test: {e}")
 
-    # Assert - preprocess extracts X_ref for training
-    ref_data = detector.preprocess(sample_dataset_result)
+    # Assert - preprocess extracts ref_data for training
+    ref_data = detector.preprocess(sample_scenario_result)
     assert ref_data is not None, "preprocess() must extract reference data"
     assert isinstance(ref_data, np.ndarray), "preprocess() should convert to numpy array"
 
-    # Check that X_ref was processed (should have 2 numeric columns, 5 rows)
-    assert ref_data.shape == (5, 2), "X_ref should be converted to (5, 2) numeric array"
+    # Check that ref_data was processed (should have 2 numeric columns, 5 rows)
+    assert ref_data.shape == (5, 2), "ref_data should be converted to (5, 2) numeric array"
 
 
 def test_should_support_format_flexibility_when_preprocessing():
@@ -368,8 +368,8 @@ def test_should_support_format_flexibility_when_preprocessing():
         class NumpyDetector(BaseDetector):
             def preprocess(self, data, **kwargs):
                 # Convert to numpy arrays
-                if hasattr(data, "X_ref"):
-                    return data.X_ref.values
+                if hasattr(data, "ref_data"):
+                    return data.ref_data.values
                 return data.values if hasattr(data, "values") else data
 
             def fit(self, preprocessed_data: Any, **kwargs):
@@ -381,8 +381,8 @@ def test_should_support_format_flexibility_when_preprocessing():
         class PandasDetector(BaseDetector):
             def preprocess(self, data, **kwargs):
                 # Keep as pandas DataFrame
-                if hasattr(data, "X_ref"):
-                    return data.X_ref
+                if hasattr(data, "ref_data"):
+                    return data.ref_data
                 return data
 
             def fit(self, preprocessed_data: Any, **kwargs):
@@ -400,19 +400,19 @@ def test_should_support_format_flexibility_when_preprocessing():
     # Create sample data
     sample_df = pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
 
-    # Mock DatasetResult
-    class MockDatasetResult:
-        def __init__(self, X_ref):
-            self.X_ref = X_ref
+    # Mock ScenarioResult
+    class MockScenarioResult:
+        def __init__(self, ref_data):
+            self.ref_data = ref_data
 
-    dataset_result = MockDatasetResult(sample_df)
+    scenario_result = MockScenarioResult(sample_df)
 
     # Assert - numpy detector returns numpy array
-    numpy_result = numpy_detector.preprocess(dataset_result)
+    numpy_result = numpy_detector.preprocess(scenario_result)
     assert isinstance(numpy_result, np.ndarray), "NumpyDetector should return numpy array"
 
     # Assert - pandas detector returns DataFrame
-    pandas_result = pandas_detector.preprocess(dataset_result)
+    pandas_result = pandas_detector.preprocess(scenario_result)
     assert isinstance(pandas_result, pd.DataFrame), "PandasDetector should return pandas DataFrame"
 
     # Assert - both maintain the same data
