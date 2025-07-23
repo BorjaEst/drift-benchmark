@@ -6,7 +6,7 @@ Pydantic models for metadata and summary information.
 
 from typing import Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from ..literals import DataDimension, DataType, LibraryId, MethodFamily
 
@@ -21,15 +21,8 @@ class DatasetMetadata(BaseModel):
     name: str = Field(..., description="Dataset name")
     data_type: DataType = Field(..., description="Type of data (continuous, categorical, mixed)")
     dimension: DataDimension = Field(..., description="Data dimensionality (univariate, multivariate)")
-    n_samples_ref: int = Field(..., description="Number of samples in reference dataset")
-    n_samples_test: int = Field(..., description="Number of samples in test dataset")
-
-    @validator("n_samples_ref", "n_samples_test")
-    def validate_positive_samples(cls, v):
-        """Validate sample counts are positive integers"""
-        if v <= 0:
-            raise ValueError("Sample counts must be positive integers")
-        return v
+    n_samples_ref: int = Field(..., gt=0, description="Number of samples in reference dataset")
+    n_samples_test: int = Field(..., gt=0, description="Number of samples in test dataset")
 
 
 class DetectorMetadata(BaseModel):
