@@ -27,3 +27,9 @@
     method_id  = "cramer_von_mises"
     variant_id = "cvm_batch"
     library_id = "alibi-detect"
+
+# River Detectors
+[[detectors]]
+    method_id  = "kswin"
+    variant_id = "kswin_standard"
+    library_id = "river"
