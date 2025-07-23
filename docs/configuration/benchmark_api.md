@@ -40,7 +40,7 @@ Before using this API, ensure you have:
 - ✅ **Registered detectors** using the `@register_detector` decorator
 - ✅ **Understanding of method+variant combinations** available in your setup
 
-**Need to create adapters?** See [ADAPTER-API.md](ADAPTER-API.md) for complete instructions on implementing `BaseDetector` adapters for your preferred libraries.
+**Need to create adapters?** See [adapter api](../components/_adapter_api.md) for complete instructions on implementing `BaseDetector` adapters for your preferred libraries.
 
 ### Key Features
 
@@ -95,7 +95,7 @@ for detector in detectors:
 # maximum_mean_discrepancy.rbf_kernel.alibi_detect
 ```
 
-**Missing adapters?** See [ADAPTER-API.md](ADAPTER-API.md) for creating new library integrations.
+**Missing adapters?** See [adapter api](../components/_adapter_api.md) for creating new library integrations.
 
 ### Library Comparison Setup
 
@@ -945,7 +945,7 @@ print("Library comparison exported to library_comparison.csv")
 
 ## 🔧 Library Comparison Examples
 
-These examples assume you already have adapters registered for the libraries you want to compare. If you need to create adapters first, see [ADAPTER-API.md](ADAPTER-API.md).
+These examples assume you already have adapters registered for the libraries you want to compare. If you need to create adapters first, see [adapter api](../components/_adapter_api.md).
 
 ### Example 1: Statistical Test Library Comparison
 

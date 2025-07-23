@@ -21,7 +21,7 @@
 
 ## 📋 Overview
 
-This document is for **developers who want to integrate new drift detection libraries** into the drift-benchmark framework. If you need to compare existing library implementations, see [BENCHMARK-API.md](BENCHMARK-API.md).
+This document is for **developers who want to integrate new drift detection libraries** into the drift-benchmark framework. If you need to compare existing library implementations, see [benchmark api](../configuration/benchmark_api.md).
 
 ### 🎯 Primary Purpose
 
@@ -43,7 +43,7 @@ Use this guide when:
 
 **Prerequisites**: Basic understanding of your target library's API and Python inheritance patterns.
 
-**Next Steps**: After creating adapters, use [BENCHMARK-API.md](BENCHMARK-API.md) to configure and run library comparisons.
+**Next Steps**: After creating adapters, use [benchmark api](../configuration/benchmark_api.md) to configure and run library comparisons.
 
 ---
 
@@ -395,9 +395,9 @@ print(f"Drift detected: {drift_detected}")
 
 ### Step 4: Configure and Run Benchmarks
 
-Once your adapters are implemented and tested, configure comparative benchmarks using [BENCHMARK-API.md](BENCHMARK-API.md). The benchmark configuration will automatically discover your registered adapters and enable library comparison.
+Once your adapters are implemented and tested, configure comparative benchmarks using [benchmark api](../configuration/benchmark_api.md). The benchmark configuration will automatically discover your registered adapters and enable library comparison.
 
-For complete examples of configuring library comparisons, result analysis, and performance evaluation, see the [BENCHMARK-API documentation](BENCHMARK-API.md).
+For complete examples of configuring library comparisons, result analysis, and performance evaluation, see the [BENCHMARK-API documentation](../configuration/benchmark_api.md).
 
 ---
 
