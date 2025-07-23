@@ -3,7 +3,6 @@
 > A comprehensive benchmarking framework for drift detection methods
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **drift-benchmark** is a unified framework for evaluating and comparing drift detection methods across different datasets and scenarios. It provides a standardized interface for benchmarking various drift detection algorithms, enabling researchers and practitioners to objectively assess performance and choose the most suitable methods for their specific use cases.
@@ -79,6 +78,7 @@ graph TD
 - **Multiple Data Sources**: Support for sklearn datasets and CSV files
 - **Univariate & Multivariate**: Support for single and multiple feature scenarios
 - **Flexible Filtering**: Configurable reference/test data filtering through scenario definitions
+- **Ground Truth Integration**: Specify drift periods and types for evaluation metrics
 
 ## 🚀 Quick Start
 
@@ -137,15 +137,27 @@ source_name = "make_classification"
 target_column = "target"
 drift_types = ["covariate"]
 
+# Ground truth specification for evaluation
+[ground_truth]
+drift_periods = [[500, 1000]]  # Drift occurs in samples 500-1000
+drift_intensity = "moderate"   # Optional: mild, moderate, severe
+
 [ref_filter]
 # Filter conditions for reference data
-sample_range = [0, 500]
+sample_range = [0, 500]               # Use samples 0-500 as reference
 
 [test_filter]
 # Filter conditions for test data with drift
-sample_range = [500, 1000]
-noise_factor = 1.5
+sample_range = [500, 1000]            # Use samples 500-1000 as test
+noise_factor = 1.5                    # sklearn-specific: increase noise
+# random_state = 42                   # sklearn-specific: control randomness
 ```
+
+**Supported Filter Operations**:
+
+- `sample_range: [start, end]` - Use specific index range
+- `sample_indices: "expression"` - Python expression for complex selection
+- Source-specific parameters (e.g., `noise_factor` for sklearn sources)
 
 #### 2. Run Benchmark
 
@@ -167,7 +179,7 @@ print(f"Results saved to: {results.output_directory}")
 for result in results.detector_results:
     print(f"Library: {result.library_id}")
     print(f"Method+Variant: {result.method_id}_{result.variant_id}")
-    print(f"Scenario: {result.dataset_name}")
+    print(f"Scenario: {result.scenario_name}")
     print(f"Drift Detected: {result.drift_detected}")
     print(f"Execution Time: {result.execution_time:.4f}s")
     print(f"Drift Score: {result.drift_score}")
@@ -267,7 +279,12 @@ class EvidentlyKSDetector(BaseDetector):
 
     def preprocess(self, data, **kwargs):
         """Convert to Evidently's expected format"""
-        return data.ref_data.values if 'ref_data' in str(data) else data.test_data.values
+        # Extract reference or test data from ScenarioResult based on phase
+        phase = kwargs.get('phase', 'detect')
+        if phase == 'train':
+            return data.ref_data.values
+        else:
+            return data.test_data.values
 
     def fit(self, preprocessed_data, **kwargs):
         # Evidently's setup for KS test
@@ -290,7 +307,12 @@ class AlibiDetectKSDetector(BaseDetector):
 
     def preprocess(self, data, **kwargs):
         """Convert to Alibi-Detect's expected format"""
-        return data.ref_data.values if 'ref_data' in str(data) else data.test_data.values
+        # Extract reference or test data from ScenarioResult based on phase
+        phase = kwargs.get('phase', 'detect')
+        if phase == 'train':
+            return data.ref_data.values
+        else:
+            return data.test_data.values
 
     def fit(self, preprocessed_data, **kwargs):
         # Alibi-Detect's KS detector setup
