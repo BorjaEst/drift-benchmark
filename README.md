@@ -8,7 +8,7 @@
 
 **drift-benchmark** is a unified framework for evaluating and comparing drift detection methods across different datasets and scenarios. It provides a standardized interface for benchmarking various drift detection algorithms, enabling researchers and practitioners to objectively assess performance and choose the most suitable methods for their specific use cases.
 
-**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same mathematical methods to identify which library provides better performance, accuracy, or resource efficiency for your specific use case.
+**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same mathematical methods within well-defined "Scenarios" which include ground-truth drift information, to identify which library provides better performance, accuracy, or resource efficiency for your specific use case.
 
 ## 🏗️ Framework Architecture
 
@@ -25,6 +25,7 @@
 - **⚙️ Variant**: Standardized algorithmic approach defined by drift-benchmark (e.g., batch processing, incremental processing, sliding window)
 - **🔌 Detector**: How a specific library implements a method+variant combination (e.g., Evidently's KS batch vs. Alibi-Detect's KS batch)
 - **🔄 Adapter**: Your custom class that maps a library's implementation to our standardized method+variant interface
+- **🎯 Scenario**: The primary unit of evaluation, generated from source datasets with ground-truth drift information and complete evaluation metadata
 
 ### 🎯 Framework Roles
 
@@ -32,13 +33,14 @@
 
 - Design and maintain the `methods.toml` registry that standardizes drift detection methods across libraries
 - Provide the `BaseDetector` abstract interface for consistent detector integration
-- Implement core benchmarking infrastructure (data loading, execution, results)
+- Implement core benchmarking infrastructure (scenario loading, execution, results)
+- Define standardized scenario formats with ground-truth drift information
 
 #### **For end users (researchers/practitioners):**
 
 - Create **adapter classes** by extending `BaseDetector` to integrate their preferred drift detection libraries
-- Configure benchmarks using our standardized method+variant identifiers
-- Run comparative evaluations across different detectors and datasets
+- Configure benchmarks using our standardized method+variant identifiers and scenario definitions
+- Run comparative evaluations across different detectors using well-defined scenarios with ground truth
 
 ### 🔄 Integration Flow
 
@@ -73,9 +75,10 @@ graph TD
 
 ### Data Format Support
 
-- **csv Files**: Standard comma-separated values with automatic type inference
+- **Scenario Files**: TOML-based scenario definitions with ground-truth drift information
+- **Multiple Data Sources**: Support for sklearn datasets and CSV files
 - **Univariate & Multivariate**: Support for single and multiple feature scenarios
-- **Flexible Splits**: Configurable reference/test data splitting
+- **Flexible Filtering**: Configurable reference/test data filtering through scenario definitions
 
 ## 🚀 Quick Start
 
@@ -100,10 +103,12 @@ pip install -e .
 Create a benchmark configuration file (`benchmark_config.toml`):
 
 ```toml
-[[datasets]]
-path = "datasets/example.csv"
-format = "csv"
-reference_split = 0.5
+# Scenario-based configuration
+[[scenarios]]
+id = "covariate_drift_example"
+
+[[scenarios]]
+id = "concept_drift_example"
 
 # Compare different library implementations of the same method+variant
 [[detectors]]
@@ -121,6 +126,25 @@ library_id = "alibi-detect"
 method_id = "cramer_von_mises"
 variant_id = "batch"
 library_id = "scipy"
+```
+
+Create scenario definition files (e.g., `scenarios/covariate_drift_example.toml`):
+
+```toml
+description = "Covariate drift scenario with known ground truth"
+source_type = "sklearn"
+source_name = "make_classification"
+target_column = "target"
+drift_types = ["covariate"]
+
+[ref_filter]
+# Filter conditions for reference data
+sample_range = [0, 500]
+
+[test_filter]
+# Filter conditions for test data with drift
+sample_range = [500, 1000]
+noise_factor = 1.5
 ```
 
 #### 2. Run Benchmark
@@ -143,7 +167,7 @@ print(f"Results saved to: {results.output_directory}")
 for result in results.detector_results:
     print(f"Library: {result.library_id}")
     print(f"Method+Variant: {result.method_id}_{result.variant_id}")
-    print(f"Dataset: {result.dataset_name}")
+    print(f"Scenario: {result.dataset_name}")
     print(f"Drift Detected: {result.drift_detected}")
     print(f"Execution Time: {result.execution_time:.4f}s")
     print(f"Drift Score: {result.drift_score}")
@@ -152,10 +176,12 @@ for result in results.detector_results:
 # Example output:
 # Library: evidently
 # Method+Variant: kolmogorov_smirnov_batch
+# Scenario: covariate_drift_example
 # Execution Time: 0.0234s
 # ---
 # Library: alibi-detect
 # Method+Variant: kolmogorov_smirnov_batch
+# Scenario: covariate_drift_example
 # Execution Time: 0.0156s  <- Alibi-Detect is faster!
 # ---
 
@@ -179,9 +205,9 @@ src/drift_benchmark/
 ├── literals.py              # Type definitions and enums
 ├── models/                  # Pydantic data models
 │   ├── __init__.py
-│   ├── configurations.py    # Config models (BenchmarkConfig, DatasetConfig)
-│   ├── results.py          # Result models (BenchmarkResult, DetectorResult)
-│   └── metadata.py         # Metadata models (DatasetMetadata, DetectorMetadata)
+│   ├── configurations.py    # Config models (BenchmarkConfig, ScenarioConfig)
+│   ├── results.py          # Result models (BenchmarkResult, DetectorResult, ScenarioResult)
+│   └── metadata.py         # Metadata models (ScenarioDefinition, DetectorMetadata)
 ├── detectors/              # Method registry and metadata
 │   ├── __init__.py
 │   ├── methods.toml        # Standardized method+variant definitions
@@ -190,9 +216,9 @@ src/drift_benchmark/
 │   ├── __init__.py
 │   ├── base_detector.py    # BaseDetector abstract class
 │   └── registry.py         # Detector registration system
-├── data/                   # Data loading utilities
+├── data/                   # Scenario loading utilities
 │   ├── __init__.py
-│   └── file_loader.py      # File loading utilities
+│   └── scenario_loader.py  # Scenario loading utilities
 ├── config/                 # Configuration loading
 │   ├── __init__.py
 │   └── loader.py           # TOML configuration parsing
@@ -208,13 +234,13 @@ src/drift_benchmark/
 ### Data Flow Pipeline
 
 1. **Configuration Loading**: Parse TOML configuration files with validation
-2. **Dataset Loading**: Load csv files and split into reference/test sets
+2. **Scenario Loading**: Load scenario definitions and generate ScenarioResult objects with ground-truth information
 3. **Detector Setup**: Instantiate configured detectors from registry
 4. **Benchmark Execution**:
-   - **Preprocessing**: Convert data to detector-specific formats
+   - **Preprocessing**: Convert scenario data to detector-specific formats
    - **Training**: Fit detectors on reference data
    - **Detection**: Run drift detection on test data
-   - **Scoring**: Collect performance metrics
+   - **Scoring**: Collect performance metrics with ground-truth comparison
 5. **Result Storage**: Export results to timestamped directories
 
 ## 🧪 Adding New Detectors
@@ -241,7 +267,7 @@ class EvidentlyKSDetector(BaseDetector):
 
     def preprocess(self, data, **kwargs):
         """Convert to Evidently's expected format"""
-        return data.X_ref.values if 'X_ref' in str(data) else data.X_test.values
+        return data.ref_data.values if 'ref_data' in str(data) else data.test_data.values
 
     def fit(self, preprocessed_data, **kwargs):
         # Evidently's setup for KS test
@@ -264,7 +290,7 @@ class AlibiDetectKSDetector(BaseDetector):
 
     def preprocess(self, data, **kwargs):
         """Convert to Alibi-Detect's expected format"""
-        return data.X_ref.values if 'X_ref' in str(data) else data.X_test.values
+        return data.ref_data.values if 'ref_data' in str(data) else data.test_data.values
 
     def fit(self, preprocessed_data, **kwargs):
         # Alibi-Detect's KS detector setup
@@ -323,11 +349,12 @@ results/20250720_143022/
 
 ### Summary Statistics
 
-When ground truth is available:
+With scenario-based ground truth information:
 
-- **Accuracy**: Correct drift detection rate
+- **Accuracy**: Correct drift detection rate compared to ground truth
 - **Precision**: True positive rate among positive predictions
 - **Recall**: True positive rate among actual positives
+- **Scenario Performance**: Detailed breakdown by drift type and scenario characteristics
 
 ## 🔧 Configuration
 
@@ -337,6 +364,7 @@ All settings can be configured via environment variables with `DRIFT_BENCHMARK_`
 
 ```bash
 export DRIFT_BENCHMARK_DATASETS_DIR="./datasets"
+export DRIFT_BENCHMARK_SCENARIOS_DIR="./scenarios"
 export DRIFT_BENCHMARK_RESULTS_DIR="./results"
 export DRIFT_BENCHMARK_LOG_LEVEL="info"
 export DRIFT_BENCHMARK_RANDOM_SEED=42
@@ -347,6 +375,7 @@ export DRIFT_BENCHMARK_RANDOM_SEED=42
 | Setting                 | Default                                        | Description                                           |
 | ----------------------- | ---------------------------------------------- | ----------------------------------------------------- |
 | `datasets_dir`          | `"datasets"`                                   | Directory for dataset files                           |
+| `scenarios_dir`         | `"scenarios"`                                  | Directory for scenario definition files               |
 | `results_dir`           | `"results"`                                    | Directory for benchmark results                       |
 | `logs_dir`              | `"logs"`                                       | Directory for log files                               |
 | `log_level`             | `"info"`                                       | Logging level (debug, info, warning, error, critical) |
