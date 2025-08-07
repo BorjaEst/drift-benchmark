@@ -15,6 +15,10 @@ Requirements Coverage:
 - REQ-DAT-008: Data type classification algorithm implementation
 - REQ-DAT-009: Metadata integration with inferred properties
 - REQ-DAT-010: Performance and scalability considerations
+
+Note: Fixed incorrect references from DimensionType to DataDimension
+per REQ-LIT-003 requirements. The correct literal type is DataDimension
+with field name 'dimension' in metadata models.
 """
 
 from pathlib import Path
@@ -25,7 +29,7 @@ import pandas as pd
 import pytest
 
 from drift_benchmark.exceptions import DataLoadingError
-from drift_benchmark.literals import DataType, DimensionType
+from drift_benchmark.literals import DataDimension, DataType
 
 
 class TestDataModuleInterface:
@@ -234,19 +238,17 @@ class TestDataTypeInference:
             # Test continuous data type inference
             numeric_scenario = sample_scenario_definition(source_type="file", source_name=str(numeric_only_csv_file))
             numeric_result = load_scenario("numeric_scenario")
-            assert numeric_result.metadata.data_type == DataType.CONTINUOUS, "numeric-only dataset should be inferred as continuous"
+            assert numeric_result.metadata.data_type == "continuous", "numeric-only dataset should be inferred as continuous"
 
             # Test categorical data type inference
             categorical_scenario = sample_scenario_definition(source_type="file", source_name=str(categorical_only_csv_file))
             categorical_result = load_scenario("categorical_scenario")
-            assert (
-                categorical_result.metadata.data_type == DataType.CATEGORICAL
-            ), "categorical-only dataset should be inferred as categorical"
+            assert categorical_result.metadata.data_type == "categorical", "categorical-only dataset should be inferred as categorical"
 
             # Test mixed data type inference
             mixed_scenario = sample_scenario_definition(source_type="file", source_name=str(sample_csv_file))
             mixed_result = load_scenario("mixed_scenario")
-            assert mixed_result.metadata.data_type == DataType.MIXED, "mixed dataset should be inferred as mixed"
+            assert mixed_result.metadata.data_type == "mixed", "mixed dataset should be inferred as mixed"
 
         except ImportError as e:
             pytest.fail(f"Failed to import load_scenario for data type inference test: {e}")
@@ -264,10 +266,10 @@ class TestDataTypeInference:
             # Assert
             assert hasattr(result.metadata, "data_type"), "metadata should have data_type field"
             assert result.metadata.data_type in [
-                DataType.CONTINUOUS,
-                DataType.CATEGORICAL,
-                DataType.MIXED,
-            ], "data_type should be valid DataType enum"
+                "continuous",
+                "categorical",
+                "mixed",
+            ], "data_type should be valid DataType literal"
 
         except ImportError as e:
             pytest.fail(f"Failed to test metadata data type setting: {e}")
@@ -614,7 +616,7 @@ class TestDataTypeClassification:
             combined_numeric = pd.concat([numeric_result.ref_data, numeric_result.test_data])
             numeric_columns = combined_numeric.select_dtypes(include=[np.number]).columns
             assert len(numeric_columns) == len(combined_numeric.columns), "continuous dataset should have all numeric columns"
-            assert numeric_result.metadata.data_type == DataType.CONTINUOUS, "should be inferred as continuous"
+            assert numeric_result.metadata.data_type == "continuous", "should be inferred as continuous"
 
             # Test categorical: object/string dtypes only
             categorical_scenario = sample_scenario_definition(source_type="file", source_name=str(categorical_only_csv_file))
@@ -624,7 +626,7 @@ class TestDataTypeClassification:
             combined_categorical = pd.concat([categorical_result.ref_data, categorical_result.test_data])
             object_columns = combined_categorical.select_dtypes(include=[object]).columns
             assert len(object_columns) == len(combined_categorical.columns), "categorical dataset should have all object columns"
-            assert categorical_result.metadata.data_type == DataType.CATEGORICAL, "should be inferred as categorical"
+            assert categorical_result.metadata.data_type == "categorical", "should be inferred as categorical"
 
             # Test mixed: both numeric and object dtypes
             mixed_scenario = sample_scenario_definition(source_type="file", source_name=str(sample_csv_file))
@@ -636,7 +638,7 @@ class TestDataTypeClassification:
             object_mixed_columns = combined_mixed.select_dtypes(include=[object]).columns
             assert len(numeric_mixed_columns) > 0, "mixed dataset should have numeric columns"
             assert len(object_mixed_columns) > 0, "mixed dataset should have object columns"
-            assert mixed_result.metadata.data_type == DataType.MIXED, "should be inferred as mixed"
+            assert mixed_result.metadata.data_type == "mixed", "should be inferred as mixed"
 
         except ImportError as e:
             pytest.fail(f"Failed to import load_scenario for algorithm test: {e}")
@@ -663,7 +665,7 @@ True,3"""
             bool_result = load_scenario("bool_scenario")
 
             # Boolean with numeric should be mixed
-            assert bool_result.metadata.data_type == DataType.MIXED, "boolean + numeric should be mixed"
+            assert bool_result.metadata.data_type == "mixed", "boolean + numeric should be mixed"
 
         except ImportError as e:
             pytest.fail(f"Failed to test edge case classification: {e}")
@@ -687,7 +689,7 @@ class TestMetadataIntegration:
             pytest.fail(f"Failed to import load_scenario for dimension test: {e}")
 
         # Assert - multivariate for multiple columns
-        assert result.metadata.dimension_type == DimensionType.MULTIVARIATE, "dataset with multiple columns should be multivariate"
+        assert result.metadata.dimension == "multivariate", "dataset with multiple columns should be multivariate"
 
         # Test univariate with single column csv
         single_column_csv = """single_feature
@@ -706,7 +708,7 @@ class TestMetadataIntegration:
         try:
             single_scenario = sample_scenario_definition(source_type="file", source_name=str(temp_path))
             single_result = load_scenario("single_scenario")
-            assert single_result.metadata.dimension_type == DimensionType.UNIVARIATE, "dataset with single column should be univariate"
+            assert single_result.metadata.dimension == "univariate", "dataset with single column should be univariate"
         finally:
             temp_path.unlink()
 
@@ -746,13 +748,13 @@ class TestMetadataIntegration:
             result = load_scenario("test_scenario")
 
             # Assert all expected metadata fields exist
-            metadata_fields = ["data_type", "dimension_type", "n_samples", "n_features"]
+            metadata_fields = ["data_type", "dimension", "n_samples", "n_features"]
             for field in metadata_fields:
                 assert hasattr(result.metadata, field), f"metadata should have {field} field"
 
             # Assert field values are appropriate types
-            assert isinstance(result.metadata.data_type, DataType), "data_type should be DataType enum"
-            assert isinstance(result.metadata.dimension_type, DimensionType), "dimension_type should be DimensionType enum"
+            assert isinstance(result.metadata.data_type, str), "data_type should be string literal"
+            assert isinstance(result.metadata.dimension, str), "dimension should be string literal"
             assert isinstance(result.metadata.n_samples, int), "n_samples should be integer"
             assert isinstance(result.metadata.n_features, int), "n_features should be integer"
 

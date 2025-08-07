@@ -24,8 +24,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from drift_benchmark.exceptions import AdapterError
-
 
 class TestBaseDetectorAbstractClass:
     """Test REQ-ADP-001: BaseDetector abstract class requirements."""

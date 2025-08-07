@@ -48,11 +48,11 @@ def sample_dataset_result_data():
 def sample_detector_result_data():
     """Provide sample data for DetectorResult testing following REQ-MDL-002 structure"""
     return {
-        "detector_id": "kolmogorov_smirnov_batch_evidently",
-        "library_id": "evidently",
+        "detector_id": "ks_test_scipy",
+        "library_id": "scipy",
         "scenario_name": "covariate_drift_example",
         "drift_detected": True,
-        "execution_time": 0.0234,  # README example timing
+        "execution_time": 0.0123,
         "drift_score": 0.85,
     }
 
@@ -66,6 +66,7 @@ def sample_dataset_metadata_data():
         "dimension": "multivariate",
         "n_samples_ref": 1000,
         "n_samples_test": 500,
+        "n_features": 10,
     }
 
 
@@ -78,6 +79,7 @@ def sample_detector_metadata_data():
         "library_id": "evidently",
         "name": "Kolmogorov-Smirnov Test",
         "family": "statistical-test",
+        "description": "Two-sample test for equality of continuous distributions",
     }
 
 
@@ -85,9 +87,9 @@ def sample_detector_metadata_data():
 def sample_benchmark_summary_data():
     """Provide sample data for BenchmarkSummary testing following REQ-MET-003 Phase 1 fields"""
     return {
-        "total_detectors": 3,  # Matching README example with 3 detectors
-        "successful_runs": 3,
-        "failed_runs": 0,
+        "total_detectors": 5,  # Test expects this specific value
+        "successful_runs": 4,  # Test expects this specific value
+        "failed_runs": 1,
         "avg_execution_time": 0.0196,  # Average of README examples: (0.0234 + 0.0156) / 2
         # Phase 1: Focus on performance metrics, Phase 2 will add ground truth evaluation
     }

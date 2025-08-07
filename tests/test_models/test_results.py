@@ -242,13 +242,49 @@ def test_should_preserve_dataframe_structure_when_created():
 
     test_data = pd.DataFrame({"numeric_col": [4.2, 5.1, 6.8], "categorical_col": ["D", "E", "F"], "mixed_col": ["text2", 2, 2.71]})
 
-    metadata = {"name": "complex_dataset", "data_type": "mixed", "dimension": "multivariate", "n_samples_ref": 3, "n_samples_test": 3}
+    # DatasetResult is an alias for ScenarioResult, so needs full structure per REQ-MDL-004
+    dataset_metadata = {
+        "name": "complex_dataset",
+        "data_type": "mixed",
+        "dimension": "multivariate",
+        "n_samples_ref": 3,
+        "n_samples_test": 3,
+        "n_features": 3,
+    }
+
+    scenario_metadata = {
+        "total_samples": 6,
+        "ref_samples": 3,
+        "test_samples": 3,
+        "n_features": 3,
+        "has_labels": False,
+        "data_type": "mixed",
+        "dimension": "multivariate",
+    }
+
+    definition = {
+        "description": "Complex mixed-type dataset scenario",
+        "source_type": "file",
+        "source_name": "complex.csv",
+        "target_column": None,
+        "drift_types": ["covariate"],
+        "ref_filter": {"sample_range": [0, 3]},
+        "test_filter": {"sample_range": [3, 6]},
+    }
 
     # Act
     try:
         from drift_benchmark.models import DatasetResult
 
-        result = DatasetResult(X_ref=ref_data, X_test=test_data, metadata=metadata)
+        # Modified to match REQ-MDL-004 structure since DatasetResult is ScenarioResult alias
+        result = DatasetResult(
+            name="complex_dataset",
+            X_ref=ref_data,
+            X_test=test_data,
+            dataset_metadata=dataset_metadata,
+            scenario_metadata=scenario_metadata,
+            definition=definition,
+        )
     except ImportError as e:
         pytest.fail(f"Failed to import DatasetResult for DataFrame preservation test: {e}")
 

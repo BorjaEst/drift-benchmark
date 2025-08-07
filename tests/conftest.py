@@ -248,10 +248,10 @@ def mock_detector():
         def preprocess(self, data, phase: str = "detect", **kwargs) -> Any:
             """REQ-ADP-005: Extract phase-specific data from ScenarioResult"""
             if phase == "train":
-                # Extract X_ref/y_ref for training
+                # Extract X_ref for training
                 return data.X_ref.values
             elif phase == "detect":
-                # Extract X_test/y_test for detection
+                # Extract X_test for detection
                 return data.X_test.values
             else:
                 raise ValueError(f"Invalid phase: {phase}")
@@ -315,24 +315,44 @@ def sample_scenario_result_data():
     """Provide sample ScenarioResult data for testing"""
     import numpy as np
 
-    # Create scenario-based data with ref_data and test_data fields
-    ref_data = pd.DataFrame(
+    # Create scenario-based data following REQ-MDL-004 structure
+    X_ref = pd.DataFrame(
         {
             "feature_1": np.random.normal(0, 1, 100),
             "feature_2": np.random.normal(0, 1, 100),
-            "target": np.random.choice([0, 1], 100),
         }
     )
 
-    test_data = pd.DataFrame(
+    X_test = pd.DataFrame(
         {
             "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
             "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
-            "target": np.random.choice([0, 1], 50),
         }
     )
 
-    metadata = {
+    y_ref = pd.Series(np.random.choice([0, 1], 100))
+    y_test = pd.Series(np.random.choice([0, 1], 50))
+
+    dataset_metadata = {
+        "name": "make_classification",
+        "data_type": "continuous",
+        "dimension": "multivariate",
+        "n_samples_ref": 100,
+        "n_samples_test": 50,
+        "n_features": 2,
+    }
+
+    scenario_metadata = {
+        "total_samples": 150,
+        "ref_samples": 100,
+        "test_samples": 50,
+        "n_features": 2,
+        "has_labels": True,
+        "data_type": "continuous",
+        "dimension": "multivariate",
+    }
+
+    definition = {
         "description": "Sample covariate drift scenario",
         "source_type": "sklearn",
         "source_name": "make_classification",
@@ -344,9 +364,13 @@ def sample_scenario_result_data():
 
     return {
         "name": "covariate_drift_example",
-        "ref_data": ref_data,
-        "test_data": test_data,
-        "metadata": metadata,
+        "X_ref": X_ref,
+        "X_test": X_test,
+        "y_ref": y_ref,
+        "y_test": y_test,
+        "dataset_metadata": dataset_metadata,
+        "scenario_metadata": scenario_metadata,
+        "definition": definition,
     }
 
 
@@ -444,11 +468,12 @@ def sample_dataset_metadata_data():
 def sample_detector_metadata_data():
     """Provide sample DetectorMetadata data for testing"""
     return {
-        "method_id": "ks_test",
-        "variant_id": "scipy",
-        "library_id": "scipy",
+        "method_id": "kolmogorov_smirnov",
+        "variant_id": "batch",
+        "library_id": "evidently",
         "name": "Kolmogorov-Smirnov Test",
         "family": "statistical-test",
+        "description": "Two-sample test for equality of continuous distributions",
     }
 
 
@@ -457,9 +482,9 @@ def sample_benchmark_summary_data():
     """Provide sample BenchmarkSummary data for testing"""
     return {
         "total_detectors": 5,
-        "successful_runs": 4,
+        "successful_runs": 4,  # Test expects this specific value
         "failed_runs": 1,
-        "avg_execution_time": 0.125,
+        "avg_execution_time": 0.0196,  # Modified to match test_models conftest.py
         "accuracy": 0.8,
         "precision": 0.75,
         "recall": 0.9,
@@ -472,14 +497,14 @@ def mock_scenario_result():
     import numpy as np
 
     # Create scenario data based on README examples
-    X_ref = pd.DataFrame(
+    ref_data = pd.DataFrame(
         {
             "feature_1": np.random.normal(0, 1, 500),
             "feature_2": np.random.normal(0, 1, 500),
         }
     )
 
-    X_test = pd.DataFrame(
+    test_data = pd.DataFrame(
         {
             "feature_1": np.random.normal(0.5, 1, 500),  # Shifted distribution (covariate drift)
             "feature_2": np.random.normal(0, 1.2, 500),  # Different variance
@@ -524,4 +549,28 @@ def mock_scenario_result():
             self.scenario_metadata = scenario_metadata
             self.definition = definition
 
-    return MockScenarioResult("covariate_drift_example", X_ref, X_test, y_ref, y_test, dataset_metadata, scenario_metadata, definition)
+            # Legacy properties for backwards compatibility
+            self.ref_data = X_ref
+            self.test_data = X_test
+
+    return MockScenarioResult(
+        "covariate_drift_example", ref_data, test_data, y_ref, y_test, dataset_metadata, scenario_metadata, definition
+    )
+
+
+@pytest.fixture(autouse=True)
+def clear_detector_registry():
+    """Clear detector registry before each test to ensure test isolation"""
+    # Clear registry before test
+    try:
+        from drift_benchmark.adapters.registry import _detector_registry
+
+        original_registry = _detector_registry.copy()
+        _detector_registry.clear()
+        yield
+        # Restore original registry after test
+        _detector_registry.clear()
+        _detector_registry.update(original_registry)
+    except ImportError:
+        # Module doesn't exist yet, just yield
+        yield
