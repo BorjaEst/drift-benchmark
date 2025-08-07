@@ -13,7 +13,7 @@ try:
     from drift_benchmark.adapters import BaseDetector, register_detector
     from drift_benchmark.models.results import ScenarioResult
 
-    @register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="evidently")
+    @register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="evidently")
     class TestEvidentlyKSDetector(BaseDetector):
         """Test Evidently KS detector for registry testing."""
 
@@ -48,7 +48,7 @@ try:
             """Return drift score."""
             return self._score
 
-    @register_detector(method_id="kolmogorov_smirnov", variant_id="batch", library_id="alibi-detect")
+    @register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="alibi-detect")
     class TestAlibiKSDetector(BaseDetector):
         """Test Alibi-Detect KS detector for registry testing."""
 
@@ -83,7 +83,7 @@ try:
             """Return drift score."""
             return self._score
 
-    @register_detector(method_id="cramer_von_mises", variant_id="batch", library_id="scipy")
+    @register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="scipy")
     class TestScipyDetector(BaseDetector):
         """Test SciPy detector for registry testing."""
 
@@ -118,6 +118,9 @@ try:
             """Return drift score."""
             return self._score
 
-except ImportError:
+    print(f"Successfully registered test detectors")
+
+except ImportError as e:
+    print(f"Skipping test detector registration due to import error: {e}")
     # Skip registration if modules not available
     pass

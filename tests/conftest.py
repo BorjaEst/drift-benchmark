@@ -17,6 +17,12 @@ try:
 except ImportError:
     pass  # Skip if not available
 
+# Try direct import as well
+try:
+    import test_detectors
+except ImportError:
+    pass
+
 
 # Session-scoped fixtures for expensive setup
 @pytest.fixture(scope="session")
@@ -189,9 +195,9 @@ def mock_benchmark_config():
             ]
             # Detectors comparing libraries as shown in README
             self.detectors = [
-                MockDetectorConfig("kolmogorov_smirnov", "batch", "evidently"),
-                MockDetectorConfig("kolmogorov_smirnov", "batch", "alibi-detect"),
-                MockDetectorConfig("cramer_von_mises", "batch", "scipy"),
+                MockDetectorConfig("kolmogorov_smirnov", "ks_batch", "evidently"),
+                MockDetectorConfig("kolmogorov_smirnov", "ks_batch", "alibi-detect"),
+                MockDetectorConfig("cramer_von_mises", "cvm_batch", "scipy"),
             ]
 
     return MockBenchmarkConfig()
@@ -438,6 +444,35 @@ def sample_scenario_definition():
             toml.dump(default_data, f)
 
         created_files.append(scenario_file)
+
+        # Also create files for commonly used test scenario names
+        common_scenarios = [
+            "test_scenario",
+            "numeric_scenario",
+            "categorical_scenario",
+            "mixed_scenario",
+            "non_existent_scenario",
+            "missing_data_scenario",
+            "missing_variations_scenario",
+            "bool_scenario",
+            "single_scenario",
+            "large_scenario",
+            "memory_test_scenario",
+        ]
+
+        for common_id in common_scenarios:
+            if common_id != scenario_id:
+                common_file = scenarios_dir / f"{common_id}.toml"
+                if not common_file.exists():
+                    with open(common_file, "w") as f:
+                        # Use same data but adjust source file if it's a file type
+                        common_data = default_data.copy()
+                        if "source_name" in kwargs and source_type == "file":
+                            # Keep the specific source file for that test
+                            common_data["source_name"] = kwargs["source_name"]
+                        toml.dump(common_data, f)
+                    created_files.append(common_file)
+
         return default_data
 
     yield _create_scenario_definition
