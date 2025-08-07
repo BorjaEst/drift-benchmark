@@ -11,6 +11,12 @@ import pandas as pd
 import pytest
 import toml
 
+# Import test detectors to auto-register them
+try:
+    from . import test_detectors  # Import test detectors to register them
+except ImportError:
+    pass  # Skip if not available
+
 
 # Session-scoped fixtures for expensive setup
 @pytest.fixture(scope="session")
@@ -400,14 +406,26 @@ def sample_scenario_definition():
 
     def _create_scenario_definition(scenario_id="test_scenario", **kwargs):
         """Create a ScenarioDefinition with optional overrides and write to TOML file"""
+        # Use appropriate ranges based on source type
+        source_type = kwargs.get("source_type", "sklearn")
+        if source_type == "file":
+            # For CSV files, use small ranges (CSV files typically have ~10 rows)
+            default_ref_filter = {"sample_range": [0, 5]}
+            default_test_filter = {"sample_range": [5, 10]}
+        else:
+            # For sklearn, use larger ranges
+            default_ref_filter = {"sample_range": [0, 500]}
+            default_test_filter = {"sample_range": [500, 1000]}
+
         default_data = {
             "description": "Test scenario definition",
             "source_type": "sklearn",
             "source_name": "make_classification",
             "target_column": "target",
             "drift_types": ["covariate"],
-            "ref_filter": {"sample_range": [0, 100]},
-            "test_filter": {"sample_range": [100, 200]},
+            "ground_truth": {},
+            "ref_filter": kwargs.get("ref_filter", default_ref_filter),
+            "test_filter": kwargs.get("test_filter", default_test_filter),
         }
         default_data.update(kwargs)
 
