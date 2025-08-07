@@ -112,21 +112,23 @@ def test_should_define_method_family_literals_when_imported():
     assert actual_values == expected_values, f"MethodFamily literal must have exactly {expected_values}, " f"but found {actual_values}"
 
 
-def test_should_define_dataset_source_literals_when_imported():
-    """Test REQ-LIT-007: Must define DatasetSource literal with values: "file", "synthetic" """
+def test_should_define_scenario_source_type_literals_when_imported():
+    """Test REQ-LIT-011: Must define ScenarioSourceType literal with values: "sklearn", "file" """
     # Arrange & Act
     try:
-        from drift_benchmark.literals import DatasetSource
+        from drift_benchmark.literals import ScenarioSourceType
 
-        source_values = get_args(DatasetSource)
+        source_values = get_args(ScenarioSourceType)
     except ImportError as e:
-        pytest.fail(f"Failed to import DatasetSource from literals module: {e}")
+        pytest.fail(f"Failed to import ScenarioSourceType from literals module: {e}")
 
     # Assert
-    expected_values = {"file", "synthetic"}
+    expected_values = {"sklearn", "file"}
     actual_values = set(source_values)
 
-    assert actual_values == expected_values, f"DatasetSource literal must have exactly {expected_values}, " f"but found {actual_values}"
+    assert actual_values == expected_values, (
+        f"ScenarioSourceType literal must have exactly {expected_values}, " f"but found {actual_values}"
+    )
 
 
 def test_should_define_file_format_literals_when_imported():
@@ -204,10 +206,10 @@ def test_should_provide_all_literals_in_module_when_imported():
         "DataLabeling",
         "ExecutionMode",
         "MethodFamily",
-        "DatasetSource",
         "FileFormat",
         "LogLevel",
         "LibraryId",
+        "ScenarioSourceType",
     ]
 
     # Act & Assert

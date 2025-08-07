@@ -1,4 +1,5 @@
 # Feature-specific fixtures for models module testing
+# Aligned with README TOML examples and REQUIREMENTS REQ-CFM-002 flat structure
 
 from typing import Any, Dict
 
@@ -8,12 +9,14 @@ import pytest
 
 @pytest.fixture
 def sample_benchmark_config_data():
-    """Provide sample data for BenchmarkConfig testing"""
+    """Provide sample data for BenchmarkConfig testing following README TOML structure"""
     return {
-        "scenarios": [{"id": "covariate_drift_example"}],
+        "scenarios": [{"id": "covariate_drift_example"}, {"id": "concept_drift_example"}],
         "detectors": [
-            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"},
-            {"method_id": "drift_detector", "variant_id": "custom", "library_id": "custom"},
+            # Library comparison examples from README
+            {"method_id": "kolmogorov_smirnov", "variant_id": "batch", "library_id": "evidently"},
+            {"method_id": "kolmogorov_smirnov", "variant_id": "batch", "library_id": "alibi-detect"},
+            {"method_id": "cramer_von_mises", "variant_id": "batch", "library_id": "scipy"},
         ],
     }
 
@@ -26,8 +29,8 @@ def sample_dataset_config_data():
 
 @pytest.fixture
 def sample_detector_config_data():
-    """Provide sample data for DetectorConfig testing"""
-    return {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"}
+    """Provide sample data for DetectorConfig testing following README examples"""
+    return {"method_id": "kolmogorov_smirnov", "variant_id": "batch", "library_id": "evidently"}
 
 
 @pytest.fixture
@@ -43,13 +46,13 @@ def sample_dataset_result_data():
 
 @pytest.fixture
 def sample_detector_result_data():
-    """Provide sample data for DetectorResult testing"""
+    """Provide sample data for DetectorResult testing following REQ-MDL-002 structure"""
     return {
-        "detector_id": "ks_test_scipy",
-        "library_id": "scipy",
-        "dataset_name": "covariate_drift_example",
+        "detector_id": "kolmogorov_smirnov_batch_evidently",
+        "library_id": "evidently",
+        "scenario_name": "covariate_drift_example",
         "drift_detected": True,
-        "execution_time": 0.0123,
+        "execution_time": 0.0234,  # README example timing
         "drift_score": 0.85,
     }
 
@@ -68,11 +71,11 @@ def sample_dataset_metadata_data():
 
 @pytest.fixture
 def sample_detector_metadata_data():
-    """Provide sample data for DetectorMetadata testing"""
+    """Provide sample data for DetectorMetadata testing following REQ-MET-002"""
     return {
-        "method_id": "ks_test",
-        "variant_id": "scipy",
-        "library_id": "scipy",
+        "method_id": "kolmogorov_smirnov",
+        "variant_id": "batch",
+        "library_id": "evidently",
         "name": "Kolmogorov-Smirnov Test",
         "family": "statistical-test",
     }
@@ -80,13 +83,11 @@ def sample_detector_metadata_data():
 
 @pytest.fixture
 def sample_benchmark_summary_data():
-    """Provide sample data for BenchmarkSummary testing"""
+    """Provide sample data for BenchmarkSummary testing following REQ-MET-003 Phase 1 fields"""
     return {
-        "total_detectors": 5,
-        "successful_runs": 4,
-        "failed_runs": 1,
-        "avg_execution_time": 0.125,
-        "accuracy": 0.8,
-        "precision": 0.75,
-        "recall": 0.9,
+        "total_detectors": 3,  # Matching README example with 3 detectors
+        "successful_runs": 3,
+        "failed_runs": 0,
+        "avg_execution_time": 0.0196,  # Average of README examples: (0.0234 + 0.0156) / 2
+        # Phase 1: Focus on performance metrics, Phase 2 will add ground truth evaluation
     }

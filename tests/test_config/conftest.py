@@ -62,9 +62,9 @@ def mock_methods_toml_file():
 def valid_benchmark_config_toml():
     """Create a valid benchmark configuration TOML file"""
     config_data = {
-        "datasets": [
-            {"path": "datasets/test_data.csv", "format": "csv", "reference_split": 0.6},
-            {"path": "datasets/validation_data.csv", "format": "csv", "reference_split": 0.7},
+        "scenarios": [
+            {"id": "covariate_drift_example"},
+            {"id": "concept_drift_example"},
         ],
         "detectors": [
             {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"},
@@ -86,7 +86,7 @@ def valid_benchmark_config_toml():
 def invalid_benchmark_config_toml():
     """Create an invalid benchmark configuration TOML file"""
     config_data = {
-        "datasets": [{"path": "datasets/test_data.csv", "format": "csv", "reference_split": 1.5}],  # Invalid: > 1.0
+        "scenarios": [{"id": "non_existent_scenario"}],  # Invalid: non-existent scenario
         "detectors": [{"method_id": "non_existent_method", "variant_id": "non_existent_impl", "library_id": "custom"}],
     }
 

@@ -104,6 +104,25 @@ def test_should_resolve_relative_paths_when_loading(valid_benchmark_config_toml)
 
 def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_file, tmp_path):
     """Test REQ-CFG-004: Configuration loading must validate that detector method_id/variant_id exist in the methods registry"""
+    # Create scenario definition file for this test
+    scenario_file = tmp_path / "scenarios" / "test_scenario.toml"
+    scenario_file.parent.mkdir(parents=True, exist_ok=True)
+    scenario_file.write_text(
+        """
+description = "Test scenario"
+source_type = "file"
+source_name = "test.csv"
+target_column = "target"
+drift_types = ["covariate"]
+
+[ref_filter]
+sample_range = [0, 100]
+
+[test_filter]
+sample_range = [100, 200]
+"""
+    )
+
     # Create valid config file with scenarios
     valid_config_data = {
         "scenarios": [{"id": "test_scenario"}],
@@ -141,6 +160,7 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
 
         with (
             patch.object(settings, "methods_registry_path", Path(str(mock_methods_toml_file))),
+            patch.object(settings, "scenarios_dir", tmp_path / "scenarios"),
             patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}),
         ):
 
@@ -212,9 +232,14 @@ sample_range = [100, 200]
     try:
         from drift_benchmark.config import load_config
         from drift_benchmark.exceptions import ConfigurationError
+        from drift_benchmark.settings import settings
 
         # Disable skip validation for this test to ensure file existence is checked
-        with patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}):
+        # Also mock scenarios_dir to point to our temp directory
+        with (
+            patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}),
+            patch.object(settings, "scenarios_dir", tmp_path / "scenarios"),
+        ):
             # Valid configuration with existing file should load
             try:
                 valid_config = load_config(str(valid_config_path))

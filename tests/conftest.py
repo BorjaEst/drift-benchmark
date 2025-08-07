@@ -1,4 +1,5 @@
 # Session and module-scoped fixtures for shared testing infrastructure
+# Aligned with README examples and REQUIREMENTS.md Phase 1 implementation
 
 import shutil
 import tempfile
@@ -161,7 +162,7 @@ def mock_detector_variants():
 
 @pytest.fixture
 def mock_benchmark_config():
-    """Provide mock BenchmarkConfig for testing"""
+    """Provide mock BenchmarkConfig matching README TOML examples and REQ-CFM-002 flat structure"""
 
     class MockScenarioConfig:
         def __init__(self, id):
@@ -175,13 +176,16 @@ def mock_benchmark_config():
 
     class MockBenchmarkConfig:
         def __init__(self):
+            # Scenarios based on README examples
             self.scenarios = [
-                MockScenarioConfig("test_scenario_1"),
-                MockScenarioConfig("test_scenario_2"),
+                MockScenarioConfig("covariate_drift_example"),
+                MockScenarioConfig("concept_drift_example"),
             ]
+            # Detectors comparing libraries as shown in README
             self.detectors = [
-                MockDetectorConfig("ks_test", "scipy", "scipy"),
-                MockDetectorConfig("drift_detector", "custom", "custom"),
+                MockDetectorConfig("kolmogorov_smirnov", "batch", "evidently"),
+                MockDetectorConfig("kolmogorov_smirnov", "batch", "alibi-detect"),
+                MockDetectorConfig("cramer_von_mises", "batch", "scipy"),
             ]
 
     return MockBenchmarkConfig()
@@ -226,13 +230,14 @@ def mock_dataset_result():
 
 @pytest.fixture
 def mock_detector():
-    """Provide mock detector for testing"""
+    """Provide mock detector following REQ-ADP-005 and REQ-ADP-010 preprocessing workflow"""
     from typing import Any, Optional
 
     import numpy as np
 
     class MockDetector:
         def __init__(self, method_id: str, variant_id: str, library_id: str = "custom", **kwargs):
+            # REQ-ADP-002, REQ-ADP-003, REQ-ADP-004: Properties
             self.method_id = method_id
             self.variant_id = variant_id
             self.library_id = library_id
@@ -240,20 +245,25 @@ def mock_detector():
             self._last_score = None
             self._execution_count = 0
 
-        def preprocess(self, data, **kwargs) -> Any:
-            # Return numeric data only for simplicity
-            if hasattr(data, "X_ref"):
-                return data.X_ref.select_dtypes(include=[np.number]).values
-            elif hasattr(data, "X_test"):
-                return data.X_test.select_dtypes(include=[np.number]).values
-            return data
+        def preprocess(self, data, phase: str = "detect", **kwargs) -> Any:
+            """REQ-ADP-005: Extract phase-specific data from ScenarioResult"""
+            if phase == "train":
+                # Extract X_ref/y_ref for training
+                return data.X_ref.values
+            elif phase == "detect":
+                # Extract X_test/y_test for detection
+                return data.X_test.values
+            else:
+                raise ValueError(f"Invalid phase: {phase}")
 
         def fit(self, preprocessed_data: Any, **kwargs):
+            """REQ-ADP-006: Abstract fit method"""
             self._fitted = True
             self._reference_data = preprocessed_data
             return self
 
         def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+            """REQ-ADP-007: Abstract detect method"""
             if not self._fitted:
                 raise RuntimeError("Detector must be fitted before detection")
             self._execution_count += 1
@@ -261,6 +271,7 @@ def mock_detector():
             return True  # Always detect drift for testing
 
         def score(self) -> Optional[float]:
+            """REQ-ADP-008: Return drift score after detection"""
             return self._last_score
 
     return MockDetector
@@ -327,6 +338,8 @@ def sample_scenario_result_data():
         "source_name": "make_classification",
         "target_column": "target",
         "drift_types": ["covariate"],
+        "ref_filter": {"sample_range": [0, 1000]},
+        "test_filter": {"sample_range": [1000, 1500]},
     }
 
     return {
@@ -349,6 +362,70 @@ def sample_scenario_definition_data():
         "ref_filter": {"sample_indices": "range(0, 1000)"},
         "test_filter": {"sample_indices": "range(1000, 1500)"},
     }
+
+
+@pytest.fixture
+def sample_scenario_definition():
+    """Provide sample ScenarioDefinition factory for testing"""
+
+    def _create_scenario_definition(**kwargs):
+        """Create a ScenarioDefinition with optional overrides"""
+        default_data = {
+            "description": "Test scenario definition",
+            "source_type": "sklearn",
+            "source_name": "make_classification",
+            "target_column": "target",
+            "drift_types": ["covariate"],
+            "ref_filter": {"sample_range": [0, 100]},
+            "test_filter": {"sample_range": [100, 200]},
+        }
+        default_data.update(kwargs)
+        return default_data
+
+    return _create_scenario_definition
+
+
+@pytest.fixture
+def sample_scenario_result():
+    """Provide sample ScenarioResult for testing"""
+    import numpy as np
+
+    # Create sample data
+    ref_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0, 1, 100),
+            "feature_2": np.random.normal(0, 1, 100),
+            "target": np.random.choice([0, 1], 100),
+        }
+    )
+
+    test_data = pd.DataFrame(
+        {
+            "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
+            "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
+            "target": np.random.choice([0, 1], 50),
+        }
+    )
+
+    # Mock metadata with required fields
+    class MockMetadata:
+        def __init__(self):
+            self.description = "Test scenario"
+            self.source_type = "sklearn"
+            self.source_name = "make_classification"
+            self.target_column = "target"
+            self.drift_types = ["covariate"]
+            self.ref_filter = {"sample_range": [0, 100]}
+            self.test_filter = {"sample_range": [100, 200]}
+
+    class MockScenarioResult:
+        def __init__(self):
+            self.name = "test_scenario"
+            self.ref_data = ref_data
+            self.test_data = test_data
+            self.metadata = MockMetadata()
+
+    return MockScenarioResult()
 
 
 @pytest.fixture
@@ -391,38 +468,60 @@ def sample_benchmark_summary_data():
 
 @pytest.fixture
 def mock_scenario_result():
-    """Provide mock ScenarioResult for testing"""
+    """Provide mock ScenarioResult following REQ-MDL-004 structure and README scenario examples"""
     import numpy as np
 
-    ref_data = pd.DataFrame(
+    # Create scenario data based on README examples
+    X_ref = pd.DataFrame(
         {
-            "feature_1": np.random.normal(0, 1, 100),
-            "feature_2": np.random.normal(0, 1, 100),
-            "target": np.random.choice([0, 1], 100),
+            "feature_1": np.random.normal(0, 1, 500),
+            "feature_2": np.random.normal(0, 1, 500),
         }
     )
 
-    test_data = pd.DataFrame(
+    X_test = pd.DataFrame(
         {
-            "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
-            "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
-            "target": np.random.choice([0, 1], 50),
+            "feature_1": np.random.normal(0.5, 1, 500),  # Shifted distribution (covariate drift)
+            "feature_2": np.random.normal(0, 1.2, 500),  # Different variance
         }
     )
 
-    metadata = {
-        "description": "Mock scenario with covariate drift",
-        "source_type": "sklearn",
-        "source_name": "make_classification",
-        "target_column": "target",
-        "drift_types": ["covariate"],
-    }
+    y_ref = pd.Series(np.random.choice([0, 1], 500))
+    y_test = pd.Series(np.random.choice([0, 1], 500))
+
+    # DatasetMetadata following REQ-MET-001
+    dataset_metadata = Mock()
+    dataset_metadata.name = "make_classification"
+    dataset_metadata.data_type = "continuous"
+    dataset_metadata.dimension = "multivariate"
+    dataset_metadata.n_samples_ref = 500
+    dataset_metadata.n_samples_test = 500
+
+    # ScenarioMetadata following REQ-MET-005 Phase 1 fields
+    scenario_metadata = Mock()
+    scenario_metadata.total_samples = 1000
+    scenario_metadata.ref_samples = 500
+    scenario_metadata.test_samples = 500
+    scenario_metadata.has_labels = True
+
+    # ScenarioDefinition following REQ-MET-004 Phase 1 fields
+    definition = Mock()
+    definition.description = "Covariate drift scenario with known ground truth"
+    definition.source_type = "sklearn"
+    definition.source_name = "make_classification"
+    definition.target_column = "target"
+    definition.ref_filter = {"sample_range": [0, 500]}
+    definition.test_filter = {"sample_range": [500, 1000], "noise_factor": 1.5}
 
     class MockScenarioResult:
-        def __init__(self, name, ref_data, test_data, metadata):
+        def __init__(self, name, X_ref, X_test, y_ref, y_test, dataset_metadata, scenario_metadata, definition):
             self.name = name
-            self.ref_data = ref_data
-            self.test_data = test_data
-            self.metadata = metadata
+            self.X_ref = X_ref
+            self.X_test = X_test
+            self.y_ref = y_ref
+            self.y_test = y_test
+            self.dataset_metadata = dataset_metadata
+            self.scenario_metadata = scenario_metadata
+            self.definition = definition
 
-    return MockScenarioResult("mock_covariate_scenario", ref_data, test_data, metadata)
+    return MockScenarioResult("covariate_drift_example", X_ref, X_test, y_ref, y_test, dataset_metadata, scenario_metadata, definition)

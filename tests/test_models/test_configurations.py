@@ -2,7 +2,8 @@
 Test suite for models.configurations module - REQ-CFM-XXX
 
 This module tests the scenario-based configuration models used throughout the drift-benchmark
-library for TOML configuration loading and validation.
+library for TOML configuration loading and validation, following README examples
+and REQUIREMENTS Phase 1 simplified approach.
 """
 
 from typing import Any, Dict
@@ -35,12 +36,12 @@ def test_should_define_benchmark_config_model_when_imported(sample_benchmark_con
     # Assert - field types are correct
     assert isinstance(config.scenarios, list), "scenarios field must be a list"
     assert isinstance(config.detectors, list), "detectors field must be a list"
-    assert len(config.scenarios) == 1, "scenarios should contain one scenario from test data"
-    assert len(config.detectors) == 2, "detectors should contain two detectors from test data"
+    assert len(config.scenarios) == 2, "scenarios should contain README example scenarios"
+    assert len(config.detectors) == 3, "detectors should contain README library comparison examples"
 
 
 def test_should_define_scenario_config_model_when_imported(sample_scenario_config_data):
-    """Test REQ-CFM-004: Must define ScenarioConfig with a single field: id: str to identify the scenario definition file to load"""
+    """Test REQ-CFM-003: Must define ScenarioConfig with a single field: id: str to identify the scenario definition file to load"""
     # Arrange & Act
     try:
         from drift_benchmark.models import ScenarioConfig
@@ -65,7 +66,7 @@ def test_should_define_scenario_config_model_when_imported(sample_scenario_confi
 
 
 def test_should_define_detector_config_model_when_imported(sample_detector_config_data):
-    """Test REQ-CFM-003: Must define DetectorConfig with fields: method_id, variant_id, library_id for individual detector setup"""
+    """Test REQ-CFM-002: Must define DetectorConfig with fields: method_id, variant_id, library_id for individual detector setup. Uses flat structure matching README TOML examples: [[detectors]] sections with direct field assignment"""
     # Arrange & Act
     try:
         from drift_benchmark.models import DetectorConfig
@@ -87,10 +88,10 @@ def test_should_define_detector_config_model_when_imported(sample_detector_confi
     assert hasattr(config, "variant_id"), "DetectorConfig must have variant_id field"
     assert hasattr(config, "library_id"), "DetectorConfig must have library_id field"
 
-    # Assert - field values are correct
-    assert config.method_id == "ks_test"
-    assert config.variant_id == "scipy"
-    assert config.library_id == "scipy"
+    # Assert - field values are correct following README examples
+    assert config.method_id == "kolmogorov_smirnov"
+    assert config.variant_id == "batch"
+    assert config.library_id == "evidently"
 
 
 def test_should_use_pydantic_v2_validation_when_created():
@@ -149,9 +150,11 @@ def test_should_use_literal_types_when_imported():
     try:
         from drift_benchmark.models import DetectorConfig
 
-        # Test that library_id field uses literal types (should accept valid values)
-        valid_config = DetectorConfig(method_id="ks_test", variant_id="batch", library_id="scipy")
-        assert valid_config.library_id == "scipy"
+        # Test that library_id field uses literal types from REQ-LIT-010 (should accept valid values)
+        valid_config = DetectorConfig(
+            method_id="kolmogorov_smirnov", variant_id="batch", library_id="evidently"  # Valid according to REQ-LIT-010
+        )
+        assert valid_config.library_id == "evidently"
 
     except ImportError as e:
         pytest.fail(f"Failed to import DetectorConfig for literal type test: {e}")

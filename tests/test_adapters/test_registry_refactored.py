@@ -162,7 +162,7 @@ class TestRegistryMapping:
     def test_should_handle_unique_combinations_when_registered(self):
         """Test that each unique (method_id, variant_id, library_id) combination is stored separately."""
         try:
-            from drift_benchmark.adapters import BaseDetector, get_detector_class, register_detector
+            from drift_benchmark.adapters import BaseDetector, register_detector, get_detector_class
 
             @register_detector(method_id="unique_test", variant_id="variant_a", library_id="LIB_X")
             class DetectorA(BaseDetector):
@@ -229,10 +229,9 @@ class TestDetectorLookup:
     def test_should_return_correct_class_type_when_called(self):
         """Test get_detector_class returns Type[BaseDetector]."""
         try:
-            import inspect
-            from typing import get_args, get_origin
-
             from drift_benchmark.adapters import BaseDetector, get_detector_class, register_detector
+            from typing import get_origin, get_args
+            import inspect
 
             @register_detector(method_id="type_method", variant_id="type_impl", library_id="TYPE_LIB")
             class TypeDetector(BaseDetector):
