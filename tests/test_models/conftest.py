@@ -92,4 +92,7 @@ def sample_benchmark_summary_data():
         "failed_runs": 1,
         "avg_execution_time": 0.0196,  # Average of README examples: (0.0234 + 0.0156) / 2
         # Phase 1: Focus on performance metrics, Phase 2 will add ground truth evaluation
+        "accuracy": 0.8,
+        "precision": 0.75,
+        "recall": 0.9,
     }
