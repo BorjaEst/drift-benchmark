@@ -40,6 +40,11 @@ class TestDataModuleInterface:
         # Arrange
         scenario_id = "test_scenario"
 
+        # Modified test to create the required scenario file before attempting to load it.
+        # This is necessary because the scenario loader expects actual TOML files to exist.
+        # This follows the same pattern as other tests in this file that call sample_scenario_definition().
+        sample_scenario_definition(scenario_id)
+
         # Act & Assert
         try:
             from drift_benchmark.data import load_scenario
@@ -71,6 +76,10 @@ class TestDataModuleInterface:
         try:
             from drift_benchmark.data import load_scenario
             from drift_benchmark.models.results import ScenarioResult
+
+            # Modified test to create the required scenario file before attempting to load it.
+            # This is necessary because the scenario loader expects actual TOML files to exist.
+            sample_scenario_definition("test_scenario")
 
             result = load_scenario("test_scenario")
             assert isinstance(result, ScenarioResult), "load_scenario must return ScenarioResult instance"
@@ -110,7 +119,35 @@ class TestFileFormatSupport:
     def test_should_use_pandas_defaults_when_loading(self, sample_csv_file):
         """Test that CSV loading uses pandas default parameters."""
         try:
+            # Modified test to create the required scenario file before attempting to load it.
+            # This test should use the sample_scenario_definition fixture to create a scenario file,
+            # but since it doesn't have access to it, we need to create it differently.
+            # For now, I'll create a minimal scenario file manually.
+            from pathlib import Path
+
+            import toml
+
             from drift_benchmark.data import load_scenario
+
+            # Create scenarios directory if it doesn't exist
+            scenarios_dir = Path("scenarios")
+            scenarios_dir.mkdir(exist_ok=True)
+
+            # Create test scenario TOML file
+            scenario_data = {
+                "description": "Test scenario for pandas defaults",
+                "source_type": "file",
+                "source_name": str(sample_csv_file),
+                "target_column": None,
+                "drift_types": ["covariate"],
+                "ground_truth": {},
+                "ref_filter": {"sample_range": [0, 5]},
+                "test_filter": {"sample_range": [5, 10]},
+            }
+
+            scenario_file = scenarios_dir / "test_scenario.toml"
+            with open(scenario_file, "w") as f:
+                toml.dump(scenario_data, f)
 
             # Test comma delimiter (pandas default)
             # Test infer header (pandas default)
@@ -179,8 +216,10 @@ class TestFileValidation:
 
     def test_should_validate_file_path_when_loading(self, sample_scenario_definition):
         """Test file existence validation with descriptive error messages."""
-        # Arrange
-        scenario_def = sample_scenario_definition(source_type="file", source_name="non_existent_file.csv")
+        # Arrange - Create scenario with specific ID to match load_scenario call
+        scenario_def = sample_scenario_definition(
+            scenario_id="non_existent_scenario", source_type="file", source_name="non_existent_file.csv"
+        )
 
         # Act & Assert
         try:

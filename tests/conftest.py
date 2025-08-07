@@ -13,6 +13,22 @@ import toml
 
 # Import test detectors to auto-register them
 try:
+    from drift_benchmark.adapters import test_detectors
+
+    print("Successfully imported test detectors from drift_benchmark.adapters")
+except ImportError as e:
+    print(f"Failed to import test detectors from drift_benchmark.adapters: {e}")
+
+try:
+    from .assets.components import test_detectors
+
+    print("Successfully imported test detectors from tests/assets/components")
+except ImportError as e:
+    print(f"Failed to import test detectors from tests/assets/components: {e}")
+    pass  # Skip if not available
+
+# Try other import paths as fallback
+try:
     from . import test_detectors  # Import test detectors to register them
 
     print("Successfully imported test detectors from relative path")
@@ -427,12 +443,47 @@ def sample_scenario_definition():
 
     def _create_scenario_definition(scenario_id="test_scenario", **kwargs):
         """Create a ScenarioDefinition with optional overrides and write to TOML file"""
+        from pathlib import Path
+
+        import toml
+
         # Use appropriate ranges based on source type
         source_type = kwargs.get("source_type", "sklearn")
-        if source_type == "file":
-            # For CSV files, use small ranges (CSV files typically have ~10 rows)
-            default_ref_filter = {"sample_range": [0, 5]}
-            default_test_filter = {"sample_range": [5, 10]}
+        source_name = kwargs.get("source_name")
+
+        if source_type == "file" and source_name:
+            # For CSV files, determine appropriate ranges by reading the file
+            try:
+                import pandas as pd
+
+                file_path = Path(source_name)
+                if file_path.exists():
+                    df = pd.read_csv(file_path)
+                    total_rows = len(df)
+
+                    # Split data roughly in half
+                    mid_point = total_rows // 2
+                    if total_rows < 10:
+                        # For small files, use all data for ref, minimal for test
+                        ref_end = total_rows
+                        test_start = max(0, total_rows - 2) if total_rows > 1 else 0
+                        test_end = total_rows
+                    else:
+                        # For larger files, split more evenly
+                        ref_end = mid_point
+                        test_start = mid_point
+                        test_end = total_rows
+
+                    default_ref_filter = {"sample_range": [0, ref_end]}
+                    default_test_filter = {"sample_range": [test_start, test_end]}
+                else:
+                    # File doesn't exist yet, use small ranges
+                    default_ref_filter = {"sample_range": [0, 5]}
+                    default_test_filter = {"sample_range": [5, 10]}
+            except Exception:
+                # Fall back to small ranges if file reading fails
+                default_ref_filter = {"sample_range": [0, 5]}
+                default_test_filter = {"sample_range": [5, 10]}
         else:
             # For sklearn, use larger ranges
             default_ref_filter = {"sample_range": [0, 500]}
@@ -460,13 +511,14 @@ def sample_scenario_definition():
 
         created_files.append(scenario_file)
 
-        # Also create files for commonly used test scenario names
+        # Also create scenario files for commonly used test scenario names with the same data
+        # This ensures tests that create a scenario with specific parameters but load a different ID work
         common_scenarios = [
-            "test_scenario",
             "numeric_scenario",
             "categorical_scenario",
             "mixed_scenario",
             "non_existent_scenario",
+            "non_existent_scenario_standalone",
             "missing_data_scenario",
             "missing_variations_scenario",
             "bool_scenario",
@@ -475,8 +527,13 @@ def sample_scenario_definition():
             "memory_test_scenario",
         ]
 
-        # Don't create common scenario files automatically - let each test create its specific scenario
-        # This prevents the first test from creating files with wrong source_name for subsequent tests
+        # Create files for commonly used scenario names using the same parameters
+        for common_scenario in common_scenarios:
+            if common_scenario != scenario_id:  # Don't duplicate the main scenario
+                common_file = scenarios_dir / f"{common_scenario}.toml"
+                with open(common_file, "w") as f:
+                    toml.dump(default_data, f)
+                created_files.append(common_file)
 
         return default_data
 

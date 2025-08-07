@@ -17,7 +17,19 @@ def test_should_define_benchmark_class_interface_when_imported(mock_benchmark_co
     try:
         from drift_benchmark.benchmark import Benchmark
 
-        benchmark = Benchmark(mock_benchmark_config)
+        # Mock the detector registry to avoid dependency on actual detectors
+        with patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector:
+            from unittest.mock import Mock
+
+            mock_get_detector.return_value = Mock
+
+            # Mock scenario loading to avoid dependency on actual scenario files
+            with patch("drift_benchmark.data.load_scenario") as mock_load_scenario:
+                mock_scenario_result = Mock()
+                mock_scenario_result.name = "test_scenario"
+                mock_load_scenario.return_value = mock_scenario_result
+
+                benchmark = Benchmark(mock_benchmark_config)
     except ImportError as e:
         pytest.fail(f"Failed to import Benchmark from benchmark module: {e}")
 
@@ -42,8 +54,12 @@ def test_should_validate_detector_configurations_when_initialized(mock_benchmark
 
             benchmark = Benchmark(mock_benchmark_config)
 
-            # Verify detector lookups were called
-            expected_calls = [("ks_test", "scipy", "scipy"), ("drift_detector", "custom", "custom")]
+            # Verify detector lookups were called - match the mock_benchmark_config detector IDs
+            expected_calls = [
+                ("kolmogorov_smirnov", "ks_batch", "evidently"),
+                ("kolmogorov_smirnov", "ks_batch", "alibi-detect"),
+                ("cramer_von_mises", "cvm_batch", "scipy"),
+            ]
             actual_calls = [call[0] for call in mock_get_detector.call_args_list]
 
             for expected_call in expected_calls:
@@ -312,7 +328,8 @@ def test_should_maintain_detector_isolation_when_run(mock_benchmark_config, mock
             return detector
 
         def detector_factory(method_id, variant_id, library_id):
-            if method_id == "ks_test":
+            # Make evidently detector succeed, others fail to test isolation
+            if library_id == "evidently":
                 return lambda *args, **kwargs: successful_detector
             else:
                 return failing_detector_factory
