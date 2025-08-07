@@ -391,9 +391,15 @@ def sample_scenario_definition_data():
 @pytest.fixture
 def sample_scenario_definition():
     """Provide sample ScenarioDefinition factory for testing"""
+    from pathlib import Path
 
-    def _create_scenario_definition(**kwargs):
-        """Create a ScenarioDefinition with optional overrides"""
+    import toml
+
+    # Track created files for cleanup
+    created_files = []
+
+    def _create_scenario_definition(scenario_id="test_scenario", **kwargs):
+        """Create a ScenarioDefinition with optional overrides and write to TOML file"""
         default_data = {
             "description": "Test scenario definition",
             "source_type": "sklearn",
@@ -404,9 +410,24 @@ def sample_scenario_definition():
             "test_filter": {"sample_range": [100, 200]},
         }
         default_data.update(kwargs)
+
+        # Write to TOML file in scenarios directory
+        scenarios_dir = Path("scenarios")
+        scenarios_dir.mkdir(exist_ok=True)
+        scenario_file = scenarios_dir / f"{scenario_id}.toml"
+
+        with open(scenario_file, "w") as f:
+            toml.dump(default_data, f)
+
+        created_files.append(scenario_file)
         return default_data
 
-    return _create_scenario_definition
+    yield _create_scenario_definition
+
+    # Cleanup created files
+    for file_path in created_files:
+        if file_path.exists():
+            file_path.unlink()
 
 
 @pytest.fixture
@@ -414,22 +435,25 @@ def sample_scenario_result():
     """Provide sample ScenarioResult for testing"""
     import numpy as np
 
-    # Create sample data
-    ref_data = pd.DataFrame(
+    # Create sample data with expected test sizes - separate features from target following REQ-MDL-004
+    # Tests expect ref_data to have shape (5, 2)
+    X_ref = pd.DataFrame(
         {
-            "feature_1": np.random.normal(0, 1, 100),
-            "feature_2": np.random.normal(0, 1, 100),
-            "target": np.random.choice([0, 1], 100),
+            "feature_1": np.random.normal(0, 1, 5),
+            "feature_2": np.random.normal(0, 1, 5),
         }
     )
 
-    test_data = pd.DataFrame(
+    X_test = pd.DataFrame(
         {
-            "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
-            "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
-            "target": np.random.choice([0, 1], 50),
+            "feature_1": np.random.normal(0.5, 1, 5),  # Shifted distribution
+            "feature_2": np.random.normal(0, 1.2, 5),  # Different variance
         }
     )
+
+    # Target as separate Series (following REQ-MDL-004)
+    y_ref = pd.Series(np.random.choice([0, 1], 5))
+    y_test = pd.Series(np.random.choice([0, 1], 5))
 
     # Mock metadata with required fields
     class MockMetadata:
@@ -439,14 +463,20 @@ def sample_scenario_result():
             self.source_name = "make_classification"
             self.target_column = "target"
             self.drift_types = ["covariate"]
-            self.ref_filter = {"sample_range": [0, 100]}
-            self.test_filter = {"sample_range": [100, 200]}
+            self.ref_filter = {"sample_range": [0, 5]}
+            self.test_filter = {"sample_range": [5, 10]}
 
     class MockScenarioResult:
         def __init__(self):
             self.name = "test_scenario"
-            self.ref_data = ref_data
-            self.test_data = test_data
+            # Legacy attributes for backward compatibility
+            self.ref_data = X_ref
+            self.test_data = X_test
+            # Modern attributes following REQ-MDL-004
+            self.X_ref = X_ref
+            self.X_test = X_test
+            self.y_ref = y_ref
+            self.y_test = y_test
             self.metadata = MockMetadata()
 
     return MockScenarioResult()
