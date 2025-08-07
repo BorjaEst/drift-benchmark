@@ -143,21 +143,30 @@ drift_periods = [[500, 1000]]  # Drift occurs in samples 500-1000
 drift_intensity = "moderate"   # Optional: mild, moderate, severe
 
 [ref_filter]
-# Filter conditions for reference data
+# Filter conditions for reference data (non-drift period)
 sample_range = [0, 500]               # Use samples 0-500 as reference
 
 [test_filter]
-# Filter conditions for test data with drift
+# Filter conditions for test data (either drift or non-drift period)
 sample_range = [500, 1000]            # Use samples 500-1000 as test
 noise_factor = 1.5                    # sklearn-specific: increase noise
 # random_state = 42                   # sklearn-specific: control randomness
 ```
 
+#### Set-Level Evaluation Approach
+
+Each scenario is designed to test either **drift** or **non-drift** conditions:
+
+- **Drift scenarios**: `test_filter` extracts samples from drift periods → ground truth = "drift detected"
+- **Non-drift scenarios**: `test_filter` extracts samples from non-drift periods → ground truth = "no drift"
+
+Detectors provide a single boolean prediction per scenario, enabling meaningful accuracy/precision/recall calculations across multiple scenarios.
+
 **Supported Filter Operations**:
 
 - `sample_range: [start, end]` - Use specific index range
-- `sample_indices: "expression"` - Python expression for complex selection
 - Source-specific parameters (e.g., `noise_factor` for sklearn sources)
+- **Security Note**: No support for arbitrary Python expressions
 
 #### 2. Run Benchmark
 
@@ -219,7 +228,7 @@ src/drift_benchmark/
 │   ├── __init__.py
 │   ├── configurations.py    # Config models (BenchmarkConfig, ScenarioConfig)
 │   ├── results.py          # Result models (BenchmarkResult, DetectorResult, ScenarioResult)
-│   └── metadata.py         # Metadata models (ScenarioDefinition, DetectorMetadata)
+│   └── metadata.py         # Metadata models (ScenarioDefinition, ScenarioMetadata, DetectorMetadata)
 ├── detectors/              # Method registry and metadata
 │   ├── __init__.py
 │   ├── methods.toml        # Standardized method+variant definitions
@@ -249,10 +258,11 @@ src/drift_benchmark/
 2. **Scenario Loading**: Load scenario definitions and generate ScenarioResult objects with ground-truth information
 3. **Detector Setup**: Instantiate configured detectors from registry
 4. **Benchmark Execution**:
-   - **Preprocessing**: Convert scenario data to detector-specific formats
+   - **Training Preprocessing**: Convert scenario X_ref/y_ref to detector-specific formats
    - **Training**: Fit detectors on reference data
+   - **Detection Preprocessing**: Convert scenario X_test/y_test to detector-specific formats
    - **Detection**: Run drift detection on test data
-   - **Scoring**: Collect performance metrics with ground-truth comparison
+   - **Scoring**: Collect performance metrics with ground-truth comparison using set-level evaluation
 5. **Result Storage**: Export results to timestamped directories
 
 ## 🧪 Adding New Detectors
@@ -282,9 +292,9 @@ class EvidentlyKSDetector(BaseDetector):
         # Extract reference or test data from ScenarioResult based on phase
         phase = kwargs.get('phase', 'detect')
         if phase == 'train':
-            return data.ref_data.values
+            return data.X_ref.values  # Convert pandas DataFrame to numpy array
         else:
-            return data.test_data.values
+            return data.X_test.values
 
     def fit(self, preprocessed_data, **kwargs):
         # Evidently's setup for KS test
@@ -310,9 +320,9 @@ class AlibiDetectKSDetector(BaseDetector):
         # Extract reference or test data from ScenarioResult based on phase
         phase = kwargs.get('phase', 'detect')
         if phase == 'train':
-            return data.ref_data.values
+            return data.X_ref.values  # Convert pandas DataFrame to numpy array
         else:
-            return data.test_data.values
+            return data.X_test.values
 
     def fit(self, preprocessed_data, **kwargs):
         # Alibi-Detect's KS detector setup
@@ -371,11 +381,11 @@ results/20250720_143022/
 
 ### Summary Statistics
 
-With scenario-based ground truth information:
+With scenario-based ground truth information using set-level evaluation:
 
-- **Accuracy**: Correct drift detection rate compared to ground truth
-- **Precision**: True positive rate among positive predictions
-- **Recall**: True positive rate among actual positives
+- **Accuracy**: Correct drift detection rate compared to ground truth across scenarios
+- **Precision**: True positive rate among positive predictions (scenarios correctly identified as having drift)
+- **Recall**: True positive rate among actual positives (drift scenarios correctly detected)
 - **Scenario Performance**: Detailed breakdown by drift type and scenario characteristics
 
 ## 🔧 Configuration
@@ -443,7 +453,12 @@ pytest tests/test_models/
 
 # Run with coverage
 pytest --cov=src/drift_benchmark tests/
+
+# Run tests in development mode
+pytest -v --tb=short tests/
 ```
+
+All requirements are traceable through test identifiers that match the REQ-XXX-YYY pattern in REQUIREMENTS.md.
 
 ## 📄 License
 
@@ -451,6 +466,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
+- **Requirements Specification**: [REQUIREMENTS.md](REQUIREMENTS.md) - Core functional requirements with REQ-XXX-YYY identifiers
+- **Advanced Requirements**: [REQUIREMENTS_Advanced.md](REQUIREMENTS_Advanced.md) - Extended features and capabilities
 - **Documentation**: [Coming Soon]
 - **Issue Tracker**: [GitHub Issues](https://github.com/BorjaEst/drift-benchmark/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/BorjaEst/drift-benchmark/discussions)
