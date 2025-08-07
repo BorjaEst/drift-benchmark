@@ -14,13 +14,28 @@ import toml
 # Import test detectors to auto-register them
 try:
     from . import test_detectors  # Import test detectors to register them
-except ImportError:
+
+    print("Successfully imported test detectors from relative path")
+except ImportError as e:
+    print(f"Failed to import test detectors from relative path: {e}")
     pass  # Skip if not available
 
 # Try direct import as well
 try:
     import test_detectors
-except ImportError:
+
+    print("Successfully imported test detectors from direct import")
+except ImportError as e:
+    print(f"Failed to import test detectors from direct import: {e}")
+    pass
+
+# Try absolute import as well
+try:
+    from tests import test_detectors
+
+    print("Successfully imported test detectors from tests package")
+except ImportError as e:
+    print(f"Failed to import test detectors from tests package: {e}")
     pass
 
 
@@ -460,18 +475,8 @@ def sample_scenario_definition():
             "memory_test_scenario",
         ]
 
-        for common_id in common_scenarios:
-            if common_id != scenario_id:
-                common_file = scenarios_dir / f"{common_id}.toml"
-                if not common_file.exists():
-                    with open(common_file, "w") as f:
-                        # Use same data but adjust source file if it's a file type
-                        common_data = default_data.copy()
-                        if "source_name" in kwargs and source_type == "file":
-                            # Keep the specific source file for that test
-                            common_data["source_name"] = kwargs["source_name"]
-                        toml.dump(common_data, f)
-                    created_files.append(common_file)
+        # Don't create common scenario files automatically - let each test create its specific scenario
+        # This prevents the first test from creating files with wrong source_name for subsequent tests
 
         return default_data
 

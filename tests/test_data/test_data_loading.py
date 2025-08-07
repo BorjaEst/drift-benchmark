@@ -236,22 +236,30 @@ class TestDataTypeInference:
             from drift_benchmark.data import load_scenario
 
             # Test continuous data type inference
-            numeric_scenario = sample_scenario_definition(source_type="file", source_name=str(numeric_only_csv_file))
-            numeric_result = load_scenario("numeric_scenario")
+            numeric_scenario = sample_scenario_definition(
+                scenario_id="class_numeric_scenario", source_type="file", source_name=str(numeric_only_csv_file)
+            )
+            numeric_result = load_scenario("class_numeric_scenario")
             assert numeric_result.metadata.data_type == "continuous", "numeric-only dataset should be inferred as continuous"
 
             # Test categorical data type inference
-            categorical_scenario = sample_scenario_definition(source_type="file", source_name=str(categorical_only_csv_file))
-            categorical_result = load_scenario("categorical_scenario")
+            categorical_scenario = sample_scenario_definition(
+                scenario_id="class_categorical_scenario", source_type="file", source_name=str(categorical_only_csv_file)
+            )
+            categorical_result = load_scenario("class_categorical_scenario")
             assert categorical_result.metadata.data_type == "categorical", "categorical-only dataset should be inferred as categorical"
 
             # Test mixed data type inference
-            mixed_scenario = sample_scenario_definition(source_type="file", source_name=str(sample_csv_file))
-            mixed_result = load_scenario("mixed_scenario")
+            mixed_scenario = sample_scenario_definition(
+                scenario_id="class_mixed_scenario", source_type="file", source_name=str(sample_csv_file)
+            )
+            mixed_result = load_scenario("class_mixed_scenario")
             assert mixed_result.metadata.data_type == "mixed", "mixed dataset should be inferred as mixed"
 
         except ImportError as e:
             pytest.fail(f"Failed to import load_scenario for data type inference test: {e}")
+
+        # Modified to use unique scenario IDs to avoid fixture conflicts
 
     def test_should_set_appropriate_data_type_in_metadata_when_loaded(self, sample_csv_file, sample_scenario_definition):
         """Test that inferred DataType is set correctly in metadata."""
