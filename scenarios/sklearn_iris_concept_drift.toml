@@ -1,0 +1,16 @@
+description   = "Iris classification dataset with concept drift via class redistribution"
+source_type   = "sklearn"
+source_name   = "load_iris"
+target_column = "target"
+drift_types   = ["concept"]
+
+[ground_truth]
+    drift_periods   = [[100, 150]] # Middle section has concept drift
+    drift_intensity = "severe"
+
+[ref_filter]
+    sample_range = [0, 100] # First 100 samples as reference
+
+[test_filter]
+    sample_range  = [100, 150] # Middle 50 samples as test (drift period)
+    concept_shift = true # Simulated concept drift via class imbalance

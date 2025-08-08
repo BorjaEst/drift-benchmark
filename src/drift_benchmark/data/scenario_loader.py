@@ -125,7 +125,15 @@ def _load_file_data(file_name: str) -> pd.DataFrame:
 def _load_sklearn_data(dataset_name: str) -> pd.DataFrame:
     """Load data from sklearn datasets."""
     try:
-        from sklearn.datasets import make_classification, make_regression
+        from sklearn.datasets import (
+            load_breast_cancer,
+            load_diabetes,
+            load_iris,
+            load_wine,
+            make_blobs,
+            make_classification,
+            make_regression,
+        )
 
         if dataset_name == "make_classification":
             X, y = make_classification(n_samples=1000, n_features=2, n_redundant=0, n_informative=2, random_state=42)
@@ -136,6 +144,31 @@ def _load_sklearn_data(dataset_name: str) -> pd.DataFrame:
             X, y = make_regression(n_samples=1000, n_features=2, noise=0.1, random_state=42)
             df = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(X.shape[1])])
             df["target"] = y
+            return df
+        elif dataset_name == "make_blobs":
+            X, y = make_blobs(n_samples=600, n_features=4, centers=3, cluster_std=2.0, random_state=42)
+            df = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(X.shape[1])])
+            df["target"] = y
+            return df
+        elif dataset_name == "load_iris":
+            data = load_iris()
+            df = pd.DataFrame(data.data, columns=data.feature_names)
+            df["target"] = data.target
+            return df
+        elif dataset_name == "load_breast_cancer":
+            data = load_breast_cancer()
+            df = pd.DataFrame(data.data, columns=data.feature_names)
+            df["target"] = data.target
+            return df
+        elif dataset_name == "load_wine":
+            data = load_wine()
+            df = pd.DataFrame(data.data, columns=data.feature_names)
+            df["target"] = data.target
+            return df
+        elif dataset_name == "load_diabetes":
+            data = load_diabetes()
+            df = pd.DataFrame(data.data, columns=data.feature_names)
+            df["target"] = data.target
             return df
         else:
             raise DataLoadingError(f"Unsupported sklearn dataset: {dataset_name}")

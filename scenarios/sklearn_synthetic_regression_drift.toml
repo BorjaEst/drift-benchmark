@@ -1,0 +1,21 @@
+description   = "Synthetic regression with concept drift via target transformation"
+source_type   = "sklearn"
+source_name   = "make_regression"
+target_column = "target"
+drift_types   = ["concept"]
+
+[ground_truth]
+    drift_periods   = [[400, 800]] # Middle section has concept drift
+    drift_intensity = "severe"
+
+[ref_filter]
+    sample_range = [0, 400] # First 400 samples as reference
+
+[test_filter]
+    sample_range  = [400, 800] # Next 400 samples as test  
+    n_samples     = 800 # Generate 800 total samples
+    n_features    = 5 # 5 features
+    n_informative = 5 # All features informative
+    noise         = 0.2 # Low noise level
+    concept_shift = true # Transform target relationship to simulate concept drift
+    random_state  = 42

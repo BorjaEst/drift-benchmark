@@ -1,0 +1,16 @@
+description   = "Breast cancer dataset with covariate drift using noise injection"
+source_type   = "sklearn"
+source_name   = "load_breast_cancer"
+target_column = "target"
+drift_types   = ["covariate"]
+
+[ground_truth]
+    drift_periods   = [[300, 569]] # Second half of dataset has drift
+    drift_intensity = "moderate"
+
+[ref_filter]
+    sample_range = [0, 300] # First half as reference (clean data)
+
+[test_filter]
+    sample_range = [300, 569] # Second half as test (with simulated drift)
+    noise_factor = 2.0 # Increase noise in features to simulate covariate drift

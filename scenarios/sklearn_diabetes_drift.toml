@@ -1,0 +1,16 @@
+description   = "Diabetes regression dataset with covariate drift via feature scaling"
+source_type   = "sklearn"
+source_name   = "load_diabetes"
+target_column = "target"
+drift_types   = ["covariate"]
+
+[ground_truth]
+    drift_periods   = [[250, 442]] # Second half shows covariate drift
+    drift_intensity = "mild"
+
+[ref_filter]
+    sample_range = [0, 250] # First half as reference
+
+[test_filter]
+    sample_range    = [250, 442] # Second half as test
+    feature_scaling = 1.5 # Scale features to simulate covariate drift

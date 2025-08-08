@@ -1,0 +1,16 @@
+description   = "Wine classification dataset with multiclass covariate drift"
+source_type   = "sklearn"
+source_name   = "load_wine"
+target_column = "target"
+drift_types   = ["covariate"]
+
+[ground_truth]
+    drift_periods   = [[120, 178]] # Last third has drift
+    drift_intensity = "moderate"
+
+[ref_filter]
+    sample_range = [0, 120] # First 120 samples as reference
+
+[test_filter]
+    sample_range = [120, 178] # Last 58 samples as test
+    noise_factor = 1.6 # Add noise to chemical measurements
