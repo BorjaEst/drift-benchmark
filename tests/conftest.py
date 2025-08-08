@@ -11,48 +11,9 @@ import pandas as pd
 import pytest
 import toml
 
-# Import test detectors to auto-register them
-try:
-    from drift_benchmark.adapters import test_detectors
-
-    print("Successfully imported test detectors from drift_benchmark.adapters")
-except ImportError as e:
-    print(f"Failed to import test detectors from drift_benchmark.adapters: {e}")
-
-try:
-    from .assets.components import test_detectors
-
-    print("Successfully imported test detectors from tests/assets/components")
-except ImportError as e:
-    print(f"Failed to import test detectors from tests/assets/components: {e}")
-    pass  # Skip if not available
-
-# Try other import paths as fallback
-try:
-    from . import test_detectors  # Import test detectors to register them
-
-    print("Successfully imported test detectors from relative path")
-except ImportError as e:
-    print(f"Failed to import test detectors from relative path: {e}")
-    pass  # Skip if not available
-
-# Try direct import as well
-try:
-    import test_detectors
-
-    print("Successfully imported test detectors from direct import")
-except ImportError as e:
-    print(f"Failed to import test detectors from direct import: {e}")
-    pass
-
-# Try absolute import as well
-try:
-    from tests import test_detectors
-
-    print("Successfully imported test detectors from tests package")
-except ImportError as e:
-    print(f"Failed to import test detectors from tests package: {e}")
-    pass
+# Test detectors are imported by the tests that need them.
+# Automatic import in conftest was causing duplicate registrations.
+# Tests should import detectors directly when needed.
 
 
 # Session-scoped fixtures for expensive setup
