@@ -1,0 +1,16 @@
+description   = "Covariate drift scenario with known ground truth"
+source_type   = "sklearn"
+source_name   = "make_classification"
+target_column = "target"
+drift_types   = ["covariate"]
+
+[ground_truth]
+    drift_periods   = [[500, 1000]]
+    drift_intensity = "moderate"
+
+[ref_filter]
+    sample_range = [0, 500]
+
+[test_filter]
+    sample_range = [500, 1000]
+    noise_factor = 1.5
