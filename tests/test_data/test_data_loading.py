@@ -451,7 +451,12 @@ def test_should_return_dataframes_when_loaded(sample_csv_file, sample_scenario_d
 
 
 def test_should_apply_scenario_filters_when_loaded(sample_csv_file, sample_scenario_definition):
-    """Test REQ-DAT-003: File datasets must support reference_split ratio (0.0 to 1.0) for creating X_ref/X_test divisions (DEPRECATED: Logic is now handled by ref_filter and test_filter within the scenario definition)"""
+    """Test REQ-DAT-014: Sample range filtering with inclusive endpoints for scenario filters.
+
+    MODIFIED: Updated from deprecated REQ-DAT-003 test to align with current filtering requirements.
+    The old test expected '≤ 5' elements for range [0, 5], but REQ-DAT-014 specifies inclusive
+    endpoints meaning [0, 5] should return exactly 6 elements (indices 0,1,2,3,4,5).
+    """
     # Arrange - test different filter configurations
     scenario_def = sample_scenario_definition(
         source_type="file", source_name=str(sample_csv_file), ref_filter={"sample_range": [0, 5]}, test_filter={"sample_range": [5, 10]}
@@ -463,16 +468,19 @@ def test_should_apply_scenario_filters_when_loaded(sample_csv_file, sample_scena
 
         result = load_scenario("test_scenario")
 
-        # Assert filters applied correctly
-        assert len(result.ref_data) <= 5, "ref_filter should limit reference data"
-        assert len(result.test_data) <= 5, "test_filter should limit test data"
+        # Assert filters applied correctly with inclusive endpoints per REQ-DAT-014
+        # [0, 5] should give 6 elements: indices 0,1,2,3,4,5  (5-0+1 = 6)
+        assert len(result.ref_data) == 6, "ref_filter [0, 5] should return exactly 6 elements with inclusive endpoints"
+        # [5, 10] on 10-sample dataset (indices 0-9) should give 5 elements: indices 5,6,7,8,9
+        # Range [5, 10] wants indices 5,6,7,8,9,10 but index 10 doesn't exist, so pandas clips to 5,6,7,8,9
+        assert len(result.test_data) == 5, "test_filter [5, 10] should return 5 elements (indices 5-9) on 10-sample dataset"
 
-        # Assert no overlap between ref and test when filters are properly applied
+        # Assert overlapping behavior is allowed per REQ-DAT-015: Overlapping subsets
         ref_indices = set(result.ref_data.index)
         test_indices = set(result.test_data.index)
-        assert (
-            len(ref_indices.intersection(test_indices)) == 0
-        ), "ref_data and test_data should not have overlapping indices with proper filters"
+        overlap = ref_indices.intersection(test_indices)
+        # With ranges [0,5] and [5,10], index 5 should be in both (overlap allowed)
+        assert len(overlap) == 1 and 5 in overlap, "ref_data and test_data should overlap at index 5 per REQ-DAT-015"
 
     except ImportError as e:
         pytest.fail(f"Failed to import load_scenario for filter test: {e}")
