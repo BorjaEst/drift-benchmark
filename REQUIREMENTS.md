@@ -164,7 +164,7 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-MET-001** | **DatasetMetadata Model**    | Must define `DatasetMetadata` with fields: name (str), data_type (DataType), dimension (DataDimension), n_samples_ref (int), n_samples_test (int), n_features (int) for describing a source dataset from which a scenario can be generated                                                                                                  |
 | **REQ-MET-002** | **DetectorMetadata Model**   | Must define `DetectorMetadata` with fields: method_id (str), variant_id (str), library_id (str), name (str), family (MethodFamily), description (str) for detector information                                                                                                                                                              |
 | **REQ-MET-003** | **BenchmarkSummary Model**   | Must define `BenchmarkSummary` with fields: total_detectors (int), successful_runs (int), failed_runs (int), avg_execution_time (float), total_scenarios (int) for performance metrics                                                                                                                                                      |
-| **REQ-MET-004** | **ScenarioDefinition Model** | Must define `ScenarioDefinition` with fields: description (str), source_type (ScenarioSourceType), source_name (str), target_column (Optional[str]), ref_filter (Dict[str, Any]), test_filter (Dict[str, Any]) to model the structure of a scenario .toml file                                                                          |
+| **REQ-MET-004** | **ScenarioDefinition Model** | Must define `ScenarioDefinition` with fields: description (str), source_type (ScenarioSourceType), source_name (str), target_column (Optional[str]), ref_filter (Dict[str, Any]), test_filter (Dict[str, Any]) to model the structure of a scenario .toml file. Filter dictionaries support: sample_range (Optional[List[int]]), feature_filters (Optional[List[Dict]]) with each feature filter containing column (str), condition (str), value (float/int). Additional modification parameters only allowed for synthetic datasets |
 | **REQ-MET-005** | **ScenarioMetadata Model**   | Must define `ScenarioMetadata` with fields: total_samples (int), ref_samples (int), test_samples (int), n_features (int), has_labels (bool), data_type (DataType), dimension (DataDimension) for scenario-specific metadata                                                                                                                 |
 
 ---
@@ -247,9 +247,36 @@ This module provides data loading utilities for the drift-benchmark library, loc
 | **REQ-DAT-006** | **Missing Data Handling**      | CSV loading must handle missing values using pandas defaults (empty strings become NaN), no additional preprocessing required                                                                                                                           |
 | **REQ-DAT-007** | **Data Type Algorithm**        | continuous: numeric dtypes (int, float), categorical: object/string dtypes, mixed: datasets with both numeric and object columns                                                                                                                        |
 | **REQ-DAT-008** | **Scenario Source Types**      | Data loading must support source_type="sklearn" for sklearn dataset generation and source_type="file" for CSV files in datasets_dir. For sklearn sources, source_name specifies the dataset function name. For file sources, source_name specifies the CSV filename |
-| **REQ-DAT-009** | **Filter Implementation**      | Scenario filters must support `sample_range: List[int]` with inclusive endpoints applied as `data[start:end+1]` for single range [start, end] or multiple ranges concatenated together. Source-specific parameters like `noise_factor: float` for sklearn sources are passed to dataset generation functions. No support for arbitrary Python expressions |
-| **REQ-DAT-010** | **Scenario File Format**       | Scenario definitions must be stored as TOML files in scenarios_dir with .toml extension, containing all required fields from ScenarioDefinition model                                                                                                                                                                                                              |
-| **REQ-DAT-011** | **Error Handling Clarity**     | All data loading errors must provide specific error messages indicating: file path, specific failure reason, suggested remediation steps                                                                                                                                                                                                                            |
+
+### 📁 Enhanced Filtering System
+
+| ID              | Requirement                     | Description                                                                                                                                                                                                                                             |
+| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-DAT-009** | **Dataset Categorization**     | System must categorize sklearn datasets as SYNTHETIC_DATASETS = {"make_classification", "make_regression", "make_blobs"} and REAL_DATASETS = {"load_breast_cancer", "load_diabetes", "load_iris", "load_wine"}                                      |
+| **REQ-DAT-010** | **Synthetic Dataset Handling** | Synthetic datasets (make_*) may be modified using parameters like `noise_factor`, `feature_scaling`, `random_state` etc. to introduce artificial drift                                                                                                |
+| **REQ-DAT-011** | **Real Dataset Preservation**  | Real datasets (load_*) must never be modified. Drift is introduced only through intelligent sampling using feature-based filtering to leverage natural variation already present in the data                                                            |
+| **REQ-DAT-012** | **Feature-Based Filtering**    | Filter configuration must support `feature_filters: List[Dict]` where each filter dict contains: column (str), condition (str from "<=", ">=", ">", "<", "==", "!="), value (float/int)                                                            |
+| **REQ-DAT-013** | **AND Logic Implementation**   | Multiple feature_filters within the same filter configuration must be applied using AND logic (all conditions must be true)                                                                                                                             |
+| **REQ-DAT-014** | **Sample Range Filtering**     | Scenario filters must support `sample_range: List[int]` with inclusive endpoints applied as `data[start:end+1]` for single range [start, end]                                                                                                         |
+| **REQ-DAT-015** | **Overlapping Subsets**        | ref_filter and test_filter are allowed to create overlapping subsets to support gradual drift analysis scenarios                                                                                                                                        |
+| **REQ-DAT-016** | **Validation of Modifications** | System must validate that modification parameters (noise_factor, feature_scaling, etc.) are only applied to synthetic datasets, raising DataValidationError if used with real datasets                                                                 |
+| **REQ-DAT-017** | **Empty Subset Handling**      | System must detect when filtering results in empty subsets and raise DataValidationError with clear message indicating filter criteria and suggested remediation                                                                                        |
+
+### 📁 Value Discovery Utilities
+
+| ID              | Requirement                      | Description                                                                                                                                                                                                                                             |
+| --------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-DAT-018** | **Threshold Discovery Interface** | Data module must provide `discover_feature_thresholds(dataset_name: str, feature_name: str) -> Dict[str, float]` returning statistical thresholds (min, max, median, q25, q75) for feature-based filtering                                          |
+| **REQ-DAT-019** | **Dataset Feature Analysis**     | System must provide utilities to analyze feature distributions in real datasets to suggest meaningful filtering thresholds                                                                                                                              |
+| **REQ-DAT-020** | **Feature Documentation**        | Value discovery utilities must provide descriptive information about features in real datasets to help users understand filtering implications                                                                                                           |
+
+### 📁 Enhanced Schema Support
+
+| ID              | Requirement                    | Description                                                                                                                                                                                                                                             |
+| --------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-DAT-021** | **Scenario File Format**      | Scenario definitions must be stored as TOML files in scenarios_dir with .toml extension, containing all required fields from ScenarioDefinition model including new feature_filters structure                                                         |
+| **REQ-DAT-022** | **Enhanced Filter Schema**     | ScenarioDefinition model must support enhanced filter structure: sample_range (optional), feature_filters (optional), and modification parameters only for synthetic datasets                                                                         |
+| **REQ-DAT-023** | **Error Handling Clarity**     | All data loading errors must provide specific error messages indicating: file path, specific failure reason, dataset type (synthetic/real), filter validation results, and suggested remediation steps                                               |
 
 ---
 
@@ -337,19 +364,29 @@ This module defines the data flow through the benchmark system orchestrated by B
 
 ## 📈 **IMPLEMENTATION SCOPE**
 
-This document contains all core requirements needed to implement a working drift detection benchmarking framework that standardizes method+variant definitions to enable fair comparison of library implementations.
+This document contains all core requirements needed to implement a working drift detection benchmarking framework that standardizes method+variant definitions to enable fair comparison of library implementations with authentic drift scenarios.
 
 ### ✅ **Core Capabilities Provided:**
 
 - **Working benchmarking framework** with detector registration and execution
 - **Library comparison capability** to evaluate different implementations of the same method+variant
 - **Configuration management** with TOML loading and validation
-- **Data loading** from CSV files and sklearn datasets with filtering
+- **Authentic data handling** with intelligent categorization of synthetic vs. real datasets
+- **Advanced filtering system** supporting both sample-range and feature-based filtering
+- **Value discovery utilities** for identifying meaningful thresholds in real datasets
 - **Sequential detector execution** with error isolation
 - **Result storage** with JSON export and timestamped directories
 - **Centralized logging** system for debugging and monitoring
 - **Type-safe models** using Pydantic v2 for data validation
 - **Registry system** for methods, variants, and library implementations
 - **Performance comparison** between different library implementations
+- **Data authenticity preservation** ensuring real datasets remain unmodified
 
-This implementation provides a solid foundation that enables researchers to compare how different libraries implement the same mathematical methods, making it easier to choose the best library for their specific use case.
+### 🎯 **Enhanced Dataset Handling:**
+
+- **Synthetic Dataset Support**: Full parameter modification capabilities for `make_*` functions to generate artificial drift scenarios
+- **Real Dataset Preservation**: Feature-based filtering only for `load_*` datasets to maintain data authenticity while creating realistic drift scenarios  
+- **Intelligent Drift Creation**: Leveraging natural correlations in real datasets (e.g., BMI vs. diabetes risk) for authentic drift detection challenges
+- **Comprehensive Validation**: Automatic detection and prevention of inappropriate modifications to real datasets
+
+This implementation provides a robust foundation that enables researchers to compare how different libraries implement the same mathematical methods using both controlled artificial scenarios and authentic real-world drift patterns, making it easier to choose the best library for their specific use case while maintaining scientific rigor.

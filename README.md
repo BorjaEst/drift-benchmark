@@ -77,8 +77,9 @@ graph TD
 - **Scenario Files**: TOML-based scenario definitions with ground-truth drift information
 - **Multiple Data Sources**: Support for sklearn datasets and CSV files
 - **Univariate & Multivariate**: Support for single and multiple feature scenarios
-- **Flexible Filtering**: Configurable reference/test data filtering through scenario definitions
+- **Advanced Filtering**: Configurable reference/test data filtering through scenario definitions with support for feature-based filtering and authentic drift scenarios
 - **Ground Truth Integration**: Specify drift periods and types for evaluation metrics
+- **Dataset Categorization**: Intelligent handling of synthetic vs. real datasets to preserve data authenticity
 
 ## 🚀 Quick Start
 
@@ -130,8 +131,10 @@ library_id = "scipy"
 
 Create scenario definition files (e.g., `scenarios/covariate_drift_example.toml`):
 
+**Synthetic Dataset Example** (modifications allowed):
+
 ```toml
-description = "Covariate drift scenario with known ground truth"
+description = "Synthetic classification with artificial covariate drift"
 source_type = "sklearn"
 source_name = "make_classification"
 target_column = "target"
@@ -147,10 +150,43 @@ drift_intensity = "moderate"   # Optional: mild, moderate, severe
 sample_range = [0, 500]               # Use samples 0-500 as reference
 
 [test_filter]
-# Filter conditions for test data (either drift or non-drift period)
+# Filter conditions for test data (with artificial drift)
 sample_range = [500, 1000]            # Use samples 500-1000 as test
-noise_factor = 1.5                    # sklearn-specific: increase noise
-# random_state = 42                   # sklearn-specific: control randomness
+noise_factor = 1.5                    # Synthetic datasets: increase noise
+n_samples = 1500                      # Synthetic datasets: control generation
+random_state = 42                     # Synthetic datasets: reproducibility
+```
+
+**Real Dataset Example** (feature-based filtering only):
+
+```toml
+description = "Breast cancer dataset with authentic covariate drift"
+source_type = "sklearn"
+source_name = "load_breast_cancer"
+target_column = "target"
+drift_types = ["covariate"]
+
+# Ground truth specification for evaluation
+[ground_truth]
+drift_periods = [[0, 569]]           # Drift through feature-based sampling
+drift_intensity = "moderate"
+
+[ref_filter]
+# Reference data: smaller tumors (authentic low-risk population)
+sample_range = [0, 569]              # Use all samples, filter by features
+feature_filters = [
+    {column = "mean radius", condition = "<=", value = 14.0},
+    {column = "mean texture", condition = "<=", value = 20.0}
+]
+
+[test_filter]
+# Test data: larger tumors (authentic high-risk population) 
+sample_range = [0, 569]              # Use all samples, filter by features
+feature_filters = [
+    {column = "mean radius", condition = ">", value = 14.0},
+    {column = "mean texture", condition = ">", value = 20.0}
+]
+# Note: No noise_factor or other modifications allowed for real datasets
 ```
 
 #### Set-Level Evaluation Approach
@@ -162,11 +198,36 @@ Each scenario is designed to test either **drift** or **non-drift** conditions:
 
 Detectors provide a single boolean prediction per scenario, enabling meaningful accuracy/precision/recall calculations across multiple scenarios.
 
+#### Authentic Drift Scenarios
+
+The framework maintains data authenticity by treating synthetic and real datasets differently:
+
+**Synthetic Datasets** (`make_*`): Generate artificial drift through parameter modifications (noise injection, feature scaling, etc.). These scenarios test detector sensitivity to controlled, artificial changes.
+
+**Real Datasets** (`load_*`): Preserve data authenticity by using only feature-based filtering to create drift scenarios. This leverages natural variation and correlations already present in real-world data, providing more realistic drift detection challenges.
+
 **Supported Filter Operations**:
 
-- `sample_range: [start, end]` - Use specific index range
-- Source-specific parameters (e.g., `noise_factor` for sklearn sources)
-- **Security Note**: No support for arbitrary Python expressions
+**For all datasets**:
+
+- `sample_range: [start, end]` - Use specific index range with inclusive endpoints
+- `feature_filters: [{column, condition, value}, ...]` - Feature-based filtering with AND logic
+  - Supported conditions: `"<="`, `">="`, `">"`, `"<"`, `"=="`, `"!="`
+  - Multiple filters applied with AND logic (all conditions must be true)
+
+**For synthetic datasets only** (`make_*` functions):
+
+- `noise_factor: float` - Control noise level for artificial drift
+- `n_samples: int` - Control dataset generation size  
+- `random_state: int` - Control randomness for reproducibility
+- Other sklearn-specific parameters as supported by the dataset function
+
+**For real datasets** (`load_*` functions):
+
+- ❌ **No modification parameters allowed** - preserves data authenticity
+- ✅ **Only filtering through sample_range and feature_filters**
+
+**Security Note**: No support for arbitrary Python expressions - only predefined filter operations
 
 #### 2. Run Benchmark
 
