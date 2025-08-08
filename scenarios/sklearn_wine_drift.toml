@@ -1,16 +1,25 @@
-description   = "Wine classification dataset with multiclass covariate drift"
+description   = "Wine classification dataset with authentic multiclass covariate drift via chemical composition filtering"
 source_type   = "sklearn"
 source_name   = "load_wine"
 target_column = "target"
 drift_types   = ["covariate"]
 
 [ground_truth]
-    drift_periods   = [[120, 178]] # Last third has drift
+    drift_periods   = [[0, 178]] # Drift through feature-based sampling creates authentic drift
     drift_intensity = "moderate"
 
 [ref_filter]
-    sample_range = [0, 120] # First 120 samples as reference
+    # Reference data: wines with lower alcohol content (authentic low-alcohol wines)
+    sample_range = [0, 178] # Use all samples, filter by features
+    feature_filters = [
+        { column = "alcohol", condition = "<=", value = 12.5 },
+        { column = "malic_acid", condition = "<=", value = 2.5 },
+    ]
 
 [test_filter]
-    sample_range = [120, 178] # Last 58 samples as test
-    noise_factor = 1.6 # Add noise to chemical measurements
+    # Test data: wines with higher alcohol content (authentic high-alcohol wines)
+    sample_range = [0, 178] # Use all samples, filter by features
+    feature_filters = [
+        { column = "alcohol", condition = ">", value = 12.5 },
+        { column = "malic_acid", condition = ">", value = 2.5 },
+    ]

@@ -1,16 +1,19 @@
-description   = "Iris classification dataset with concept drift via class redistribution"
+description   = "Iris classification dataset with authentic concept drift via class-based filtering"
 source_type   = "sklearn"
 source_name   = "load_iris"
 target_column = "target"
 drift_types   = ["concept"]
 
 [ground_truth]
-    drift_periods   = [[100, 150]] # Middle section has concept drift
+    drift_periods   = [[0, 150]] # Drift through class-based filtering creates authentic concept drift
     drift_intensity = "severe"
 
 [ref_filter]
-    sample_range = [0, 100] # First 100 samples as reference
+    # Reference data: balanced mix of classes (authentic multi-class distribution)
+    sample_range    = [0, 150] # Use all samples, filter by features
+    feature_filters = [{ column = "petal length (cm)", condition = "<=", value = 4.5 }]
 
 [test_filter]
-    sample_range  = [100, 150] # Middle 50 samples as test (drift period)
-    concept_shift = true # Simulated concept drift via class imbalance
+    # Test data: focus on larger flowers (authentic class imbalance)
+    sample_range    = [0, 150] # Use all samples, filter by features  
+    feature_filters = [{ column = "petal length (cm)", condition = ">", value = 4.5 }]

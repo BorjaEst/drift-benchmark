@@ -1,21 +1,29 @@
-description   = "Large synthetic classification dataset with gradual covariate drift"
+description   = "Large synthetic classification dataset with artificial covariate drift via noise injection"
 source_type   = "sklearn"
 source_name   = "make_classification"
 target_column = "target"
 drift_types   = ["covariate"]
 
 [ground_truth]
-    drift_periods   = [[1500, 2500]] # Drift in second half
+    drift_periods   = [[1500, 2500]] # Artificial drift in second half
     drift_intensity = "moderate"
 
 [ref_filter]
     sample_range = [0, 1500] # First 1500 samples as reference
-
-[test_filter]
-    sample_range  = [1500, 2500] # Next 1000 samples as test
+    # Reference data generation parameters
     n_samples     = 2500 # Generate 2500 total samples
     n_features    = 10 # 10 features total
     n_informative = 8 # 8 informative features
     n_redundant   = 2 # 2 redundant features
-    noise_factor  = 1.8 # Add noise to simulate drift
+    noise_factor  = 1.0 # Standard noise level
+    random_state  = 42 # For reproducibility
+
+[test_filter]
+    sample_range = [1500, 2500] # Next 1000 samples as test
+    # Test data generation with artificial drift
+    n_samples     = 2500 # Generate 2500 total samples
+    n_features    = 10 # 10 features total
+    n_informative = 8 # 8 informative features
+    n_redundant   = 2 # 2 redundant features
+    noise_factor  = 1.8 # Higher noise to simulate artificial drift
     random_state  = 42 # For reproducibility

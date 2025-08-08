@@ -1,20 +1,27 @@
-description   = "Clustered blobs dataset with covariate shift via cluster separation"
+description   = "Clustered blobs dataset with artificial covariate drift via parameter modification"
 source_type   = "sklearn"
 source_name   = "make_blobs"
 target_column = "target"
 drift_types   = ["covariate"]
 
 [ground_truth]
-    drift_periods   = [[300, 600]] # Second half has drift
+    drift_periods   = [[300, 600]] # Second half has artificial drift
     drift_intensity = "severe"
 
 [ref_filter]
     sample_range = [0, 300] # First 300 samples as reference
+    # Reference data generation parameters
+    n_samples    = 600 # Generate 600 total samples for splitting
+    n_features   = 4 # 4-dimensional features
+    centers      = 3 # 3 cluster centers
+    cluster_std  = 1.0 # Standard cluster standard deviation
+    random_state = 42
 
 [test_filter]
     sample_range = [300, 600] # Next 300 samples as test
-    n_samples    = 600 # Generate 600 total samples  
+    # Test data generation with artificial drift
+    n_samples    = 600 # Generate 600 total samples for splitting
     n_features   = 4 # 4-dimensional features
     centers      = 3 # 3 cluster centers
-    cluster_std  = 2.0 # Higher cluster standard deviation for drift
+    cluster_std  = 2.0 # Higher cluster standard deviation for artificial drift
     random_state = 42

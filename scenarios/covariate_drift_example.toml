@@ -1,4 +1,4 @@
-description   = "Covariate drift scenario with known ground truth"
+description   = "Covariate drift scenario with artificial drift via noise injection"
 source_type   = "sklearn"
 source_name   = "make_classification"
 target_column = "target"
@@ -10,7 +10,16 @@ drift_types   = ["covariate"]
 
 [ref_filter]
     sample_range = [0, 500]
+    # Reference data generation parameters
+    n_samples    = 1000 # Generate 1000 total samples
+    n_features   = 10 # 10 features
+    noise_factor = 1.0 # Standard noise level
+    random_state = 42
 
 [test_filter]
     sample_range = [500, 1000]
-    noise_factor = 1.5
+    # Test data generation with artificial covariate drift
+    n_samples    = 1000 # Generate 1000 total samples
+    n_features   = 10 # 10 features
+    noise_factor = 1.5 # Higher noise to simulate covariate drift
+    random_state = 42
