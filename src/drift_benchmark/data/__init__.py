@@ -1,11 +1,11 @@
 """
 Data loading module for drift-benchmark - REQ-DAT-XXX
 
-This module provides basic data loading utilities for the drift-benchmark library.
+This module provides scenario loading utilities for the drift-benchmark library.
 """
 
-from .file_loader import load_dataset
+from .scenario_loader import load_scenario
 
 __all__ = [
-    "load_dataset",
+    "load_scenario",
 ]
