@@ -37,12 +37,12 @@ try:
         BenchmarkConfig,
         BenchmarkResult,
         BenchmarkSummary,
-        DatasetConfig,
         DatasetMetadata,
-        DatasetResult,
         DetectorConfig,
         DetectorMetadata,
         DetectorResult,
+        ScenarioConfig,
+        ScenarioResult,
     )
     from .settings import Settings, get_logger, settings, setup_logging
 
@@ -74,18 +74,25 @@ def get_benchmark():
     return Benchmark
 
 
-def get_detector_class(method_id: str, variant_id: str):
+def get_base_detector():
+    """Get BaseDetector class - lazy import for adapters"""
+    from .adapters import BaseDetector
+
+    return BaseDetector
+
+
+def get_detector_class(method_id: str, variant_id: str, library_id: str):
     """Get detector class - lazy import for registry"""
     from .adapters import get_detector_class as _get_detector_class
 
-    return _get_detector_class(method_id, variant_id)
+    return _get_detector_class(method_id, variant_id, library_id)
 
 
-def register_detector(method_id: str, variant_id: str):
+def register_detector(method_id: str, variant_id: str, library_id: str):
     """Register detector decorator - lazy import for registry"""
     from .adapters import register_detector as _register_detector
 
-    return _register_detector(method_id, variant_id)
+    return _register_detector(method_id, variant_id, library_id)
 
 
 def list_detectors():
@@ -102,11 +109,11 @@ def load_config(path: str):
     return _load_config(path)
 
 
-def load_dataset(config):
-    """Load dataset - lazy import to avoid heavy dependencies"""
-    from .data import load_dataset as _load_dataset
+def load_scenario(scenario_id: str):
+    """Load scenario - lazy import to avoid heavy dependencies"""
+    from .data import load_scenario as _load_scenario
 
-    return _load_dataset(config)
+    return _load_scenario(scenario_id)
 
 
 def save_results(results):
@@ -119,6 +126,7 @@ def save_results(results):
 # Convenience access to lazy-loaded classes
 BenchmarkRunner = property(get_benchmark_runner)
 Benchmark = property(get_benchmark)
+BaseDetector = property(get_base_detector)
 
 __version__ = "0.1.0"
 __all__ = [
@@ -149,11 +157,11 @@ __all__ = [
     "LogLevel",
     # Data models
     "BenchmarkConfig",
-    "DatasetConfig",
     "DetectorConfig",
-    "DatasetResult",
+    "ScenarioConfig",
     "DetectorResult",
     "BenchmarkResult",
+    "ScenarioResult",
     "DatasetMetadata",
     "DetectorMetadata",
     "BenchmarkSummary",
@@ -168,7 +176,7 @@ __all__ = [
     "get_detector_class",
     "list_detectors",
     # High-level components
-    "load_dataset",
+    "load_scenario",
     "load_config",
     "Benchmark",
     "BenchmarkRunner",
