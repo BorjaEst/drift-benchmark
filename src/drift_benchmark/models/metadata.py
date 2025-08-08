@@ -37,7 +37,9 @@ class ScenarioDefinition(BaseModel):
     source_type: ScenarioSourceType = Field(..., description="Type of data source (sklearn, file)")
     source_name: str = Field(..., description="Name of the specific source (function name, file path)")
     target_column: Optional[str] = Field(None, description="Name of the target/label column (None for unsupervised)")
-    drift_types: List[DriftType] = Field(default_factory=list, description="Types of drift present in scenario")
+    drift_types: List[DriftType] = Field(
+        default=["covariate"], min_length=1, description="Types of drift present in scenario (cannot be empty, defaults to covariate)"
+    )
     ground_truth: Dict = Field(default_factory=dict, description="Ground truth drift information")
     ref_filter: Dict = Field(..., description="Filter criteria for reference data")
     test_filter: Dict = Field(..., description="Filter criteria for test data")
@@ -71,6 +73,7 @@ class ScenarioMetadata(BaseModel):
     has_labels: bool = Field(..., description="Whether scenario includes target labels")
     data_type: DataType = Field(..., description="Type of data (continuous, categorical, mixed)")
     dimension: DataDimension = Field(..., description="Data dimensionality (univariate, multivariate)")
+    dataset_category: Optional[str] = Field(None, description="Dataset category (synthetic, real)")
 
     # Additional fields expected by tests
     @property

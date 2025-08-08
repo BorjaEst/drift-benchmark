@@ -5,7 +5,7 @@ Provides scenario loading utilities that apply filtering to create ScenarioResul
 """
 
 from pathlib import Path
-from typing import Dict, Union
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 
@@ -14,6 +14,25 @@ from ..literals import DataDimension, DataType, ScenarioSourceType
 from ..models.metadata import ScenarioDefinition
 from ..models.results import ScenarioResult
 from ..settings import settings
+
+# Dataset categorization for filtering validation - REQ-DAT-009
+SYNTHETIC_DATASETS = {"make_classification", "make_regression", "make_blobs"}
+REAL_DATASETS = {"load_breast_cancer", "load_diabetes", "load_iris", "load_wine"}
+
+# Modification parameters allowed only for synthetic datasets - REQ-DAT-010, REQ-DAT-016
+MODIFICATION_PARAMETERS = {
+    "noise_factor",
+    "feature_scaling",
+    "n_samples",
+    "random_state",
+    "n_features",
+    "n_redundant",
+    "n_informative",
+    "n_clusters",
+    "cluster_std",
+    "centers",
+    "noise",
+}
 
 
 def load_scenario(scenario_id: str) -> ScenarioResult:
@@ -26,12 +45,30 @@ def load_scenario(scenario_id: str) -> ScenarioResult:
     # Load scenario definition
     scenario_def = _load_scenario_definition(scenario_id)
 
+    # REQ-DAT-016: Validate modification parameters are only used with synthetic datasets
+    _validate_modification_parameters(scenario_def)
+
     # Load source data based on source_type
     source_data = _load_source_data(scenario_def)
 
     # Apply filters to create ref_data and test_data
-    ref_data = _apply_filter(source_data, scenario_def.ref_filter)
-    test_data = _apply_filter(source_data, scenario_def.test_filter)
+    ref_data = _apply_filter(source_data, scenario_def.ref_filter, scenario_def.source_name, "ref_filter")
+    test_data = _apply_filter(source_data, scenario_def.test_filter, scenario_def.source_name, "test_filter")
+
+    # REQ-DAT-017: Check for empty subsets
+    if len(ref_data) == 0:
+        raise DataValidationError(
+            f"Reference filter resulted in empty dataset. "
+            f"Filter criteria: {scenario_def.ref_filter}. "
+            f"Please adjust filter conditions to include some samples."
+        )
+
+    if len(test_data) == 0:
+        raise DataValidationError(
+            f"Test filter resulted in empty dataset. "
+            f"Filter criteria: {scenario_def.test_filter}. "
+            f"Please adjust filter conditions to include some samples."
+        )
 
     # Split features and labels
     X_ref, y_ref = _split_features_labels(ref_data, scenario_def.target_column)
@@ -176,29 +213,117 @@ def _load_sklearn_data(dataset_name: str) -> pd.DataFrame:
         raise DataLoadingError("scikit-learn is required for sklearn data sources")
 
 
-def _apply_filter(data: pd.DataFrame, filter_config: Dict) -> pd.DataFrame:
-    """Apply filter configuration to extract subset of data."""
+def _apply_filter(data: pd.DataFrame, filter_config: Dict, source_name: str, filter_name: str) -> pd.DataFrame:
+    """
+    Apply filter configuration to extract subset of data.
+
+    REQ-DAT-012: Feature-based filtering support
+    REQ-DAT-013: AND logic implementation
+    REQ-DAT-014: Sample range filtering with inclusive endpoints
+    """
     filtered_data = data.copy()
 
-    # Apply sample_range filter if specified
+    # Apply sample_range filter if specified - REQ-DAT-014
     if "sample_range" in filter_config:
         start, end = filter_config["sample_range"]
 
-        # Ensure we don't go beyond data bounds
-        start = max(0, start)
-        end = min(len(data), end)
+        # Validate sample range bounds
+        if start < 0:
+            raise DataValidationError(
+                f"Invalid sample range in {filter_name}: start index {start} cannot be negative. "
+                f"Dataset '{source_name}' has {len(data)} samples (indices 0-{len(data)-1})."
+            )
 
-        # If the range is invalid or would result in empty data, handle gracefully
-        if start >= end or start >= len(data):
-            # Return empty DataFrame with same columns for consistency
-            return pd.DataFrame(columns=data.columns)
+        if start >= len(data):
+            raise DataValidationError(
+                f"Invalid sample range in {filter_name}: start index {start} is beyond dataset size. "
+                f"Dataset '{source_name}' has {len(data)} samples (indices 0-{len(data)-1})."
+            )
 
-        filtered_data = filtered_data.iloc[start:end].copy()
+        if end > len(data):
+            raise DataValidationError(
+                f"Invalid sample range in {filter_name}: end index {end} is beyond dataset size. "
+                f"Dataset '{source_name}' has {len(data)} samples (indices 0-{len(data)-1})."
+            )
 
-    # Apply other filters as specified in the filter config
-    # This is a basic implementation - more sophisticated filtering could be added
+        if start > end:
+            raise DataValidationError(f"Invalid sample range in {filter_name}: start index {start} is greater than end index {end}.")
+
+        # REQ-DAT-014: Apply inclusive endpoints: data[start:end+1]
+        # This means [start, end] includes both start and end indices
+        filtered_data = filtered_data.iloc[start : end + 1].copy()
+
+    # REQ-DAT-012: Apply feature-based filtering
+    if "feature_filters" in filter_config:
+        feature_filters = filter_config["feature_filters"]
+
+        for feature_filter in feature_filters:
+            # Validate required fields
+            if not all(key in feature_filter for key in ["column", "condition", "value"]):
+                raise DataValidationError(
+                    f"Invalid feature filter in {filter_name}: {feature_filter}. " f"Required fields: column, condition, value"
+                )
+
+            column = feature_filter["column"]
+            condition = feature_filter["condition"]
+            value = feature_filter["value"]
+
+            # Validate column exists
+            if column not in filtered_data.columns:
+                available_columns = list(filtered_data.columns)
+                raise DataValidationError(
+                    f"Column '{column}' not found in dataset '{source_name}' during {filter_name} filtering. "
+                    f"Available columns: {available_columns}"
+                )
+
+            # Apply condition - REQ-DAT-013: AND logic (all conditions must be true)
+            if condition == "<=":
+                mask = filtered_data[column] <= value
+            elif condition == ">=":
+                mask = filtered_data[column] >= value
+            elif condition == ">":
+                mask = filtered_data[column] > value
+            elif condition == "<":
+                mask = filtered_data[column] < value
+            elif condition == "==":
+                mask = filtered_data[column] == value
+            elif condition == "!=":
+                mask = filtered_data[column] != value
+            else:
+                raise DataValidationError(
+                    f"Unsupported condition '{condition}' in {filter_name}. " f"Supported conditions: <=, >=, >, <, ==, !="
+                )
+
+            # Apply mask (AND logic with previous filters)
+            filtered_data = filtered_data[mask].copy()
 
     return filtered_data
+
+
+def _validate_modification_parameters(scenario_def: ScenarioDefinition):
+    """
+    Validate that modification parameters are only used with synthetic datasets.
+
+    REQ-DAT-016: Validation of modifications for real datasets
+    """
+    source_name = scenario_def.source_name
+
+    # Check if this is a real dataset
+    if source_name in REAL_DATASETS:
+        forbidden_params = []
+
+        # Check both ref_filter and test_filter for modification parameters
+        for filter_name, filter_config in [("ref_filter", scenario_def.ref_filter), ("test_filter", scenario_def.test_filter)]:
+            for param in filter_config:
+                if param in MODIFICATION_PARAMETERS:
+                    forbidden_params.append(f"{filter_name}.{param}")
+
+        if forbidden_params:
+            raise DataValidationError(
+                f"Real dataset '{source_name}' cannot use modification parameters: {forbidden_params}. "
+                f"Real datasets only support filtering operations (feature_filters) "
+                f"to preserve data authenticity. Remove these forbidden parameters: {forbidden_params}"
+            )
 
 
 def _create_scenario_metadata(scenario_def: ScenarioDefinition, ref_data: pd.DataFrame, test_data: pd.DataFrame) -> ScenarioDefinition:
@@ -248,6 +373,14 @@ def _create_metadata(
     n_features = X_ref.shape[1]
     dimension = "univariate" if n_features == 1 else "multivariate"
 
+    # REQ-DAT-009: Dataset categorization
+    if scenario_def.source_name in SYNTHETIC_DATASETS:
+        dataset_category = "synthetic"
+    elif scenario_def.source_name in REAL_DATASETS:
+        dataset_category = "real"
+    else:
+        dataset_category = "unknown"
+
     # Handle edge case where filtering results in empty test set
     n_samples_test = len(X_test)
     if n_samples_test == 0:
@@ -256,6 +389,14 @@ def _create_metadata(
         n_samples_test_for_metadata = 1
     else:
         n_samples_test_for_metadata = n_samples_test
+
+    # Check for empty reference set - REQ-DAT-017
+    if len(X_ref) == 0:
+        raise DataValidationError(
+            f"Filtering resulted in empty reference dataset. "
+            f"Filter criteria: {scenario_def.ref_filter}. "
+            f"Please adjust filter conditions to include some samples."
+        )
 
     # Create DatasetMetadata
     dataset_metadata = DatasetMetadata(
@@ -276,6 +417,7 @@ def _create_metadata(
         has_labels=y_ref is not None,
         data_type=data_type,
         dimension=dimension,
+        dataset_category=dataset_category,  # REQ-DAT-009: Include dataset categorization
     )
 
     return dataset_metadata, scenario_metadata
@@ -312,9 +454,3 @@ def _infer_data_type(df: pd.DataFrame) -> DataType:
     else:
         # Edge case: no recognized columns, default to continuous
         return "continuous"
-
-
-# DEPRECATED: load_dataset function is deprecated - Use load_scenario instead
-# def load_dataset(config: DatasetConfig) -> DatasetResult:
-#     """DEPRECATED: Use load_scenario instead"""
-#     pass
