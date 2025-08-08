@@ -408,11 +408,38 @@ def sample_scenario_definition():
 
         import toml
 
-        # Use appropriate ranges based on source type
+        # Use appropriate ranges based on source type and name
         source_type = kwargs.get("source_type", "sklearn")
-        source_name = kwargs.get("source_name")
+        source_name = kwargs.get("source_name", "make_classification")
 
-        if source_type == "file" and source_name:
+        # Determine dataset size based on known sklearn datasets
+        if source_type == "sklearn":
+            # Known dataset sizes from sklearn
+            dataset_sizes = {
+                "make_classification": 1000,
+                "make_regression": 1000,
+                "make_blobs": 600,
+                "load_iris": 150,
+                "load_breast_cancer": 569,
+                "load_wine": 178,
+                "load_diabetes": 442,
+            }
+
+            total_size = dataset_sizes.get(source_name, 1000)
+
+            # Split roughly in half with some overlap allowed - use inclusive endpoints
+            mid_point = total_size // 2
+
+            # For small datasets, use smaller ranges with inclusive endpoints (indices 0 to total_size-1)
+            if total_size <= 200:
+                default_ref_filter = {"sample_range": [0, mid_point - 1]}
+                default_test_filter = {"sample_range": [mid_point // 2, min(total_size - 1, mid_point + mid_point // 2 - 1)]}
+            else:
+                # For larger datasets, use standard splits
+                default_ref_filter = {"sample_range": [0, mid_point - 1]}
+                default_test_filter = {"sample_range": [mid_point // 2, min(total_size - 1, mid_point + mid_point // 2 - 1)]}
+
+        elif source_type == "file" and source_name:
             # For CSV files, determine appropriate ranges by reading the file
             try:
                 import pandas as pd
@@ -422,33 +449,33 @@ def sample_scenario_definition():
                     df = pd.read_csv(file_path)
                     total_rows = len(df)
 
-                    # Split data roughly in half
+                    # Split data roughly in half - use inclusive endpoints (indices 0 to total_rows-1)
                     mid_point = total_rows // 2
                     if total_rows < 10:
-                        # For small files, use all data for ref, minimal for test
-                        ref_end = total_rows
-                        test_start = max(0, total_rows - 2) if total_rows > 1 else 0
-                        test_end = total_rows
+                        # For small files, use most data for ref, minimal for test
+                        ref_end = min(total_rows - 1, max(0, total_rows - 2))
+                        test_start = max(0, total_rows - 3) if total_rows > 2 else 0
+                        test_end = total_rows - 1
                     else:
                         # For larger files, split more evenly
-                        ref_end = mid_point
+                        ref_end = mid_point - 1
                         test_start = mid_point
-                        test_end = total_rows
+                        test_end = total_rows - 1
 
                     default_ref_filter = {"sample_range": [0, ref_end]}
                     default_test_filter = {"sample_range": [test_start, test_end]}
                 else:
-                    # File doesn't exist yet, use small ranges
-                    default_ref_filter = {"sample_range": [0, 5]}
-                    default_test_filter = {"sample_range": [5, 10]}
+                    # File doesn't exist yet, use small ranges that work with typical test files (10 rows, indices 0-9)
+                    default_ref_filter = {"sample_range": [0, 4]}
+                    default_test_filter = {"sample_range": [5, 9]}
             except Exception:
-                # Fall back to small ranges if file reading fails
-                default_ref_filter = {"sample_range": [0, 5]}
-                default_test_filter = {"sample_range": [5, 10]}
+                # Fall back to small ranges that work with 10-row test files (indices 0-9)
+                default_ref_filter = {"sample_range": [0, 4]}
+                default_test_filter = {"sample_range": [5, 9]}
         else:
-            # For sklearn, use larger ranges
+            # Default fallback
             default_ref_filter = {"sample_range": [0, 500]}
-            default_test_filter = {"sample_range": [500, 1000]}
+            default_test_filter = {"sample_range": [250, 750]}
 
         default_data = {
             "description": "Test scenario definition",

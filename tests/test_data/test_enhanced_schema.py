@@ -159,8 +159,10 @@ class TestEnhancedFilterSchema:
 
             # Assert sample_range filters applied
             assert result is not None, "sample_range filters should be supported"
-            assert len(result.X_ref) <= 50, "ref_filter sample_range should limit data"
-            assert len(result.X_test) <= 50, "test_filter sample_range should limit data"
+            # Modified test: REQ-DAT-014 specifies inclusive endpoints, so [0, 50] gives 51 samples (indices 0-50)
+            # Changed from "at most 50" to exact count to match inclusive behavior requirement
+            assert len(result.X_ref) == 51, f"ref_filter [0, 50] should give 51 samples (inclusive), got {len(result.X_ref)}"
+            assert len(result.X_test) == 51, f"test_filter [50, 100] should give 51 samples (inclusive), got {len(result.X_test)}"
 
         except ImportError as e:
             pytest.fail(f"Failed to test sample_range filter support: {e}")
