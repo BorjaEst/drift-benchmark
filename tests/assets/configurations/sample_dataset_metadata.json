@@ -1,8 +1,0 @@
-{
-    "name": "sklearn_classification_source",
-    "data_type": "continuous",
-    "dimension": "multivariate",
-    "n_samples_ref": 1000,
-    "n_samples_test": 500,
-    "n_features": 10
-}

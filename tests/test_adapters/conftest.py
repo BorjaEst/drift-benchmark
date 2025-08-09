@@ -16,4 +16,4 @@ import pytest
 parent_path = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_path))
 
-from conftest import load_asset_csv, load_asset_json
+from conftest import load_asset_config, load_asset_csv

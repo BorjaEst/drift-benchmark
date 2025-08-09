@@ -32,8 +32,63 @@ def load_asset_toml(filename: str, subfolder: str = "configurations") -> dict:
         return toml.load(f)
 
 
+def load_asset_config(filename: str, subfolder: str = "configurations") -> dict:
+    """
+    Load configuration asset from tests/assets/{subfolder}/
+
+    Prioritizes TOML format (.toml) over JSON (.json) for configuration files.
+    Includes backward compatibility support with deprecation warnings.
+
+    Args:
+        filename: The config filename (with or without extension)
+        subfolder: The subfolder under tests/assets/
+
+    Returns:
+        dict: Parsed configuration data
+
+    Raises:
+        FileNotFoundError: If neither TOML nor JSON version exists
+        ValueError: If JSON format is used (with backward compatibility option)
+    """
+    import warnings
+
+    assets_dir = Path(__file__).parent / "assets" / subfolder
+
+    # Remove extension if provided to allow flexible input
+    base_name = Path(filename).stem
+
+    # Priority 1: Try TOML format first
+    toml_file = assets_dir / f"{base_name}.toml"
+    if toml_file.exists():
+        with open(toml_file, "r") as f:
+            return toml.load(f)
+
+    # Priority 2: Check for JSON format (backward compatibility)
+    json_file = assets_dir / f"{base_name}.json"
+    if json_file.exists():
+        warnings.warn(
+            f"Loading JSON configuration '{json_file.name}' is deprecated. "
+            f"Please use the TOML equivalent '{toml_file.name}'. "
+            "JSON support will be removed in future versions.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        with open(json_file, "r") as f:
+            return json.load(f)
+
+    # Neither format found
+    raise FileNotFoundError(
+        f"Configuration file '{base_name}' not found in {assets_dir}. " f"Looked for: {toml_file.name}, {json_file.name}"
+    )
+
+
 def load_asset_json(filename: str, subfolder: str = "results") -> dict:
-    """Load JSON asset from tests/assets/{subfolder}/"""
+    """
+    Load JSON asset from tests/assets/{subfolder}/
+
+    NOTE: For configuration files, use load_asset_config() instead.
+    This function should only be used for result/output data that remains in JSON format.
+    """
     assets_dir = Path(__file__).parent / "assets" / subfolder
     with open(assets_dir / filename, "r") as f:
         return json.load(f)
@@ -576,11 +631,11 @@ def standard_test_configurations():
     def _get_config(config_type: str = "simple"):
         """Get standard configuration by type"""
         if config_type == "simple":
-            return load_asset_json("simple_test_config.json", "configurations")
+            return load_asset_config("simple_test_config", "configurations")
         elif config_type == "invalid":
-            return load_asset_json("invalid_test_config.json", "configurations")
+            return load_asset_config("invalid_test_config", "configurations")
         elif config_type == "standard":
-            return load_asset_json("standard_benchmark.json", "configurations")
+            return load_asset_config("standard_benchmark", "configurations")
         else:
             raise ValueError(f"Unknown config_type: {config_type}")
 

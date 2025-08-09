@@ -1,0 +1,7 @@
+[[scenarios]]
+    id = "test_scenario"
+
+[[detectors]]
+    method_id  = "test_method"
+    variant_id = "test_impl"
+    library_id = "custom"

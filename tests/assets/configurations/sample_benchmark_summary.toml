@@ -1,0 +1,7 @@
+total_detectors    = 5
+successful_runs    = 4
+failed_runs        = 1
+avg_execution_time = 0.0196
+accuracy           = 0.8
+precision          = 0.75
+recall             = 0.9
