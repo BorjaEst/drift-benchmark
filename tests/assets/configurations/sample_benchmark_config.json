@@ -1,0 +1,23 @@
+{
+    "scenarios": [
+        {"id": "covariate_drift_example"},
+        {"id": "concept_drift_example"}
+    ],
+    "detectors": [
+        {
+            "method_id": "kolmogorov_smirnov",
+            "variant_id": "batch",
+            "library_id": "evidently"
+        },
+        {
+            "method_id": "kolmogorov_smirnov",
+            "variant_id": "batch",
+            "library_id": "alibi-detect"
+        },
+        {
+            "method_id": "cramer_von_mises",
+            "variant_id": "batch",
+            "library_id": "scipy"
+        }
+    ]
+}

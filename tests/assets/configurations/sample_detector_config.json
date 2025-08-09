@@ -1,0 +1,5 @@
+{
+    "method_id": "kolmogorov_smirnov",
+    "variant_id": "batch",
+    "library_id": "evidently"
+}

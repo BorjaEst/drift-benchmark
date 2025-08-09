@@ -1,0 +1,31 @@
+[methods.ks_test]
+    name            = "Kolmogorov-Smirnov Test"
+    description     = "Statistical test for distribution differences"
+    family          = "statistical-test"
+    data_dimension  = "univariate"
+    data_types      = ["continuous"]
+    drift_types     = ["covariate"]
+    requires_labels = false
+    references      = ["https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test"]
+
+    [methods.ks_test.variants.scipy]
+        name            = "SciPy Variant"
+        execution_mode  = "batch"
+        hyperparameters = ["threshold"]
+        references      = ["SciPy implementation"]
+
+[methods.drift_detector]
+    name            = "Basic Drift Detector"
+    description     = "Simple change detection algorithm"
+    family          = "change-detection"
+    data_dimension  = "multivariate"
+    data_types      = ["continuous", "categorical"]
+    drift_types     = ["covariate", "concept"]
+    requires_labels = false
+    references      = ["Custom implementation"]
+
+    [methods.drift_detector.variants.custom]
+        name            = "Custom Variant"
+        execution_mode  = "batch"
+        hyperparameters = ["threshold", "window_size"]
+        references      = ["Internal implementation"]

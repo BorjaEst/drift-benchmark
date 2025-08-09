@@ -1,0 +1,15 @@
+[[scenarios]]
+    id = "covariate_drift_example"
+
+[[scenarios]]
+    id = "concept_drift_example"
+
+[[detectors]]
+    method_id  = "ks_test"
+    variant_id = "scipy"
+    library_id = "evidently"
+
+[[detectors]]
+    method_id  = "drift_detector"
+    variant_id = "custom"
+    library_id = "alibi-detect"

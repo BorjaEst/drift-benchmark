@@ -1,3 +1,4 @@
 # Everything except this folder
 /*
 !.gitignore
+!expected_benchmark_result.json

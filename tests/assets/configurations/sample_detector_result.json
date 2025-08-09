@@ -1,0 +1,8 @@
+{
+    "detector_id": "ks_test_scipy",
+    "library_id": "scipy",
+    "scenario_name": "covariate_drift_example",
+    "drift_detected": true,
+    "execution_time": 0.0123,
+    "drift_score": 0.85
+}

@@ -1,0 +1,8 @@
+{
+    "method_id": "kolmogorov_smirnov",
+    "variant_id": "batch",
+    "library_id": "evidently",
+    "name": "Kolmogorov-Smirnov Test",
+    "family": "statistical-test",
+    "description": "Two-sample test for equality of continuous distributions"
+}

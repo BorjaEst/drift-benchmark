@@ -1,0 +1,37 @@
+{
+  "benchmark_results": {
+    "config": {
+      "scenarios": [
+        {"id": "test_scenario"}
+      ],
+      "detectors": [
+        {
+          "method_id": "ks_test",
+          "variant_id": "scipy",
+          "library_id": "custom"
+        }
+      ]
+    },
+    "detector_results": [
+      {
+        "detector_id": "ks_test_scipy_custom",
+        "method_id": "ks_test",
+        "variant_id": "scipy",
+        "library_id": "custom",
+        "scenario_name": "test_scenario",
+        "drift_detected": true,
+        "execution_time": 0.023,
+        "drift_score": 0.75
+      }
+    ],
+    "summary": {
+      "total_detectors": 1,
+      "successful_runs": 1,
+      "failed_runs": 0,
+      "avg_execution_time": 0.023,
+      "total_scenarios": 1
+    },
+    "timestamp": "2025-01-01T12:00:00",
+    "output_directory": "results/test_output"
+  }
+}
