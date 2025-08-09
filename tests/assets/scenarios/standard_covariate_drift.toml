@@ -1,15 +1,15 @@
-description = "Standard covariate drift scenario for testing"
-source_type = "file"
-source_name = "standard_combined_data.csv"
+description   = "Standard covariate drift scenario for testing"
+source_type   = "file"
+source_name   = "standard_combined_data.csv"
 target_column = "target"
-drift_types = ["covariate"]
+drift_types   = ["covariate"]
 
 [ground_truth]
-drift_periods = [[10, 20]]
-drift_intensity = "moderate"
+    drift_periods   = [[10, 20]]
+    drift_intensity = "moderate"
 
 [ref_filter]
-sample_range = [0, 9]
+    sample_range = [0, 9]
 
 [test_filter]
-sample_range = [10, 19]
+    sample_range = [10, 19]

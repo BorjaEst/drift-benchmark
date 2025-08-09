@@ -279,15 +279,16 @@ def sample_scenario_config_data():
 def sample_scenario_result_data():
     """Provide sample ScenarioResult data for testing - asset-driven approach"""
     # Given: We have standard test datasets as assets
-    # When: A test needs scenario result data  
+    # When: A test needs scenario result data
     # Then: Load it from assets for consistency
     X_ref = load_asset_csv("ref_data_100.csv")
-    X_test = load_asset_csv("test_data_50.csv") 
-    
+    X_test = load_asset_csv("test_data_50.csv")
+
     # Create target data to match expected sizes
     import numpy as np
-    y_ref = X_ref['target'] if 'target' in X_ref.columns else pd.Series(np.random.choice([0, 1], len(X_ref)))
-    y_test = X_test['target'] if 'target' in X_test.columns else pd.Series(np.random.choice([0, 1], len(X_test)))
+
+    y_ref = X_ref["target"] if "target" in X_ref.columns else pd.Series(np.random.choice([0, 1], len(X_ref)))
+    y_test = X_test["target"] if "target" in X_test.columns else pd.Series(np.random.choice([0, 1], len(X_test)))
 
     dataset_metadata = {
         "name": "make_classification",
@@ -295,14 +296,14 @@ def sample_scenario_result_data():
         "dimension": "multivariate",
         "n_samples_ref": len(X_ref),
         "n_samples_test": len(X_test),
-        "n_features": len(X_ref.columns) - (1 if 'target' in X_ref.columns else 0),
+        "n_features": len(X_ref.columns) - (1 if "target" in X_ref.columns else 0),
     }
 
     scenario_metadata = {
         "total_samples": len(X_ref) + len(X_test),
         "ref_samples": len(X_ref),
         "test_samples": len(X_test),
-        "n_features": len(X_ref.columns) - (1 if 'target' in X_ref.columns else 0),
+        "n_features": len(X_ref.columns) - (1 if "target" in X_ref.columns else 0),
         "has_labels": True,
         "data_type": "continuous",
         "dimension": "multivariate",
@@ -314,14 +315,14 @@ def sample_scenario_result_data():
         "source_name": "make_classification",
         "target_column": "target",
         "drift_types": ["covariate"],
-        "ref_filter": {"sample_range": [0, len(X_ref)-1]},
-        "test_filter": {"sample_range": [len(X_ref), len(X_ref)+len(X_test)-1]},
+        "ref_filter": {"sample_range": [0, len(X_ref) - 1]},
+        "test_filter": {"sample_range": [len(X_ref), len(X_ref) + len(X_test) - 1]},
     }
 
     return {
         "name": "covariate_drift_example",
         "X_ref": X_ref[["feature_1", "feature_2"]],  # Features only
-        "X_test": X_test[["feature_1", "feature_2"]], # Features only
+        "X_test": X_test[["feature_1", "feature_2"]],  # Features only
         "y_ref": y_ref,
         "y_test": y_test,
         "dataset_metadata": dataset_metadata,
@@ -329,7 +330,7 @@ def sample_scenario_result_data():
         "definition": definition,
         # Legacy fields for backwards compatibility
         "ref_data": X_ref,  # Include target column for legacy tests
-        "test_data": X_test, # Include target column for legacy tests
+        "test_data": X_test,  # Include target column for legacy tests
     }
 
 
@@ -496,14 +497,15 @@ def sample_scenario_result():
     # Then: Load it from assets for consistency
     X_ref_full = load_asset_csv("ref_data_5.csv")
     X_test_full = load_asset_csv("test_data_5.csv")
-    
+
     X_ref = X_ref_full[["feature_1", "feature_2"]]
     X_test = X_test_full[["feature_1", "feature_2"]]
-    
+
     # Create target data to match expected sizes
     import numpy as np
-    y_ref = X_ref_full['target'] if 'target' in X_ref_full.columns else pd.Series(np.random.choice([0, 1], len(X_ref)))
-    y_test = X_test_full['target'] if 'target' in X_test_full.columns else pd.Series(np.random.choice([0, 1], len(X_test)))
+
+    y_ref = X_ref_full["target"] if "target" in X_ref_full.columns else pd.Series(np.random.choice([0, 1], len(X_ref)))
+    y_test = X_test_full["target"] if "target" in X_test_full.columns else pd.Series(np.random.choice([0, 1], len(X_test)))
 
     # Mock metadata with required fields
     class MockMetadata:
@@ -513,8 +515,8 @@ def sample_scenario_result():
             self.source_name = "make_classification"
             self.target_column = "target"
             self.drift_types = ["covariate"]
-            self.ref_filter = {"sample_range": [0, len(X_ref)-1]}
-            self.test_filter = {"sample_range": [len(X_ref), len(X_ref)+len(X_test)-1]}
+            self.ref_filter = {"sample_range": [0, len(X_ref) - 1]}
+            self.test_filter = {"sample_range": [len(X_ref), len(X_ref) + len(X_test) - 1]}
 
     class MockScenarioResult:
         def __init__(self):
@@ -579,8 +581,9 @@ def mock_scenario_result():
     # Then: Load it from assets for consistency
     ref_data = load_asset_csv("standard_ref_data.csv")[["feature_1", "feature_2"]]
     test_data = load_asset_csv("standard_test_data.csv")[["feature_1", "feature_2"]]
-    
+
     import numpy as np
+
     y_ref = pd.Series(np.random.choice([0, 1], len(ref_data)))
     y_test = pd.Series(np.random.choice([0, 1], len(test_data)))
 
@@ -605,8 +608,8 @@ def mock_scenario_result():
     definition.source_type = "sklearn"
     definition.source_name = "make_classification"
     definition.target_column = "target"
-    definition.ref_filter = {"sample_range": [0, len(ref_data)-1]}
-    definition.test_filter = {"sample_range": [len(ref_data), len(ref_data)+len(test_data)-1], "noise_factor": 1.5}
+    definition.ref_filter = {"sample_range": [0, len(ref_data) - 1]}
+    definition.test_filter = {"sample_range": [len(ref_data), len(ref_data) + len(test_data) - 1], "noise_factor": 1.5}
 
     class MockScenarioResult:
         def __init__(self, name, X_ref, X_test, y_ref, y_test, dataset_metadata, scenario_metadata, definition):
@@ -708,3 +711,9 @@ def dataset_assets_path():
 def configuration_assets_path():
     """Provide path to configuration assets for test configuration file creation"""
     return Path(__file__).parent / "assets" / "configurations"
+
+
+@pytest.fixture
+def data_type_inference_test_cases():
+    """Provide test cases for data type inference testing - asset-driven approach"""
+    return load_asset_json("data_type_inference_cases.json", "configurations")

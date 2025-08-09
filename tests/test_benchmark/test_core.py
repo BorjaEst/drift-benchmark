@@ -57,8 +57,7 @@ def test_should_validate_detector_configurations_when_initialized(mock_benchmark
             # Verify detector lookups were called - match the mock_benchmark_config detector IDs
             # Asset-driven: Get expected calls from the mock_benchmark_config (loaded from assets)
             expected_calls = [
-                (detector.method_id, detector.variant_id, detector.library_id) 
-                for detector in mock_benchmark_config.detectors
+                (detector.method_id, detector.variant_id, detector.library_id) for detector in mock_benchmark_config.detectors
             ]
             actual_calls = [call[0] for call in mock_get_detector.call_args_list]
 
