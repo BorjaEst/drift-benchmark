@@ -13,18 +13,6 @@ from unittest.mock import patch
 import pytest
 
 
-@pytest.fixture(scope="session")
-def project_root():
-    """Provide project root directory for testing"""
-    return Path(__file__).parent.parent
-
-
-@pytest.fixture(scope="session")
-def package_source_dir(project_root):
-    """Provide package source directory"""
-    return project_root / "src" / "drift_benchmark"
-
-
 @pytest.fixture(autouse=True)
 def clean_import_state():
     """Clean import state before each test to ensure isolation"""

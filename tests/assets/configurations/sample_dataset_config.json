@@ -1,5 +1,0 @@
-{
-    "path": "datasets/example.csv",
-    "format": "csv",
-    "reference_split": 0.7
-}

@@ -28,28 +28,9 @@ def sample_benchmark_config_data(configuration_assets_path):
 
 
 @pytest.fixture
-def sample_dataset_config_data(configuration_assets_path):
-    """Provide sample data for DatasetConfig testing from assets"""
-    return load_asset_json("sample_dataset_config.json", "configurations")
-
-
-@pytest.fixture
 def sample_detector_config_data(configuration_assets_path):
     """Provide sample data for DetectorConfig testing from assets"""
     return load_asset_json("sample_detector_config.json", "configurations")
-
-
-@pytest.fixture
-def sample_dataset_result_data(configuration_assets_path):
-    """Provide sample data for DatasetResult testing from assets"""
-    # Load from assets but construct the DataFrames here since they're complex
-    config_data = load_asset_json("sample_dataset_result.json", "configurations")
-
-    # Create DataFrames from the config data
-    ref_data = pd.DataFrame(config_data["ref_data"])
-    test_data = pd.DataFrame(config_data["test_data"])
-
-    return {"X_ref": ref_data, "X_test": test_data, "metadata": config_data["metadata"]}
 
 
 @pytest.fixture

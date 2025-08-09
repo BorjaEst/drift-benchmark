@@ -433,45 +433,6 @@ def sample_scenario_result():
 
 
 @pytest.fixture
-def sample_dataset_metadata_data():
-    """Provide sample DatasetMetadata data for testing - describes source dataset from which scenarios are generated"""
-    return {
-        "name": "sklearn_classification_source",
-        "data_type": "continuous",
-        "dimension": "multivariate",
-        "n_samples_ref": 1000,
-        "n_samples_test": 500,
-    }
-
-
-@pytest.fixture
-def sample_detector_metadata_data():
-    """Provide sample DetectorMetadata data for testing"""
-    return {
-        "method_id": "kolmogorov_smirnov",
-        "variant_id": "batch",
-        "library_id": "evidently",
-        "name": "Kolmogorov-Smirnov Test",
-        "family": "statistical-test",
-        "description": "Two-sample test for equality of continuous distributions",
-    }
-
-
-@pytest.fixture
-def sample_benchmark_summary_data():
-    """Provide sample BenchmarkSummary data for testing"""
-    return {
-        "total_detectors": 5,
-        "successful_runs": 4,  # Test expects this specific value
-        "failed_runs": 1,
-        "avg_execution_time": 0.0196,  # Modified to match test_models conftest.py
-        "accuracy": 0.8,
-        "precision": 0.75,
-        "recall": 0.9,
-    }
-
-
-@pytest.fixture
 def mock_scenario_result():
     """Provide mock ScenarioResult following REQ-MDL-004 structure and README scenario examples - asset-driven approach"""
     # Given: We have standard test datasets as assets
@@ -552,18 +513,6 @@ def clear_detector_registry():
 
 
 @pytest.fixture
-def mixed_data():
-    """Load mixed data types dataset from assets"""
-    return load_asset_csv("mixed_data.csv")
-
-
-@pytest.fixture
-def expected_benchmark_result():
-    """Load expected benchmark result from assets"""
-    return load_asset_json("expected_benchmark_result.json")
-
-
-@pytest.fixture
 def dataset_assets_path():
     """Provide path to dataset assets for test data file creation"""
     return Path(__file__).parent / "assets" / "datasets"
@@ -573,12 +522,6 @@ def dataset_assets_path():
 def configuration_assets_path():
     """Provide path to configuration assets for test configuration file creation"""
     return Path(__file__).parent / "assets" / "configurations"
-
-
-@pytest.fixture
-def filtering_test_cases():
-    """Provide test cases for scenario filtering testing - asset-driven approach"""
-    return load_asset_json("filtering_test_cases.json", "configurations")
 
 
 @pytest.fixture

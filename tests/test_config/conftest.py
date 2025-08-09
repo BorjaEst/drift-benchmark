@@ -49,21 +49,3 @@ def valid_benchmark_config_toml(configuration_assets_path):
 
     # Cleanup
     temp_path.unlink(missing_ok=True)
-
-
-@pytest.fixture
-def invalid_benchmark_config_toml():
-    """Create an invalid benchmark configuration TOML file - kept inline for error testing"""
-    config_data = {
-        "scenarios": [{"id": "non_existent_scenario"}],  # Invalid: non-existent scenario
-        "detectors": [{"method_id": "non_existent_method", "variant_id": "non_existent_impl", "library_id": "custom"}],
-    }
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
-        toml.dump(config_data, f)
-        temp_path = Path(f.name)
-
-    yield temp_path
-
-    # Cleanup
-    temp_path.unlink(missing_ok=True)
