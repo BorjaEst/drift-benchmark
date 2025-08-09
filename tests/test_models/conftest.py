@@ -1,98 +1,76 @@
 # Feature-specific fixtures for models module testing
+# REFACTORED: Asset-driven approach using tests/assets/configurations/
 # Aligned with README TOML examples and REQUIREMENTS REQ-CFM-002 flat structure
 
+import sys
+
+# Import asset loaders from main conftest
+from pathlib import Path
 from typing import Any, Dict
 
 import pandas as pd
 import pytest
 
+# Add parent path for imports
+parent_path = Path(__file__).parent.parent
+sys.path.insert(0, str(parent_path))
 
-@pytest.fixture
-def sample_benchmark_config_data():
-    """Provide sample data for BenchmarkConfig testing following README TOML structure"""
-    return {
-        "scenarios": [{"id": "covariate_drift_example"}, {"id": "concept_drift_example"}],
-        "detectors": [
-            # Library comparison examples from README
-            {"method_id": "kolmogorov_smirnov", "variant_id": "batch", "library_id": "evidently"},
-            {"method_id": "kolmogorov_smirnov", "variant_id": "batch", "library_id": "alibi-detect"},
-            {"method_id": "cramer_von_mises", "variant_id": "batch", "library_id": "scipy"},
-        ],
-    }
+from conftest import configuration_assets_path, load_asset_csv, load_asset_json
 
 
 @pytest.fixture
-def sample_dataset_config_data():
-    """Provide sample data for DatasetConfig testing"""
-    return {"path": "datasets/example.csv", "format": "csv", "reference_split": 0.7}
+def sample_benchmark_config_data(configuration_assets_path):
+    """Provide sample data for BenchmarkConfig testing from assets - Given-When-Then pattern"""
+    # Given: We have a benchmark config asset
+    # When: A test needs benchmark configuration data
+    # Then: Load it from assets for consistency
+    return load_asset_json("sample_benchmark_config.json", "configurations")
 
 
 @pytest.fixture
-def sample_detector_config_data():
-    """Provide sample data for DetectorConfig testing following README examples"""
-    return {"method_id": "kolmogorov_smirnov", "variant_id": "batch", "library_id": "evidently"}
+def sample_dataset_config_data(configuration_assets_path):
+    """Provide sample data for DatasetConfig testing from assets"""
+    return load_asset_json("sample_dataset_config.json", "configurations")
 
 
 @pytest.fixture
-def sample_dataset_result_data():
-    """Provide sample data for DatasetResult testing"""
-    ref_data = pd.DataFrame({"feature_1": [1.0, 2.0, 3.0], "feature_2": ["A", "B", "C"]})
-    test_data = pd.DataFrame({"feature_1": [4.0, 5.0, 6.0], "feature_2": ["D", "E", "F"]})
-
-    metadata = {"name": "test_dataset", "data_type": "mixed", "dimension": "multivariate", "n_samples_ref": 3, "n_samples_test": 3}
-
-    return {"X_ref": ref_data, "X_test": test_data, "metadata": metadata}
+def sample_detector_config_data(configuration_assets_path):
+    """Provide sample data for DetectorConfig testing from assets"""
+    return load_asset_json("sample_detector_config.json", "configurations")
 
 
 @pytest.fixture
-def sample_detector_result_data():
-    """Provide sample data for DetectorResult testing following REQ-MDL-002 structure"""
-    return {
-        "detector_id": "ks_test_scipy",
-        "library_id": "scipy",
-        "scenario_name": "covariate_drift_example",
-        "drift_detected": True,
-        "execution_time": 0.0123,
-        "drift_score": 0.85,
-    }
+def sample_dataset_result_data(configuration_assets_path):
+    """Provide sample data for DatasetResult testing from assets"""
+    # Load from assets but construct the DataFrames here since they're complex
+    config_data = load_asset_json("sample_dataset_result.json", "configurations")
+
+    # Create DataFrames from the config data
+    ref_data = pd.DataFrame(config_data["ref_data"])
+    test_data = pd.DataFrame(config_data["test_data"])
+
+    return {"X_ref": ref_data, "X_test": test_data, "metadata": config_data["metadata"]}
 
 
 @pytest.fixture
-def sample_dataset_metadata_data():
-    """Provide sample data for DatasetMetadata testing"""
-    return {
-        "name": "sklearn_classification_source",
-        "data_type": "continuous",
-        "dimension": "multivariate",
-        "n_samples_ref": 1000,
-        "n_samples_test": 500,
-        "n_features": 10,
-    }
+def sample_detector_result_data(configuration_assets_path):
+    """Provide sample data for DetectorResult testing from assets"""
+    return load_asset_json("sample_detector_result.json", "configurations")
 
 
 @pytest.fixture
-def sample_detector_metadata_data():
-    """Provide sample data for DetectorMetadata testing following REQ-MET-002"""
-    return {
-        "method_id": "kolmogorov_smirnov",
-        "variant_id": "batch",
-        "library_id": "evidently",
-        "name": "Kolmogorov-Smirnov Test",
-        "family": "statistical-test",
-        "description": "Two-sample test for equality of continuous distributions",
-    }
+def sample_dataset_metadata_data(configuration_assets_path):
+    """Provide sample data for DatasetMetadata testing from assets"""
+    return load_asset_json("sample_dataset_metadata.json", "configurations")
 
 
 @pytest.fixture
-def sample_benchmark_summary_data():
-    """Provide sample data for BenchmarkSummary testing following REQ-MET-003 Phase 1 fields"""
-    return {
-        "total_detectors": 5,  # Test expects this specific value
-        "successful_runs": 4,  # Test expects this specific value
-        "failed_runs": 1,
-        "avg_execution_time": 0.0196,  # Average of README examples: (0.0234 + 0.0156) / 2
-        # Phase 1: Focus on performance metrics, Phase 2 will add ground truth evaluation
-        "accuracy": 0.8,
-        "precision": 0.75,
-        "recall": 0.9,
-    }
+def sample_detector_metadata_data(configuration_assets_path):
+    """Provide sample data for DetectorMetadata testing from assets"""
+    return load_asset_json("sample_detector_metadata.json", "configurations")
+
+
+@pytest.fixture
+def sample_benchmark_summary_data(configuration_assets_path):
+    """Provide sample data for BenchmarkSummary testing from assets"""
+    return load_asset_json("sample_benchmark_summary.json", "configurations")

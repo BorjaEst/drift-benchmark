@@ -1,75 +1,70 @@
 # Feature-specific fixtures for data module testing
+# REFACTORED: Asset-driven approach using tests/assets/datasets/
 
+import sys
 import tempfile
+
+# Import asset loaders from main conftest
 from pathlib import Path
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
 
+# Add parent path for imports
+parent_path = Path(__file__).parent.parent
+sys.path.insert(0, str(parent_path))
+
+from conftest import dataset_assets_path, load_asset_csv
+
 
 @pytest.fixture
-def sample_csv_file():
-    """Create a temporary csv file for testing"""
-    csv_content = """feature_1,feature_2,categorical_feature
-1.5,2.3,A
-2.1,1.8,B
-3.0,3.2,C
-1.8,2.7,A
-2.5,1.5,B
-3.3,3.8,C
-1.2,2.0,A
-2.8,1.3,B
-3.5,4.1,C
-1.9,2.5,A"""
+def sample_csv_file(dataset_assets_path):
+    """Create a CSV file from assets for testing - Given-When-Then pattern"""
+    # Given: We have a test CSV asset
+    # When: A test needs a physical CSV file
+    # Then: Provide a temporary file with asset content
+
+    asset_data = load_asset_csv("mixed_data.csv")  # Use mixed data which has categorical features
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        f.write(csv_content)
+        asset_data.to_csv(f, index=False)
         temp_path = Path(f.name)
 
     yield temp_path
 
     # Cleanup
-    temp_path.unlink()
+    temp_path.unlink(missing_ok=True)
 
 
 @pytest.fixture
-def numeric_only_csv_file():
-    """Create a csv file with only numeric data"""
-    csv_content = """feature_1,feature_2,feature_3
-1.5,2.3,0.1
-2.1,1.8,0.2
-3.0,3.2,0.3
-1.8,2.7,0.4
-2.5,1.5,0.5"""
+def numeric_only_csv_file(dataset_assets_path):
+    """Create a csv file with only numeric data - loaded from assets"""
+    asset_data = load_asset_csv("simple_continuous.csv")
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        f.write(csv_content)
+        asset_data.to_csv(f, index=False)
         temp_path = Path(f.name)
 
     yield temp_path
 
     # Cleanup
-    temp_path.unlink()
+    temp_path.unlink(missing_ok=True)
 
 
 @pytest.fixture
-def categorical_only_csv_file():
-    """Create a csv file with only categorical data"""
-    csv_content = """category_1,category_2,category_3
-A,X,red
-B,Y,blue
-C,Z,green
-A,X,red
-B,Y,blue"""
+def categorical_only_csv_file(dataset_assets_path):
+    """Create a csv file with only categorical data - loaded from assets"""
+    asset_data = load_asset_csv("simple_categorical.csv")
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-        f.write(csv_content)
+        asset_data.to_csv(f, index=False)
         temp_path = Path(f.name)
 
     yield temp_path
 
     # Cleanup
-    temp_path.unlink()
+    temp_path.unlink(missing_ok=True)
 
 
 @pytest.fixture

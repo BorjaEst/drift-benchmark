@@ -1,6 +1,8 @@
 # Session and module-scoped fixtures for shared testing infrastructure
 # Aligned with README examples and REQUIREMENTS.md Phase 1 implementation
+# REFACTORED: Asset-driven testing approach - all shared data loaded from tests/assets/
 
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -14,6 +16,27 @@ import toml
 # Test detectors are imported by the tests that need them.
 # Automatic import in conftest was causing duplicate registrations.
 # Tests should import detectors directly when needed.
+
+
+# Asset loading utilities
+def load_asset_csv(filename: str) -> pd.DataFrame:
+    """Load CSV asset from tests/assets/datasets/"""
+    assets_dir = Path(__file__).parent / "assets" / "datasets"
+    return pd.read_csv(assets_dir / filename)
+
+
+def load_asset_toml(filename: str, subfolder: str = "configurations") -> dict:
+    """Load TOML asset from tests/assets/{subfolder}/"""
+    assets_dir = Path(__file__).parent / "assets" / subfolder
+    with open(assets_dir / filename, "r") as f:
+        return toml.load(f)
+
+
+def load_asset_json(filename: str, subfolder: str = "results") -> dict:
+    """Load JSON asset from tests/assets/{subfolder}/"""
+    assets_dir = Path(__file__).parent / "assets" / subfolder
+    with open(assets_dir / filename, "r") as f:
+        return json.load(f)
 
 
 # Session-scoped fixtures for expensive setup
@@ -36,65 +59,26 @@ def temp_workspace():
 
 @pytest.fixture(scope="session")
 def sample_dataset():
-    """Provide sample dataset for testing"""
-    import numpy as np
+    """Provide sample dataset for testing - loaded from assets"""
+    # Load reference and test data from asset files
+    reference_data = load_asset_csv("reference_data.csv")
+    test_data = load_asset_csv("test_data.csv")
 
-    # Generate synthetic dataset with drift
-    np.random.seed(42)
-
-    # Reference data (normal distribution)
-    ref_size = 1000
-    ref_data = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0, 1, ref_size),
-            "feature_2": np.random.normal(0, 1, ref_size),
-            "categorical_feature": np.random.choice(["A", "B", "C"], ref_size),
-        }
-    )
-
-    # Test data (shifted distribution - concept drift)
-    test_size = 500
-    test_data = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0.5, 1, test_size),  # Shifted mean
-            "feature_2": np.random.normal(0, 1.2, test_size),  # Increased variance
-            "categorical_feature": np.random.choice(["A", "B", "C"], test_size, p=[0.6, 0.3, 0.1]),  # Changed distribution
-        }
-    )
-
-    full_dataset = pd.concat([ref_data, test_data], ignore_index=True)
+    # Combine for full dataset
+    full_dataset = pd.concat([reference_data, test_data], ignore_index=True)
 
     return {
         "full_dataset": full_dataset,
-        "reference_data": ref_data,
+        "reference_data": reference_data,
         "test_data": test_data,
-        "reference_split": 0.67,  # ref_size / (ref_size + test_size)
+        "reference_split": len(reference_data) / len(full_dataset),
     }
 
 
 @pytest.fixture(scope="session")
 def mock_methods_registry():
-    """Provide mock methods registry configuration"""
-    return {
-        "methods": {
-            "ks_test": {
-                "name": "Kolmogorov-Smirnov Test",
-                "description": "Statistical test for distribution differences",
-                "family": "statistical-test",
-                "data_dimension": ["univariate", "multivariate"],
-                "data_types": ["continuous"],
-                "variants": {"scipy": {"name": "SciPy Variant", "execution_mode": "batch"}},
-            },
-            "drift_detector": {
-                "name": "Basic Drift Detector",
-                "description": "Simple change detection algorithm",
-                "family": "change-detection",
-                "data_dimension": ["univariate", "multivariate"],
-                "data_types": ["continuous", "categorical"],
-                "variants": {"custom": {"name": "Custom Variant", "execution_mode": "batch"}},
-            },
-        }
-    }
+    """Provide mock methods registry configuration - loaded from assets"""
+    return load_asset_toml("test_methods.toml")
 
 
 # Module-scoped fixtures for shared test utilities
@@ -112,18 +96,9 @@ def settings_env_vars():
 
 @pytest.fixture(scope="module")
 def sample_csv_content():
-    """Provide sample csv content for file-based testing"""
-    return """feature_1,feature_2,categorical_feature
-1.2,0.8,A
--0.5,1.1,B
-2.1,-0.3,C
-0.7,1.5,A
--1.2,0.2,B
-1.8,-0.7,C
-0.3,0.9,A
--0.8,1.3,B
-1.5,-0.1,C
-0.1,0.6,A"""
+    """Provide sample csv content for file-based testing - loaded from assets"""
+    simple_data = load_asset_csv("simple_continuous.csv")
+    return simple_data.to_csv(index=False)
 
 
 @pytest.fixture(scope="module")
@@ -166,7 +141,7 @@ def mock_detector_variants():
 
 @pytest.fixture
 def mock_benchmark_config():
-    """Provide mock BenchmarkConfig matching README TOML examples and REQ-CFM-002 flat structure"""
+    """Provide mock BenchmarkConfig matching README TOML examples and REQ-CFM-002 flat structure - loaded from assets"""
 
     class MockScenarioConfig:
         def __init__(self, id):
@@ -180,16 +155,16 @@ def mock_benchmark_config():
 
     class MockBenchmarkConfig:
         def __init__(self):
-            # Scenarios based on README examples
-            self.scenarios = [
-                MockScenarioConfig("covariate_drift_example"),
-                MockScenarioConfig("concept_drift_example"),
-            ]
-            # Detectors comparing libraries as shown in README
+            # Load configuration from assets
+            config_data = load_asset_toml("basic_benchmark.toml")
+
+            # Create scenarios from loaded data
+            self.scenarios = [MockScenarioConfig(scenario["id"]) for scenario in config_data["scenarios"]]
+
+            # Create detectors from loaded data
             self.detectors = [
-                MockDetectorConfig("kolmogorov_smirnov", "ks_batch", "evidently"),
-                MockDetectorConfig("kolmogorov_smirnov", "ks_batch", "alibi-detect"),
-                MockDetectorConfig("cramer_von_mises", "cvm_batch", "scipy"),
+                MockDetectorConfig(detector["method_id"], detector["variant_id"], detector["library_id"])
+                for detector in config_data["detectors"]
             ]
 
     return MockBenchmarkConfig()
@@ -197,31 +172,17 @@ def mock_benchmark_config():
 
 @pytest.fixture
 def mock_dataset_result():
-    """Provide mock DatasetResult for testing"""
-    import numpy as np
-
-    ref_data = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0, 1, 100),
-            "feature_2": np.random.normal(0, 1, 100),
-            "categorical": np.random.choice(["A", "B", "C"], 100),
-        }
-    )
-
-    test_data = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
-            "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
-            "categorical": np.random.choice(["A", "B", "C"], 50),
-        }
-    )
+    """Provide mock DatasetResult for testing - loaded from assets"""
+    # Load data from assets instead of generating
+    ref_data = load_asset_csv("reference_data.csv")[["feature_1", "feature_2", "categorical_feature"]]
+    test_data = load_asset_csv("test_data.csv")[["feature_1", "feature_2", "categorical_feature"]]
 
     metadata = Mock()
     metadata.name = "mock_dataset"
     metadata.data_type = "mixed"
     metadata.dimension = "multivariate"
-    metadata.n_samples_ref = 100
-    metadata.n_samples_test = 50
+    metadata.n_samples_ref = len(ref_data)
+    metadata.n_samples_test = len(test_data)
 
     class MockDatasetResult:
         def __init__(self, X_ref, X_test, metadata):
@@ -316,41 +277,32 @@ def sample_scenario_config_data():
 
 @pytest.fixture
 def sample_scenario_result_data():
-    """Provide sample ScenarioResult data for testing"""
+    """Provide sample ScenarioResult data for testing - asset-driven approach"""
+    # Given: We have standard test datasets as assets
+    # When: A test needs scenario result data  
+    # Then: Load it from assets for consistency
+    X_ref = load_asset_csv("ref_data_100.csv")
+    X_test = load_asset_csv("test_data_50.csv") 
+    
+    # Create target data to match expected sizes
     import numpy as np
-
-    # Create scenario-based data following REQ-MDL-004 structure
-    X_ref = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0, 1, 100),
-            "feature_2": np.random.normal(0, 1, 100),
-        }
-    )
-
-    X_test = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0.5, 1, 50),  # Shifted distribution
-            "feature_2": np.random.normal(0, 1.2, 50),  # Different variance
-        }
-    )
-
-    y_ref = pd.Series(np.random.choice([0, 1], 100))
-    y_test = pd.Series(np.random.choice([0, 1], 50))
+    y_ref = X_ref['target'] if 'target' in X_ref.columns else pd.Series(np.random.choice([0, 1], len(X_ref)))
+    y_test = X_test['target'] if 'target' in X_test.columns else pd.Series(np.random.choice([0, 1], len(X_test)))
 
     dataset_metadata = {
         "name": "make_classification",
         "data_type": "continuous",
         "dimension": "multivariate",
-        "n_samples_ref": 100,
-        "n_samples_test": 50,
-        "n_features": 2,
+        "n_samples_ref": len(X_ref),
+        "n_samples_test": len(X_test),
+        "n_features": len(X_ref.columns) - (1 if 'target' in X_ref.columns else 0),
     }
 
     scenario_metadata = {
-        "total_samples": 150,
-        "ref_samples": 100,
-        "test_samples": 50,
-        "n_features": 2,
+        "total_samples": len(X_ref) + len(X_test),
+        "ref_samples": len(X_ref),
+        "test_samples": len(X_test),
+        "n_features": len(X_ref.columns) - (1 if 'target' in X_ref.columns else 0),
         "has_labels": True,
         "data_type": "continuous",
         "dimension": "multivariate",
@@ -362,19 +314,22 @@ def sample_scenario_result_data():
         "source_name": "make_classification",
         "target_column": "target",
         "drift_types": ["covariate"],
-        "ref_filter": {"sample_range": [0, 1000]},
-        "test_filter": {"sample_range": [1000, 1500]},
+        "ref_filter": {"sample_range": [0, len(X_ref)-1]},
+        "test_filter": {"sample_range": [len(X_ref), len(X_ref)+len(X_test)-1]},
     }
 
     return {
         "name": "covariate_drift_example",
-        "X_ref": X_ref,
-        "X_test": X_test,
+        "X_ref": X_ref[["feature_1", "feature_2"]],  # Features only
+        "X_test": X_test[["feature_1", "feature_2"]], # Features only
         "y_ref": y_ref,
         "y_test": y_test,
         "dataset_metadata": dataset_metadata,
         "scenario_metadata": scenario_metadata,
         "definition": definition,
+        # Legacy fields for backwards compatibility
+        "ref_data": X_ref,  # Include target column for legacy tests
+        "test_data": X_test, # Include target column for legacy tests
     }
 
 
@@ -535,28 +490,20 @@ def sample_scenario_definition():
 
 @pytest.fixture
 def sample_scenario_result():
-    """Provide sample ScenarioResult for testing"""
+    """Provide sample ScenarioResult for testing - asset-driven approach"""
+    # Given: We have standard test datasets as assets
+    # When: A test needs a ScenarioResult mock
+    # Then: Load it from assets for consistency
+    X_ref_full = load_asset_csv("ref_data_5.csv")
+    X_test_full = load_asset_csv("test_data_5.csv")
+    
+    X_ref = X_ref_full[["feature_1", "feature_2"]]
+    X_test = X_test_full[["feature_1", "feature_2"]]
+    
+    # Create target data to match expected sizes
     import numpy as np
-
-    # Create sample data with expected test sizes - separate features from target following REQ-MDL-004
-    # Tests expect ref_data to have shape (5, 2)
-    X_ref = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0, 1, 5),
-            "feature_2": np.random.normal(0, 1, 5),
-        }
-    )
-
-    X_test = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0.5, 1, 5),  # Shifted distribution
-            "feature_2": np.random.normal(0, 1.2, 5),  # Different variance
-        }
-    )
-
-    # Target as separate Series (following REQ-MDL-004)
-    y_ref = pd.Series(np.random.choice([0, 1], 5))
-    y_test = pd.Series(np.random.choice([0, 1], 5))
+    y_ref = X_ref_full['target'] if 'target' in X_ref_full.columns else pd.Series(np.random.choice([0, 1], len(X_ref)))
+    y_test = X_test_full['target'] if 'target' in X_test_full.columns else pd.Series(np.random.choice([0, 1], len(X_test)))
 
     # Mock metadata with required fields
     class MockMetadata:
@@ -566,8 +513,8 @@ def sample_scenario_result():
             self.source_name = "make_classification"
             self.target_column = "target"
             self.drift_types = ["covariate"]
-            self.ref_filter = {"sample_range": [0, 5]}
-            self.test_filter = {"sample_range": [5, 10]}
+            self.ref_filter = {"sample_range": [0, len(X_ref)-1]}
+            self.test_filter = {"sample_range": [len(X_ref), len(X_ref)+len(X_test)-1]}
 
     class MockScenarioResult:
         def __init__(self):
@@ -626,40 +573,30 @@ def sample_benchmark_summary_data():
 
 @pytest.fixture
 def mock_scenario_result():
-    """Provide mock ScenarioResult following REQ-MDL-004 structure and README scenario examples"""
+    """Provide mock ScenarioResult following REQ-MDL-004 structure and README scenario examples - asset-driven approach"""
+    # Given: We have standard test datasets as assets
+    # When: A test needs a mock scenario result
+    # Then: Load it from assets for consistency
+    ref_data = load_asset_csv("standard_ref_data.csv")[["feature_1", "feature_2"]]
+    test_data = load_asset_csv("standard_test_data.csv")[["feature_1", "feature_2"]]
+    
     import numpy as np
-
-    # Create scenario data based on README examples
-    ref_data = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0, 1, 500),
-            "feature_2": np.random.normal(0, 1, 500),
-        }
-    )
-
-    test_data = pd.DataFrame(
-        {
-            "feature_1": np.random.normal(0.5, 1, 500),  # Shifted distribution (covariate drift)
-            "feature_2": np.random.normal(0, 1.2, 500),  # Different variance
-        }
-    )
-
-    y_ref = pd.Series(np.random.choice([0, 1], 500))
-    y_test = pd.Series(np.random.choice([0, 1], 500))
+    y_ref = pd.Series(np.random.choice([0, 1], len(ref_data)))
+    y_test = pd.Series(np.random.choice([0, 1], len(test_data)))
 
     # DatasetMetadata following REQ-MET-001
     dataset_metadata = Mock()
     dataset_metadata.name = "make_classification"
     dataset_metadata.data_type = "continuous"
     dataset_metadata.dimension = "multivariate"
-    dataset_metadata.n_samples_ref = 500
-    dataset_metadata.n_samples_test = 500
+    dataset_metadata.n_samples_ref = len(ref_data)
+    dataset_metadata.n_samples_test = len(test_data)
 
     # ScenarioMetadata following REQ-MET-005 Phase 1 fields
     scenario_metadata = Mock()
-    scenario_metadata.total_samples = 1000
-    scenario_metadata.ref_samples = 500
-    scenario_metadata.test_samples = 500
+    scenario_metadata.total_samples = len(ref_data) + len(test_data)
+    scenario_metadata.ref_samples = len(ref_data)
+    scenario_metadata.test_samples = len(test_data)
     scenario_metadata.has_labels = True
 
     # ScenarioDefinition following REQ-MET-004 Phase 1 fields
@@ -668,8 +605,8 @@ def mock_scenario_result():
     definition.source_type = "sklearn"
     definition.source_name = "make_classification"
     definition.target_column = "target"
-    definition.ref_filter = {"sample_range": [0, 500]}
-    definition.test_filter = {"sample_range": [500, 1000], "noise_factor": 1.5}
+    definition.ref_filter = {"sample_range": [0, len(ref_data)-1]}
+    definition.test_filter = {"sample_range": [len(ref_data), len(ref_data)+len(test_data)-1], "noise_factor": 1.5}
 
     class MockScenarioResult:
         def __init__(self, name, X_ref, X_test, y_ref, y_test, dataset_metadata, scenario_metadata, definition):
@@ -707,3 +644,67 @@ def clear_detector_registry():
     except ImportError:
         # Module doesn't exist yet, just yield
         yield
+
+
+# === ASSET-DRIVEN FIXTURES ===
+# These fixtures load data from tests/assets/ for consistency and maintainability
+
+
+@pytest.fixture
+def simple_continuous_data():
+    """Load simple continuous dataset from assets"""
+    return load_asset_csv("simple_continuous.csv")
+
+
+@pytest.fixture
+def simple_categorical_data():
+    """Load simple categorical dataset from assets"""
+    return load_asset_csv("simple_categorical.csv")
+
+
+@pytest.fixture
+def mixed_data():
+    """Load mixed data types dataset from assets"""
+    return load_asset_csv("mixed_data.csv")
+
+
+@pytest.fixture
+def basic_benchmark_config():
+    """Load basic benchmark configuration from assets"""
+    return load_asset_toml("basic_benchmark.toml")
+
+
+@pytest.fixture
+def minimal_benchmark_config():
+    """Load minimal benchmark configuration from assets"""
+    return load_asset_toml("minimal_benchmark.toml")
+
+
+@pytest.fixture
+def test_methods_registry():
+    """Load test methods registry from assets"""
+    return load_asset_toml("test_methods.toml")
+
+
+@pytest.fixture
+def expected_benchmark_result():
+    """Load expected benchmark result from assets"""
+    return load_asset_json("expected_benchmark_result.json")
+
+
+@pytest.fixture
+def scenario_assets_path():
+    """Provide path to scenario assets for test scenario file creation"""
+    return Path(__file__).parent / "assets" / "scenarios"
+
+
+@pytest.fixture
+def dataset_assets_path():
+    """Provide path to dataset assets for test data file creation"""
+    return Path(__file__).parent / "assets" / "datasets"
+
+
+@pytest.fixture
+def configuration_assets_path():
+    """Provide path to configuration assets for test configuration file creation"""
+    return Path(__file__).parent / "assets" / "configurations"
