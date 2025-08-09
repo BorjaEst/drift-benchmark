@@ -67,26 +67,3 @@ def invalid_benchmark_config_toml():
 
     # Cleanup
     temp_path.unlink(missing_ok=True)
-
-
-@pytest.fixture
-def sample_test_csv_files(tmp_path, configuration_assets_path):
-    """Create sample csv files for configuration testing using asset data"""
-    # Given: We have asset data for testing
-    # When: Tests need CSV files
-    # Then: Create them from assets
-    from conftest import load_asset_csv
-
-    asset_data = load_asset_csv("mixed_data.csv")
-    csv_content = asset_data.to_csv(index=False)
-
-    datasets_dir = tmp_path / "datasets"
-    datasets_dir.mkdir()
-
-    test_data_path = datasets_dir / "test_data.csv"
-    validation_data_path = datasets_dir / "validation_data.csv"
-
-    test_data_path.write_text(csv_content)
-    validation_data_path.write_text(csv_content)
-
-    return {"test_data.csv": test_data_path, "validation_data.csv": validation_data_path, "datasets_dir": datasets_dir}

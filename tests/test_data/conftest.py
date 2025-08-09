@@ -67,29 +67,4 @@ def categorical_only_csv_file(dataset_assets_path):
     temp_path.unlink(missing_ok=True)
 
 
-@pytest.fixture
-def sample_dataset_config():
-    """Provide sample DatasetConfig factory for testing"""
-    from drift_benchmark.models import DatasetConfig
-
-    def _factory(*args, **kwargs):
-        # Handle positional arguments: (path, format, reference_split)
-        if args:
-            if len(args) >= 1:
-                kwargs.setdefault("path", args[0])
-            if len(args) >= 2:
-                kwargs.setdefault("format", args[1])
-            if len(args) >= 3:
-                kwargs.setdefault("reference_split", args[2])
-
-        # Set defaults for any missing values
-        kwargs.setdefault("path", "test.csv")
-        kwargs.setdefault("format", "csv")
-        kwargs.setdefault("reference_split", 0.5)
-
-        return DatasetConfig(**kwargs)
-
-    return _factory
-
-
 # Enhanced fixtures for filtering system tests

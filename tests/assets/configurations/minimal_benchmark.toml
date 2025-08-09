@@ -1,7 +1,0 @@
-[[scenarios]]
-    id = "test_scenario"
-
-[[detectors]]
-    method_id  = "ks_test"
-    variant_id = "scipy"
-    library_id = "custom"
