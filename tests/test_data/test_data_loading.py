@@ -923,3 +923,39 @@ class TestPerformanceAndScalability:
             pytest.fail(f"Failed to test memory efficiency: {e}")
         finally:
             temp_path.unlink()
+
+
+# === PARAMETERIZED TESTS FOR IMPROVED MAINTAINABILITY ===
+# These tests replace duplicated test functions with asset-driven parameterized approaches
+
+
+@pytest.mark.parametrize(
+    "dataset_type,file_fixture,expected_data_type,description",
+    [
+        ("numeric", "numeric_only_csv_file", "continuous", "numeric-only dataset should be inferred as continuous"),
+        ("categorical", "categorical_only_csv_file", "categorical", "categorical-only dataset should be inferred as categorical"),
+        ("mixed", "sample_csv_file", "mixed", "mixed dataset should be inferred as mixed"),
+    ],
+)
+def test_should_infer_data_types_when_loaded_parameterized(
+    dataset_type, file_fixture, expected_data_type, description, request, sample_scenario_definition
+):
+    """Test REQ-DAT-005: File loading must automatically infer data types (parameterized version)"""
+    # Given: We have different types of datasets as fixtures
+    # When: We load a scenario from each dataset type
+    # Then: The correct data type should be inferred
+
+    # Arrange - get the file fixture dynamically
+    csv_file = request.getfixturevalue(file_fixture)
+
+    # Act & Assert
+    try:
+        from drift_benchmark.data import load_scenario
+
+        # Create scenario definition for this dataset type
+        scenario_def = sample_scenario_definition(source_type="file", source_name=str(csv_file))
+        result = load_scenario(f"{dataset_type}_scenario")
+        assert expected_data_type in str(result.metadata), description
+
+    except ImportError as e:
+        pytest.fail(f"Failed to import load_scenario for data type inference test: {e}")

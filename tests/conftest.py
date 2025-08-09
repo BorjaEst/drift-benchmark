@@ -717,3 +717,9 @@ def configuration_assets_path():
 def data_type_inference_test_cases():
     """Provide test cases for data type inference testing - asset-driven approach"""
     return load_asset_json("data_type_inference_cases.json", "configurations")
+
+
+@pytest.fixture
+def filtering_test_cases():
+    """Provide test cases for scenario filtering testing - asset-driven approach"""
+    return load_asset_json("filtering_test_cases.json", "configurations")
