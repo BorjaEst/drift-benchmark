@@ -37,35 +37,6 @@ def mock_methods_toml_file(configuration_assets_path):
 
 
 @pytest.fixture
-def invalid_methods_toml_file():
-    """Create an invalid methods.toml file for testing error handling - kept inline for error cases"""
-    invalid_config = {
-        "methods": {
-            "incomplete_method": {
-                "name": "Incomplete Method",
-                # Missing required fields: description, drift_types, family, data_dimension, data_types, requires_labels, references
-                "variants": {
-                    "incomplete_impl": {
-                        "name": "Incomplete Variant"
-                        # Missing required fields: execution_mode, hyperparameters, references
-                    }
-                },
-            }
-        }
-    }
-
-    # Create temporary file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
-        toml.dump(invalid_config, f)
-        temp_path = Path(f.name)
-
-    yield temp_path
-
-    # Cleanup
-    temp_path.unlink(missing_ok=True)
-
-
-@pytest.fixture
 def empty_methods_toml_file():
     """Create an empty methods.toml file for testing - kept inline for error cases"""
     empty_config = {"methods": {}}

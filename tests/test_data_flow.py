@@ -292,7 +292,9 @@ def test_should_support_library_comparison_flow_when_benchmark_runs(mock_benchma
         assert hasattr(result.summary, "avg_execution_time"), "result summary should track execution time for performance comparison"
 
 
-def test_should_maintain_data_flow_isolation_when_benchmark_runs(mock_benchmark_config, mock_detector, mock_scenario_result):
+def test_should_maintain_data_flow_isolation_when_benchmark_runs(
+    mock_benchmark_config, mock_detector, mock_scenario_result, simple_dataframe_factory
+):
     """Test REQ-FLW-008: Preprocessing workflow pattern - exact workflow: (1) scenario = load_scenario(id), (2) ref_data = detector.preprocess(scenario, phase="train"), (3) detector.fit(ref_data), (4) test_data = detector.preprocess(scenario, phase="detect"), (5) result = detector.detect(test_data)"""
     # Arrange - multiple scenarios to test library comparison
     scenario_configs = [Mock(id="covariate_drift_example"), Mock(id="concept_drift_example")]
@@ -301,15 +303,19 @@ def test_should_maintain_data_flow_isolation_when_benchmark_runs(mock_benchmark_
     # Create different scenario results for library comparison based on README examples
     scenario1_result = Mock()
     scenario1_result.name = "covariate_drift_example"
-    scenario1_result.X_ref = pd.DataFrame({"feature": [1, 2, 3]})
-    scenario1_result.X_test = pd.DataFrame({"feature": [4, 5, 6]})
+    # REFACTORED: Use factory fixture instead of hardcoded DataFrame creation
+    simple_data = simple_dataframe_factory("simple")
+    scenario1_result.X_ref = simple_data.iloc[:3]  # First 3 rows
+    scenario1_result.X_test = simple_data.iloc[3:]  # Remaining rows
     scenario1_result.definition = Mock()
     scenario1_result.definition.description = "Covariate drift scenario"
 
     scenario2_result = Mock()
     scenario2_result.name = "concept_drift_example"
-    scenario2_result.X_ref = pd.DataFrame({"feature": [4, 5, 6]})
-    scenario2_result.X_test = pd.DataFrame({"feature": [7, 8, 9]})
+    # REFACTORED: Use factory fixture instead of hardcoded DataFrame creation
+    simple_data = simple_dataframe_factory("simple")
+    scenario2_result.X_ref = simple_data.iloc[:3]  # First 3 rows
+    scenario2_result.X_test = simple_data.iloc[3:]  # Remaining rows
     scenario2_result.definition = Mock()
     scenario2_result.definition.description = "Concept drift scenario"
 

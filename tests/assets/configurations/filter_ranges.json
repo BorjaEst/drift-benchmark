@@ -1,0 +1,16 @@
+{
+    "sample_range_small": [0, 5],
+    "sample_range_medium": [0, 100], 
+    "sample_range_large": [0, 1000],
+    "test_range_small": [5, 10],
+    "test_range_medium": [100, 150],
+    "test_range_large": [1000, 1500],
+    "overlapping_ranges": {
+        "ref_filter": [0, 5],
+        "test_filter": [3, 8]
+    },
+    "non_overlapping_ranges": {
+        "ref_filter": [0, 4],
+        "test_filter": [5, 9]
+    }
+}

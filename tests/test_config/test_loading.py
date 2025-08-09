@@ -52,7 +52,7 @@ def test_should_load_benchmark_config_from_toml_when_called(valid_benchmark_conf
     assert first_detector.variant_id == "scipy"
 
 
-def test_should_use_pydantic_v2_validation_when_loading():
+def test_should_use_pydantic_v2_validation_when_loading(standard_test_configurations):
     """Test REQ-CFG-002: Configuration loading must use BenchmarkConfig Pydantic v2 BaseModel with automatic field validation"""
     # Arrange & Act
     try:
@@ -70,11 +70,8 @@ def test_should_use_pydantic_v2_validation_when_loading():
     except ImportError as e:
         pytest.fail(f"Failed to import BenchmarkConfig for Pydantic test: {e}")
 
-    # Test validation functionality with scenario-based configuration
-    valid_data = {
-        "scenarios": [{"id": "test_scenario"}],
-        "detectors": [{"method_id": "test_method", "variant_id": "test_impl", "library_id": "custom"}],
-    }
+    # REFACTORED: Use centralized configuration fixture instead of hardcoded data
+    valid_data = standard_test_configurations("simple")
 
     try:
         config = BenchmarkConfig.model_validate(valid_data)

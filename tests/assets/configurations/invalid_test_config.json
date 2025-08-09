@@ -1,0 +1,4 @@
+{
+    "scenarios": [{"id": "non_existent_scenario"}],
+    "detectors": [{"method_id": "non_existent_method", "variant_id": "non_existent_impl", "library_id": "custom"}]
+}

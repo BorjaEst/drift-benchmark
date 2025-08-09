@@ -16,7 +16,7 @@ import pytest
 parent_path = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_path))
 
-from conftest import load_asset_json
+from conftest import load_asset_csv, load_asset_json
 
 
 @pytest.fixture
@@ -26,15 +26,20 @@ def sample_dataset_result():
     # When: Tests require reference and test data with mixed types
     # Then: Provide structured data matching adapter expectations
 
-    ref_data = pd.DataFrame(
-        {"feature_1": [1.0, 2.0, 3.0, 4.0, 5.0], "feature_2": [0.1, 0.2, 0.3, 0.4, 0.5], "categorical": ["A", "B", "A", "C", "B"]}
-    )
+    # REFACTORED: Load test data from assets for consistency and maintainability
+    adapter_data = load_asset_csv("adapter_test_data.csv")
 
-    test_data = pd.DataFrame(
-        {"feature_1": [6.0, 7.0, 8.0, 9.0, 10.0], "feature_2": [0.6, 0.7, 0.8, 0.9, 1.0], "categorical": ["C", "A", "B", "C", "A"]}
-    )
+    # Split data into reference (first 5 rows) and test (last 5 rows)
+    ref_data = adapter_data.iloc[:5].copy()
+    test_data = adapter_data.iloc[5:].copy()
 
-    metadata = {"name": "adapter_test_dataset", "data_type": "mixed", "dimension": "multivariate", "n_samples_ref": 5, "n_samples_test": 5}
+    metadata = {
+        "name": "adapter_test_dataset",
+        "data_type": "mixed",
+        "dimension": "multivariate",
+        "n_samples_ref": len(ref_data),
+        "n_samples_test": len(test_data),
+    }
 
     # Mock DatasetResult class for testing
     class MockDatasetResult:

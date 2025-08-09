@@ -1,8 +1,9 @@
 """
-Test detectors for benchmark testing.
+Test utilities module for shared test implementations.
 
-These detectors are automatically registered when this module is imported.
-They provide mock implementations for testing the benchmark framework.
+This module contains test detector implementations and other utilities
+that can be used across multiple test modules without causing pytest
+collection warnings.
 """
 
 from typing import Any, Optional
@@ -10,9 +11,8 @@ from typing import Any, Optional
 from drift_benchmark.adapters import BaseDetector, register_detector
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="evidently")
-class TestEvidentlyKSDetector(BaseDetector):
-    """Test Evidently KS detector for benchmark testing."""
+class EvidentlyKSDetector(BaseDetector):
+    """Evidently KS detector implementation for testing."""
 
     def __init__(self, method_id: str, variant_id: str, library_id: str = "evidently", **kwargs):
         self._method_id = method_id
@@ -60,9 +60,8 @@ class TestEvidentlyKSDetector(BaseDetector):
         return self._score
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="alibi-detect")
-class TestAlibiKSDetector(BaseDetector):
-    """Test Alibi-Detect KS detector for benchmark testing."""
+class AlibiKSDetector(BaseDetector):
+    """Alibi-Detect KS detector implementation for testing."""
 
     def __init__(self, method_id: str, variant_id: str, library_id: str = "alibi-detect", **kwargs):
         self._method_id = method_id
@@ -110,9 +109,8 @@ class TestAlibiKSDetector(BaseDetector):
         return self._score
 
 
-@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="scipy")
-class TestScipyDetector(BaseDetector):
-    """Test SciPy detector for benchmark testing."""
+class ScipyDetector(BaseDetector):
+    """SciPy detector implementation for testing."""
 
     def __init__(self, method_id: str, variant_id: str, library_id: str = "scipy", **kwargs):
         self._method_id = method_id
@@ -160,4 +158,21 @@ class TestScipyDetector(BaseDetector):
         return self._score
 
 
-print(f"Successfully registered test detectors from tests/assets/components")
+def register_test_detectors():
+    """
+    Register test detectors for use in tests.
+
+    Call this function when you need to register test detectors
+    for specific tests that require them.
+    """
+    # Only register if not already registered
+    try:
+        from drift_benchmark.adapters.registry import get_detector
+
+        # Check if already registered
+        get_detector("kolmogorov_smirnov", "ks_batch", "evidently")
+    except Exception:
+        # Not registered, so register them
+        register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="evidently")(EvidentlyKSDetector)
+        register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="alibi-detect")(AlibiKSDetector)
+        register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="scipy")(ScipyDetector)

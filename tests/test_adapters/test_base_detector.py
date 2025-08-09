@@ -780,7 +780,7 @@ def test_should_handle_data_flow_in_preprocess_when_called(sample_scenario_resul
     assert ref_data.shape == (5, 2), "ref_data should be converted to (5, 2) numeric array"
 
 
-def test_should_support_format_flexibility_when_preprocessing():
+def test_should_support_format_flexibility_when_preprocessing(simple_dataframe_factory):
     """Test REQ-ADP-010: preprocess() return type flexibility allows conversion to various formats required by detector libraries"""
     # Arrange
     try:
@@ -819,8 +819,8 @@ def test_should_support_format_flexibility_when_preprocessing():
     except ImportError as e:
         pytest.fail(f"Failed to import BaseDetector for format flexibility test: {e}")
 
-    # Create sample data
-    sample_df = pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
+    # REFACTORED: Use factory fixture instead of hardcoded DataFrame creation
+    sample_df = simple_dataframe_factory("simple")
 
     # Mock ScenarioResult
     class MockScenarioResult:
@@ -1066,7 +1066,7 @@ class TestBaseDetectorDataFlow:
 class TestBaseDetectorFormatFlexibility:
     """Test REQ-ADP-010: BaseDetector format flexibility requirements."""
 
-    def test_should_support_format_flexibility_when_preprocessing(self):
+    def test_should_support_format_flexibility_when_preprocessing(self, simple_dataframe_factory):
         """Test preprocess return type flexibility for various detector library formats."""
         # Arrange
         try:
@@ -1105,8 +1105,8 @@ class TestBaseDetectorFormatFlexibility:
         except ImportError as e:
             pytest.fail(f"Failed to import BaseDetector for format flexibility test: {e}")
 
-        # Create sample data
-        sample_df = pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
+        # REFACTORED: Use factory fixture instead of hardcoded DataFrame creation
+        sample_df = simple_dataframe_factory("simple")
 
         # Mock ScenarioResult
         class MockScenarioResult:
@@ -1127,7 +1127,7 @@ class TestBaseDetectorFormatFlexibility:
         np.testing.assert_array_equal(numpy_result, sample_df.values)
         pd.testing.assert_frame_equal(pandas_result, sample_df)
 
-    def test_should_support_custom_formats_when_preprocessing(self):
+    def test_should_support_custom_formats_when_preprocessing(self, simple_dataframe_factory):
         """Test preprocess supports custom data formats for specific libraries."""
         try:
             from drift_benchmark.adapters import BaseDetector
@@ -1162,7 +1162,8 @@ class TestBaseDetectorFormatFlexibility:
             custom_detector = CustomFormatDetector("custom_method", "custom_impl", "CUSTOM_LIB")
             list_detector = ListFormatDetector("list_method", "list_impl", "LIST_LIB")
 
-            sample_df = pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
+            # REFACTORED: Use factory fixture instead of hardcoded DataFrame creation
+            sample_df = simple_dataframe_factory("simple")
 
             class MockScenarioResult:
                 def __init__(self, ref_data):

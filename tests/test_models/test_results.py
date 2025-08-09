@@ -235,12 +235,12 @@ def test_should_support_optional_drift_score_when_created():
         pytest.fail(f"Failed to import DetectorResult for optional field test: {e}")
 
 
-def test_should_preserve_dataframe_structure_when_created():
+def test_should_preserve_dataframe_structure_when_created(simple_dataframe_factory):
     """Test that DatasetResult preserves pandas DataFrame structure and data integrity"""
-    # Arrange
-    ref_data = pd.DataFrame({"numeric_col": [1.0, 2.5, 3.7], "categorical_col": ["A", "B", "C"], "mixed_col": [1, "text", 3.14]})
-
-    test_data = pd.DataFrame({"numeric_col": [4.2, 5.1, 6.8], "categorical_col": ["D", "E", "F"], "mixed_col": ["text2", 2, 2.71]})
+    # REFACTORED: Use factory fixture instead of hardcoded DataFrame creation
+    mixed_data = simple_dataframe_factory("mixed")
+    ref_data = mixed_data["ref"]
+    test_data = mixed_data["test"]
 
     # DatasetResult is an alias for ScenarioResult, so needs full structure per REQ-MDL-004
     dataset_metadata = {

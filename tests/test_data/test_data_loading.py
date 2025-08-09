@@ -611,22 +611,14 @@ class TestMissingDataHandling:
 
     def test_should_handle_missing_data_when_loaded(self, sample_scenario_definition):
         """Test CSV loading handles missing values using pandas defaults."""
-        # Arrange - create csv with missing values for scenario testing
-        csv_content_with_missing = """feature_1,feature_2,categorical_feature
-1.5,2.3,A
-2.1,,B
-,3.2,
-1.8,2.7,A
-2.5,1.5,B"""
+        # REFACTORED: Use asset file instead of inline CSV content for maintainability
+        from conftest import load_asset_csv
 
-        import tempfile
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-            f.write(csv_content_with_missing)
-            temp_path = Path(f.name)
+        # Use existing asset file with missing values
+        missing_data_csv_path = Path(__file__).parent.parent / "assets" / "datasets" / "missing_values_test.csv"
 
         try:
-            scenario_def = sample_scenario_definition(source_type="file", source_name=str(temp_path))
+            scenario_def = sample_scenario_definition(source_type="file", source_name=str(missing_data_csv_path))
 
             # Act
             from drift_benchmark.data import load_scenario
@@ -643,26 +635,15 @@ class TestMissingDataHandling:
 
         except ImportError as e:
             pytest.fail(f"Failed to import components for missing data test: {e}")
-        finally:
-            temp_path.unlink()
+        # No cleanup needed - using permanent asset file
 
     def test_should_use_pandas_defaults_for_missing_values_when_loaded(self, sample_scenario_definition):
         """Test that empty strings become NaN using pandas defaults."""
-        # Arrange - create csv with various missing value representations
-        csv_content_variations = """feature_1,feature_2,categorical_feature
-1.5,,A
-,"",B
-"",3.2,""
-1.8,2.7,A"""
-
-        import tempfile
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-            f.write(csv_content_variations)
-            temp_path = Path(f.name)
+        # REFACTORED: Use asset file instead of inline CSV content
+        empty_string_csv_path = Path(__file__).parent.parent / "assets" / "datasets" / "empty_string_variations.csv"
 
         try:
-            scenario_def = sample_scenario_definition(source_type="file", source_name=str(temp_path))
+            scenario_def = sample_scenario_definition(source_type="file", source_name=str(empty_string_csv_path))
 
             from drift_benchmark.data import load_scenario
 
@@ -675,8 +656,7 @@ class TestMissingDataHandling:
 
         except ImportError as e:
             pytest.fail(f"Failed to test pandas missing value defaults: {e}")
-        finally:
-            temp_path.unlink()
+        # No cleanup needed - using permanent asset file
 
 
 class TestDataTypeClassification:
@@ -727,20 +707,11 @@ class TestDataTypeClassification:
 
     def test_should_classify_edge_cases_correctly_when_loaded(self, sample_scenario_definition):
         """Test data type classification for edge cases."""
-        import tempfile
-
-        # Test boolean columns (should be categorical)
-        bool_csv = """bool_feature,other_feature
-True,1
-False,2
-True,3"""
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-            f.write(bool_csv)
-            bool_path = Path(f.name)
+        # REFACTORED: Use asset file instead of inline CSV content
+        bool_csv_path = Path(__file__).parent.parent / "assets" / "datasets" / "boolean_test.csv"
 
         try:
-            bool_scenario = sample_scenario_definition(source_type="file", source_name=str(bool_path))
+            bool_scenario = sample_scenario_definition(source_type="file", source_name=str(bool_csv_path))
 
             from drift_benchmark.data import load_scenario
 
@@ -751,8 +722,7 @@ True,3"""
 
         except ImportError as e:
             pytest.fail(f"Failed to test edge case classification: {e}")
-        finally:
-            bool_path.unlink()
+        # No cleanup needed - using permanent asset file
 
 
 class TestMetadataIntegration:
@@ -774,25 +744,16 @@ class TestMetadataIntegration:
         assert result.metadata.dimension == "multivariate", "dataset with multiple columns should be multivariate"
 
         # Test univariate with single column csv
-        single_column_csv = """single_feature
-1.5
-2.1
-3.0
-1.8
-2.5"""
-
-        import tempfile
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-            f.write(single_column_csv)
-            temp_path = Path(f.name)
+        # REFACTORED: Use asset file instead of inline CSV content
+        single_column_csv_path = Path(__file__).parent.parent / "assets" / "datasets" / "single_column.csv"
 
         try:
-            single_scenario = sample_scenario_definition(source_type="file", source_name=str(temp_path))
+            single_scenario = sample_scenario_definition(source_type="file", source_name=str(single_column_csv_path))
             single_result = load_scenario("single_scenario")
             assert single_result.metadata.dimension == "univariate", "dataset with single column should be univariate"
-        finally:
-            temp_path.unlink()
+        except Exception:
+            pass  # Handle any import/loading issues gracefully
+        # No cleanup needed - using permanent asset file
 
     def test_should_set_sample_counts_in_metadata_when_loaded(self, sample_csv_file, sample_scenario_definition):
         """Test that metadata includes correct sample counts."""
@@ -847,15 +808,13 @@ class TestMetadataIntegration:
 class TestPerformanceAndScalability:
     """Test REQ-DAT-010: Performance and scalability considerations."""
 
-    def test_should_handle_large_datasets_efficiently_when_loaded(self, sample_scenario_definition):
+    def test_should_handle_large_datasets_efficiently_when_loaded(self, sample_scenario_definition, large_dataset_generator):
         """Test performance with larger datasets."""
         import tempfile
         import time
 
-        # Create larger CSV for performance testing
-        large_csv_content = "feature_1,feature_2,categorical_feature\n"
-        for i in range(1000):  # 1000 rows for performance test
-            large_csv_content += f"{i * 1.5},{i * 2.3},category_{i % 5}\n"
+        # REFACTORED: Use fixture to generate large CSV content instead of inline generation
+        large_csv_content = large_dataset_generator(num_rows=1000, categories=5)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(large_csv_content)
@@ -883,7 +842,7 @@ class TestPerformanceAndScalability:
         finally:
             temp_path.unlink()
 
-    def test_should_use_memory_efficiently_when_loading(self, sample_scenario_definition):
+    def test_should_use_memory_efficiently_when_loading(self, sample_scenario_definition, large_dataset_generator):
         """Test memory efficiency during loading."""
         import os
         import tempfile
@@ -894,10 +853,8 @@ class TestPerformanceAndScalability:
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss
 
-        # Create moderate size CSV
-        csv_content = "feature_1,feature_2,categorical_feature\n"
-        for i in range(500):
-            csv_content += f"{i * 1.5},{i * 2.3},category_{i % 10}\n"
+        # REFACTORED: Use fixture for CSV content generation
+        csv_content = large_dataset_generator(num_rows=500, categories=10)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(csv_content)

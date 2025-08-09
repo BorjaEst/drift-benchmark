@@ -1,0 +1,4 @@
+numeric_col,categorical_col,mixed_col
+4.2,D,text2
+5.1,E,2
+6.8,F,2.71

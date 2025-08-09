@@ -57,86 +57,7 @@ def temp_workspace():
     shutil.rmtree(temp_dir)
 
 
-@pytest.fixture(scope="session")
-def sample_dataset():
-    """Provide sample dataset for testing - loaded from assets"""
-    # Load reference and test data from asset files
-    reference_data = load_asset_csv("reference_data.csv")
-    test_data = load_asset_csv("test_data.csv")
-
-    # Combine for full dataset
-    full_dataset = pd.concat([reference_data, test_data], ignore_index=True)
-
-    return {
-        "full_dataset": full_dataset,
-        "reference_data": reference_data,
-        "test_data": test_data,
-        "reference_split": len(reference_data) / len(full_dataset),
-    }
-
-
-@pytest.fixture(scope="session")
-def mock_methods_registry():
-    """Provide mock methods registry configuration - loaded from assets"""
-    return load_asset_toml("test_methods.toml")
-
-
 # Module-scoped fixtures for shared test utilities
-@pytest.fixture(scope="module")
-def settings_env_vars():
-    """Provide environment variable settings for testing"""
-    return {
-        "DRIFT_BENCHMARK_DATASETS_DIR": "test_datasets",
-        "DRIFT_BENCHMARK_RESULTS_DIR": "test_results",
-        "DRIFT_BENCHMARK_LOGS_DIR": "test_logs",
-        "DRIFT_BENCHMARK_LOG_LEVEL": "debug",
-        "DRIFT_BENCHMARK_RANDOM_SEED": "123",
-    }
-
-
-@pytest.fixture(scope="module")
-def sample_csv_content():
-    """Provide sample csv content for file-based testing - loaded from assets"""
-    simple_data = load_asset_csv("simple_continuous.csv")
-    return simple_data.to_csv(index=False)
-
-
-@pytest.fixture(scope="module")
-def mock_detector_variants():
-    """Provide mock detector variants for testing"""
-
-    class MockDetector:
-        def __init__(self, method_id: str, variant_id: str, library_id: str = "custom", **kwargs):
-            self.method_id = method_id
-            self.variant_id = variant_id
-            self.library_id = library_id
-            self._fitted = False
-            self._last_score = None
-
-        def preprocess(self, data, **kwargs):
-            # Mock preprocessing - return numpy arrays
-            if hasattr(data, "X_ref"):
-                return data.X_ref.values
-            elif hasattr(data, "X_test"):
-                return data.X_test.values
-            return data.values if hasattr(data, "values") else data
-
-        def fit(self, preprocessed_data, **kwargs):
-            self._fitted = True
-            self._reference_data = preprocessed_data
-            return self
-
-        def detect(self, preprocessed_data, **kwargs):
-            if not self._fitted:
-                raise RuntimeError("Detector must be fitted before detection")
-            # Mock drift detection - always detect drift for testing
-            self._last_score = 0.75
-            return True
-
-        def score(self):
-            return self._last_score
-
-    return {"ks_test": {"scipy": MockDetector}, "drift_detector": {"custom": MockDetector}}
 
 
 @pytest.fixture
@@ -168,29 +89,6 @@ def mock_benchmark_config():
             ]
 
     return MockBenchmarkConfig()
-
-
-@pytest.fixture
-def mock_dataset_result():
-    """Provide mock DatasetResult for testing - loaded from assets"""
-    # Load data from assets instead of generating
-    ref_data = load_asset_csv("reference_data.csv")[["feature_1", "feature_2", "categorical_feature"]]
-    test_data = load_asset_csv("test_data.csv")[["feature_1", "feature_2", "categorical_feature"]]
-
-    metadata = Mock()
-    metadata.name = "mock_dataset"
-    metadata.data_type = "mixed"
-    metadata.dimension = "multivariate"
-    metadata.n_samples_ref = len(ref_data)
-    metadata.n_samples_test = len(test_data)
-
-    class MockDatasetResult:
-        def __init__(self, X_ref, X_test, metadata):
-            self.X_ref = X_ref
-            self.X_test = X_test
-            self.metadata = metadata
-
-    return MockDatasetResult(ref_data, test_data, metadata)
 
 
 @pytest.fixture
@@ -654,51 +552,15 @@ def clear_detector_registry():
 
 
 @pytest.fixture
-def simple_continuous_data():
-    """Load simple continuous dataset from assets"""
-    return load_asset_csv("simple_continuous.csv")
-
-
-@pytest.fixture
-def simple_categorical_data():
-    """Load simple categorical dataset from assets"""
-    return load_asset_csv("simple_categorical.csv")
-
-
-@pytest.fixture
 def mixed_data():
     """Load mixed data types dataset from assets"""
     return load_asset_csv("mixed_data.csv")
 
 
 @pytest.fixture
-def basic_benchmark_config():
-    """Load basic benchmark configuration from assets"""
-    return load_asset_toml("basic_benchmark.toml")
-
-
-@pytest.fixture
-def minimal_benchmark_config():
-    """Load minimal benchmark configuration from assets"""
-    return load_asset_toml("minimal_benchmark.toml")
-
-
-@pytest.fixture
-def test_methods_registry():
-    """Load test methods registry from assets"""
-    return load_asset_toml("test_methods.toml")
-
-
-@pytest.fixture
 def expected_benchmark_result():
     """Load expected benchmark result from assets"""
     return load_asset_json("expected_benchmark_result.json")
-
-
-@pytest.fixture
-def scenario_assets_path():
-    """Provide path to scenario assets for test scenario file creation"""
-    return Path(__file__).parent / "assets" / "scenarios"
 
 
 @pytest.fixture
@@ -714,12 +576,69 @@ def configuration_assets_path():
 
 
 @pytest.fixture
-def data_type_inference_test_cases():
-    """Provide test cases for data type inference testing - asset-driven approach"""
-    return load_asset_json("data_type_inference_cases.json", "configurations")
-
-
-@pytest.fixture
 def filtering_test_cases():
     """Provide test cases for scenario filtering testing - asset-driven approach"""
     return load_asset_json("filtering_test_cases.json", "configurations")
+
+
+@pytest.fixture
+def large_dataset_generator():
+    """Generate large datasets for performance testing - minimizes hardcoded content"""
+
+    def _generate_csv(num_rows: int = 1000, categories: int = 5) -> str:
+        """Generate CSV content with specified number of rows and categories"""
+        lines = ["feature_1,feature_2,categorical_feature"]
+        for i in range(num_rows):
+            lines.append(f"{i * 1.5},{i * 2.3},category_{i % categories}")
+        return "\n".join(lines)
+
+    return _generate_csv
+
+
+@pytest.fixture
+def simple_dataframe_factory():
+    """Factory for creating simple DataFrames from assets or minimal inline data"""
+
+    def _create_df(df_type: str = "simple"):
+        """Create DataFrame based on type - prioritizes assets, falls back to minimal inline"""
+        if df_type == "simple":
+            # REFACTORED: Load from asset when available, fallback to minimal inline
+            try:
+                return load_asset_csv("simple_test_data.csv")
+            except:
+                return pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
+        elif df_type == "mixed":
+            try:
+                ref_data = load_asset_csv("mixed_result_ref.csv")
+                test_data = load_asset_csv("mixed_result_test.csv")
+                return {"ref": ref_data, "test": test_data}
+            except:
+                ref_data = pd.DataFrame(
+                    {"numeric_col": [1.0, 2.5, 3.7], "categorical_col": ["A", "B", "C"], "mixed_col": [1, "text", 3.14]}
+                )
+                test_data = pd.DataFrame(
+                    {"numeric_col": [4.2, 5.1, 6.8], "categorical_col": ["D", "E", "F"], "mixed_col": ["text2", 2, 2.71]}
+                )
+                return {"ref": ref_data, "test": test_data}
+        else:
+            raise ValueError(f"Unknown df_type: {df_type}")
+
+    return _create_df
+
+
+@pytest.fixture
+def standard_test_configurations():
+    """Provide standard test configurations to avoid repetitive inline config creation"""
+
+    def _get_config(config_type: str = "simple"):
+        """Get standard configuration by type"""
+        if config_type == "simple":
+            return load_asset_json("simple_test_config.json", "configurations")
+        elif config_type == "invalid":
+            return load_asset_json("invalid_test_config.json", "configurations")
+        elif config_type == "standard":
+            return load_asset_json("standard_benchmark.json", "configurations")
+        else:
+            raise ValueError(f"Unknown config_type: {config_type}")
+
+    return _get_config
