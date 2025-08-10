@@ -66,6 +66,8 @@ This module defines architectural principles and dependency management for the d
 | **REQ-LIT-009** | **Log Level Literals**            | Must define `LogLevel` literal with values: "debug", "info", "warning", "error", "critical"                                                             |
 | **REQ-LIT-010** | **Library ID Literals**           | Must define `LibraryId` literal with values: "evidently", "alibi-detect", "scikit-learn", "river", "scipy", "custom"                                    |
 | **REQ-LIT-011** | **Scenario Source Type Literals** | Must define `ScenarioSourceType` literal with values: "sklearn", "file"                                                                                 |
+| **REQ-LIT-012** | **Statistical Validation Literals** | Must define `StatisticalTest` literal with values: "t_test", "wilcoxon", "mcnemar", "friedman"                                                           |
+| **REQ-LIT-013** | **Effect Size Literals**           | Must define `EffectSizeMetric` literal with values: "cohens_d", "hedges_g", "glass_delta", "cliff_delta"                                                |
 
 ---
 
@@ -82,6 +84,7 @@ This module defines custom exceptions for the drift-benchmark library to provide
 | **REQ-EXC-005** | **Data Errors**              | Must define `DataLoadingError`, `DataValidationError` for data-related issues              |
 | **REQ-EXC-006** | **Benchmark Errors**         | Must define `BenchmarkExecutionError` for benchmark execution issues                       |
 | **REQ-EXC-007** | **Duplicate Registration**   | Must define `DuplicateDetectorError` for attempting to register already existing detectors |
+| **REQ-EXC-008** | **Statistical Validation Errors** | Must define `StatisticalValidationError` for statistical power and effect size validation failures |
 
 ---
 
@@ -166,6 +169,7 @@ This module contains the data models used throughout the drift-benchmark library
 | **REQ-MET-003** | **BenchmarkSummary Model**   | Must define `BenchmarkSummary` with fields: total_detectors (int), successful_runs (int), failed_runs (int), avg_execution_time (float), total_scenarios (int) for performance metrics                                                                                                                                                      |
 | **REQ-MET-004** | **ScenarioDefinition Model** | Must define `ScenarioDefinition` with fields: description (str), source_type (ScenarioSourceType), source_name (str), target_column (Optional[str]), ref_filter (Dict[str, Any]), test_filter (Dict[str, Any]) to model the structure of a scenario .toml file. Filter dictionaries support: sample_range (Optional[List[int]]), feature_filters (Optional[List[Dict]]) with each feature filter containing column (str), condition (str), value (float/int). Additional modification parameters only allowed for synthetic datasets |
 | **REQ-MET-005** | **ScenarioMetadata Model**   | Must define `ScenarioMetadata` with fields: total_samples (int), ref_samples (int), test_samples (int), n_features (int), has_labels (bool), data_type (DataType), dimension (DataDimension) for scenario-specific metadata                                                                                                                 |
+| **REQ-MET-006** | **StatisticalValidation Model** | Must define `StatisticalValidation` with fields: expected_effect_size (Optional[float]), minimum_power (float, default=0.80), alpha_level (float, default=0.05), sample_size_adequate (bool) for statistical rigor validation |
 
 ---
 
@@ -268,6 +272,16 @@ This module provides data loading utilities for the drift-benchmark library, loc
 | --------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-DAT-018** | **Threshold Discovery Interface** | Data module must provide `discover_feature_thresholds(dataset_name: str, feature_name: str) -> Dict[str, float]` returning statistical thresholds (min, max, median, q25, q75) for feature-based filtering                                          |
 | **REQ-DAT-019** | **Dataset Feature Analysis**     | System must provide utilities to analyze feature distributions in real datasets to suggest meaningful filtering thresholds                                                                                                                              |
+| **REQ-DAT-020** | **Baseline Scenario Validation** | Every drift scenario must have a corresponding no-drift baseline scenario for statistical validation. System must validate baseline exists for each drift scenario during configuration loading |
+| **REQ-DAT-021** | **Quantitative Drift Measurement** | System must replace qualitative drift_intensity ("moderate", "severe") with quantitative metrics (kl_divergence, effect_size) in ground_truth sections of scenario files |
+
+### 🧪 Statistical Validation Requirements
+
+| ID              | Requirement                      | Description                                                                                                                                   |
+| --------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **REQ-STA-001** | **Power Analysis Integration**   | System must provide `calculate_required_sample_size(effect_size, power=0.80, alpha=0.05)` to validate scenario sample sizes are adequate    |
+| **REQ-STA-002** | **Effect Size Quantification**  | All scenarios must specify expected quantitative effect sizes instead of qualitative descriptors. Support Cohen's d, Hedges' g, Cliff's delta |
+| **REQ-STA-003** | **Statistical Significance Testing** | Benchmark results must include statistical significance tests (McNemar's test for paired comparisons, confidence intervals for metrics)     |
 | **REQ-DAT-020** | **Feature Documentation**        | Value discovery utilities must provide descriptive information about features in real datasets to help users understand filtering implications                                                                                                           |
 
 ### 📁 Enhanced Schema Support
@@ -276,6 +290,9 @@ This module provides data loading utilities for the drift-benchmark library, loc
 | --------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **REQ-DAT-021** | **Scenario File Format**      | Scenario definitions must be stored as TOML files in scenarios_dir with .toml extension, containing all required fields from ScenarioDefinition model including new feature_filters structure                                                         |
 | **REQ-DAT-022** | **Enhanced Filter Schema**     | ScenarioDefinition model must support enhanced filter structure: sample_range (optional), feature_filters (optional), and modification parameters only for synthetic datasets                                                                         |
+| **REQ-DAT-023** | **Scientific Metadata Schema** | Scenario files must support optional [statistical_validation] section with expected_effect_size, minimum_power, alpha_level fields for scientific rigor |
+
+---
 | **REQ-DAT-023** | **Error Handling Clarity**     | All data loading errors must provide specific error messages indicating: file path, specific failure reason, dataset type (synthetic/real), filter validation results, and suggested remediation steps                                               |
 
 ---

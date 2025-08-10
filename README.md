@@ -7,7 +7,7 @@
 
 **drift-benchmark** is a unified framework for evaluating and comparing drift detection methods across different datasets and scenarios. It provides a standardized interface for benchmarking various drift detection algorithms, enabling researchers and practitioners to objectively assess performance and choose the most suitable methods for their specific use cases.
 
-**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same mathematical methods within well-defined "Scenarios" which include ground-truth drift information, to identify which library provides better performance, accuracy, or resource efficiency for your specific use case.
+**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same mathematical methods within well-defined "Scenarios" which include ground-truth drift information and **statistical validation**, to identify which library provides better performance, accuracy, or resource efficiency for your specific use case with scientific rigor.
 
 ## 🏗️ Framework Architecture
 
@@ -16,7 +16,8 @@
 - **📋 Standardized Method+Variant Definitions**: We define consistent algorithmic approaches (variants) for each mathematical method
 - **⚙️ Library-Agnostic Interface**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same method+variant
 - **📊 Performance Benchmarking**: Evaluate speed, accuracy, and resource usage across implementations
-- **🔄 Fair Comparisons**: Ensure all libraries are tested under identical conditions and data preprocessing
+- **� Statistical Validation**: Ensure scientifically rigorous comparisons with power analysis and effect size measurements
+- **�🔄 Fair Comparisons**: Ensure all libraries are tested under identical conditions and data preprocessing
 
 ### 📚 Core Concepts
 
@@ -63,6 +64,7 @@ graph TD
 - **🔌 Unified Interface**: Consistent `BaseDetector` API for integrating any drift detection library
 - **📊 Flexible Data Handling**: Support for pandas DataFrames and automatic conversion to library-specific formats
 - **📈 Comprehensive Evaluation**: Performance metrics including accuracy, precision, recall, and execution time
+- **🧪 Statistical Rigor**: Power analysis, effect size measurements, and significance testing for scientifically valid comparisons
 - **🗂️ Multiple Data Types**: Support for continuous, categorical, and mixed data types
 - **⚙️ Configurable Benchmarks**: TOML-based configuration for reproducible experiments
 
@@ -143,7 +145,15 @@ drift_types = ["covariate"]
 # Ground truth specification for evaluation
 [ground_truth]
 drift_periods = [[500, 1000]]  # Drift occurs in samples 500-1000
-drift_intensity = "moderate"   # Optional: mild, moderate, severe
+# Enhanced: quantitative measurement replaces qualitative "moderate"
+kl_divergence = 0.45           # Expected KL divergence between distributions
+effect_size = 0.65             # Expected Cohen's d effect size
+
+# Optional: Statistical validation for scientific rigor
+[statistical_validation]
+expected_effect_size = 0.65    # Quantitative effect size expectation
+minimum_power = 0.80           # Statistical power requirement (80%)
+alpha_level = 0.05             # Significance level (5%)
 
 [ref_filter]
 # Filter conditions for reference data (non-drift period)
@@ -187,6 +197,33 @@ feature_filters = [
     {column = "mean texture", condition = ">", value = 20.0}
 ]
 # Note: No noise_factor or other modifications allowed for real datasets
+```
+
+#### Baseline Scenarios for Scientific Validation
+
+**Important**: Each drift scenario should have a corresponding no-drift baseline scenario for statistical validation:
+
+```toml
+# Example: covariate_drift_baseline.toml (companion to covariate_drift_example.toml)
+description = "No-drift baseline for statistical comparison"
+source_type = "sklearn"
+source_name = "make_classification"
+target_column = "target"
+drift_types = ["none"]
+
+[ground_truth]
+drift_periods = []              # No drift periods
+expected_detection = false      # Should NOT detect drift
+
+[statistical_validation]
+minimum_power = 0.80           # Validate false positive rate < 5%
+
+[ref_filter]
+sample_range = [0, 500]
+
+[test_filter]
+sample_range = [501, 1000]     # Different samples, no drift modifications
+# NO noise_factor or other drift-inducing parameters
 ```
 
 #### Set-Level Evaluation Approach
@@ -447,6 +484,8 @@ With scenario-based ground truth information using set-level evaluation:
 - **Accuracy**: Correct drift detection rate compared to ground truth across scenarios
 - **Precision**: True positive rate among positive predictions (scenarios correctly identified as having drift)
 - **Recall**: True positive rate among actual positives (drift scenarios correctly detected)
+- **Statistical Significance**: P-values and confidence intervals for performance comparisons
+- **Effect Size**: Quantitative measurement of performance differences between detectors
 - **Scenario Performance**: Detailed breakdown by drift type and scenario characteristics
 
 ## 🔧 Configuration
@@ -520,6 +559,30 @@ pytest -v --tb=short tests/
 ```
 
 All requirements are traceable through test identifiers that match the REQ-XXX-YYY pattern in REQUIREMENTS.md.
+
+## 🧪 Scientific Rigor and Statistical Validation
+
+**drift-benchmark** incorporates scientific best practices for experimental design and statistical validation:
+
+### Enhanced Scenario Format
+
+- **Quantitative Measurements**: Replace subjective drift intensity ("moderate", "severe") with measurable effect sizes
+- **Statistical Power Analysis**: Validate scenarios have adequate sample sizes for reliable detection
+- **Baseline Requirements**: Each drift scenario should include a no-drift baseline for statistical comparison
+
+### Backward Compatibility
+
+- **Graceful Degradation**: Existing scenarios without statistical validation fields continue to work
+- **Optional Enhancement**: Statistical validation fields are optional - add them when scientific rigor is required
+- **Incremental Adoption**: Enhance scenarios individually as needed
+
+### Migration Path
+
+1. **Current scenarios remain valid** - no immediate changes required
+2. **Add statistical validation** to new scenarios using the enhanced format shown above
+3. **Create baseline scenarios** for existing drift scenarios when statistical comparison is needed
+
+This approach ensures the framework supports both quick prototyping and publication-ready research.
 
 ## 📄 License
 
