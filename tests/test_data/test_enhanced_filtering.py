@@ -3,10 +3,10 @@ Test suite for enhanced filtering system - REQ-DAT-009 to REQ-DAT-017
 
 This module tests the enhanced filtering capabilities for the drift-benchmark
 library, focusing on dataset categorization, feature-based filtering, and
-authentic drift scenarios.
+authentic drift scenarios with UCI ML Repository integration.
 
 Requirements Coverage:
-- REQ-DAT-009: Dataset categorization (synthetic vs real)
+- REQ-DAT-009: Dataset categorization (synthetic vs real vs UCI)
 - REQ-DAT-010: Synthetic dataset handling with modifications
 - REQ-DAT-011: Real dataset preservation (no modifications)
 - REQ-DAT-012: Feature-based filtering with AND logic
@@ -15,6 +15,9 @@ Requirements Coverage:
 - REQ-DAT-015: Overlapping subsets support
 - REQ-DAT-016: Validation of modifications for dataset types
 - REQ-DAT-017: Empty subset handling and validation
+- REQ-DAT-018: UCI Repository integration with comprehensive metadata
+- REQ-DAT-024: UCI metadata integration with scientific traceability
+- REQ-DAT-025: Comprehensive dataset profiles for real-world data
 """
 
 import numpy as np
@@ -25,7 +28,7 @@ from drift_benchmark.exceptions import DataValidationError
 
 
 class TestDatasetCategorization:
-    """Test REQ-DAT-009: Dataset categorization (synthetic vs real)."""
+    """Test REQ-DAT-009: Dataset categorization (synthetic vs real vs UCI)."""
 
     def test_should_categorize_synthetic_datasets_when_loading(self, sample_scenario_definition):
         """Test that make_* datasets are categorized as synthetic."""
@@ -70,6 +73,76 @@ class TestDatasetCategorization:
 
             except ImportError as e:
                 pytest.fail(f"Failed to import load_scenario for real categorization test: {e}")
+
+    def test_should_categorize_uci_datasets_when_loading(self, sample_scenario_definition):
+        """Test REQ-DAT-018: UCI datasets are categorized separately with comprehensive metadata."""
+        # Arrange - UCI dataset scenarios
+        uci_datasets = ["wine-quality-red", "breast-cancer-wisconsin", "hepatitis"]
+
+        for dataset_name in uci_datasets:
+            scenario_def = sample_scenario_definition(
+                scenario_id=f"uci_{dataset_name.replace('-', '_')}", source_type="uci", source_name=dataset_name
+            )
+
+            # Act & Assert
+            try:
+                from drift_benchmark.data import load_scenario
+
+                result = load_scenario(f"uci_{dataset_name.replace('-', '_')}")
+
+                # Assert UCI categorization
+                assert hasattr(result.metadata, "dataset_category"), "metadata should include dataset_category"
+                assert result.metadata.dataset_category == "uci", f"{dataset_name} should be categorized as UCI dataset"
+
+                # REQ-DAT-024: UCI metadata integration with scientific traceability
+                assert hasattr(result.metadata, "uci_metadata"), "UCI datasets should include comprehensive metadata"
+                assert hasattr(result.metadata.uci_metadata, "dataset_id"), "UCI metadata should include dataset_id"
+                assert hasattr(result.metadata.uci_metadata, "domain"), "UCI metadata should include domain context"
+                assert hasattr(
+                    result.metadata.uci_metadata, "acquisition_date"
+                ), "UCI metadata should include acquisition_date for traceability"
+
+                # REQ-DAT-025: Comprehensive dataset profiles for UCI data
+                assert hasattr(result.metadata, "total_instances"), "UCI datasets should include total_instances count"
+                assert hasattr(result.metadata, "feature_descriptions"), "UCI datasets should include detailed feature descriptions"
+                assert hasattr(result.metadata, "missing_data_indicators"), "UCI datasets should include missing data analysis"
+
+            except ImportError as e:
+                pytest.fail(f"Failed to import load_scenario for UCI categorization test: {e}")
+
+    def test_should_preserve_dataset_authenticity_across_categories_when_filtering(self, sample_scenario_definition):
+        """Test REQ-DAT-011: Both real sklearn datasets and UCI datasets must preserve authenticity."""
+        # Arrange - test authenticity preservation across different real dataset types
+        real_datasets = [("sklearn", "load_breast_cancer"), ("uci", "breast-cancer-wisconsin")]
+
+        for source_type, dataset_name in real_datasets:
+            scenario_def = sample_scenario_definition(
+                scenario_id=f"authenticity_{source_type}_{dataset_name.replace('-', '_')}",
+                source_type=source_type,
+                source_name=dataset_name,
+                test_filter={
+                    "sample_range": [100, 200],
+                    "noise_factor": 1.5,  # Should be rejected for both real and UCI datasets
+                    "feature_scaling": 2.0,  # Should be rejected for both real and UCI datasets
+                },
+            )
+
+            # Act & Assert
+            try:
+                from drift_benchmark.data import load_scenario
+                from drift_benchmark.exceptions import DataValidationError
+
+                with pytest.raises(DataValidationError) as exc_info:
+                    load_scenario(f"authenticity_{source_type}_{dataset_name.replace('-', '_')}")
+
+                error_message = str(exc_info.value).lower()
+                assert "modification" in error_message, f"Error should mention modification restriction for {source_type} datasets"
+                assert (
+                    "authenticity" in error_message or "real" in error_message or "uci" in error_message
+                ), f"Error should reference dataset authenticity for {source_type}"
+
+            except ImportError as e:
+                pytest.fail(f"Failed to test authenticity preservation for {source_type} dataset: {e}")
 
 
 class TestSyntheticDatasetHandling:

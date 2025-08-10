@@ -2,12 +2,15 @@
 Test suite for value discovery utilities - REQ-DAT-018 to REQ-DAT-020
 
 This module tests the value discovery utilities that help users identify
-meaningful thresholds for feature-based filtering in real datasets.
+meaningful thresholds for feature-based filtering in real datasets, with
+enhanced support for UCI ML Repository integration.
 
 Requirements Coverage:
-- REQ-DAT-018: Threshold discovery interface
+- REQ-DAT-018: UCI Repository integration with comprehensive metadata
 - REQ-DAT-019: Dataset feature analysis utilities
 - REQ-DAT-020: Feature documentation and guidance
+- REQ-DAT-024: UCI metadata integration with scientific traceability
+- REQ-DAT-025: Comprehensive dataset profiles for real-world data
 """
 
 import numpy as np
@@ -15,6 +18,124 @@ import pandas as pd
 import pytest
 
 from drift_benchmark.exceptions import DataLoadingError
+
+
+class TestUCIRepositoryIntegration:
+    """Test REQ-DAT-018: UCI Repository integration with comprehensive metadata."""
+
+    def test_should_support_uci_dataset_discovery_when_imported(self):
+        """Test that value discovery supports UCI ML Repository datasets."""
+        # Act & Assert
+        try:
+            from drift_benchmark.data import discover_feature_thresholds
+
+            # Test UCI dataset threshold discovery
+            result = discover_feature_thresholds("uci:wine-quality-red", "alcohol")
+
+            # Assert UCI dataset support
+            assert isinstance(result, dict), "Should return dictionary for UCI datasets"
+            assert "min" in result and "max" in result, "Should have min/max for UCI datasets"
+            assert result["min"] < result["max"], "Min should be less than max for UCI datasets"
+
+            # REQ-DAT-024: UCI metadata should be preserved in discovery results
+            assert "uci_metadata" in result, "Discovery results should include UCI metadata"
+            assert "dataset_id" in result["uci_metadata"], "Should preserve UCI dataset identifier"
+            assert "domain" in result["uci_metadata"], "Should include domain context"
+            assert "acquisition_date" in result["uci_metadata"], "Should include acquisition date for traceability"
+
+        except ImportError as e:
+            pytest.fail(f"Failed to test UCI dataset discovery: {e}")
+
+    def test_should_provide_comprehensive_uci_metadata_when_analyzing(self):
+        """Test REQ-DAT-024: UCI metadata integration with scientific traceability."""
+        # Act & Assert
+        try:
+            from drift_benchmark.data import get_uci_dataset_metadata
+
+            # Test comprehensive UCI metadata retrieval
+            result = get_uci_dataset_metadata("breast-cancer-wisconsin")
+
+            # Assert comprehensive UCI metadata structure
+            assert isinstance(result, dict), "Should return structured UCI metadata"
+
+            # REQ-DAT-025: Comprehensive dataset profiles
+            assert "total_instances" in result, "Should include total instance count"
+            assert "feature_descriptions" in result, "Should include detailed feature descriptions"
+            assert "numerical_feature_count" in result, "Should count numerical features"
+            assert "categorical_feature_count" in result, "Should count categorical features"
+            assert "missing_data_percentage" in result, "Should include missing data analysis"
+            assert "data_quality_score" in result, "Should include data quality assessment"
+
+            # REQ-DAT-024: Scientific traceability metadata
+            assert "original_source" in result, "Should preserve original source information"
+            assert "acquisition_date" in result, "Should include data acquisition date"
+            assert "last_updated" in result, "Should include last update information"
+            assert "collection_methodology" in result, "Should document data collection methodology"
+            assert "domain_context" in result, "Should provide domain-specific context"
+
+        except ImportError as e:
+            pytest.fail(f"Failed to test comprehensive UCI metadata: {e}")
+
+    def test_should_detect_and_address_missing_data_in_uci_datasets_when_analyzing(self):
+        """Test REQ-DAT-025: Mechanisms for detecting and addressing missing data or anomalies in UCI datasets."""
+        # Act & Assert
+        try:
+            from drift_benchmark.data import analyze_uci_data_quality
+
+            # Test missing data detection for UCI datasets
+            result = analyze_uci_data_quality("hepatitis")  # Known UCI dataset with missing values
+
+            # Assert missing data detection mechanisms
+            assert isinstance(result, dict), "Should return structured data quality analysis"
+            assert "missing_data_indicators" in result, "Should include missing data detection"
+            assert "anomaly_detection_results" in result, "Should include anomaly detection"
+            assert "data_quality_indicators" in result, "Should include comprehensive quality indicators"
+
+            # Assert missing data analysis structure
+            missing_indicators = result["missing_data_indicators"]
+            assert "total_missing_count" in missing_indicators, "Should count total missing values"
+            assert "missing_by_feature" in missing_indicators, "Should analyze missing data by feature"
+            assert "missing_patterns" in missing_indicators, "Should identify missing data patterns"
+
+            # Assert anomaly detection capabilities
+            anomaly_results = result["anomaly_detection_results"]
+            assert "outlier_detection_method" in anomaly_results, "Should specify detection method"
+            assert "outlier_count" in anomaly_results, "Should count detected outliers"
+            assert "outlier_features" in anomaly_results, "Should identify features with outliers"
+
+            # Assert quality indicators
+            quality_indicators = result["data_quality_indicators"]
+            assert "completeness_score" in quality_indicators, "Should assess data completeness"
+            assert "consistency_score" in quality_indicators, "Should assess data consistency"
+            assert "accuracy_assessment" in quality_indicators, "Should provide accuracy assessment"
+
+        except ImportError as e:
+            pytest.fail(f"Failed to test UCI data quality analysis: {e}")
+
+    def test_should_provide_clear_ucimlrepo_reference_when_discovering(self):
+        """Test clear reference to the ucimlrepo repository supporting robust drift analysis."""
+        # Act & Assert
+        try:
+            from drift_benchmark.data import get_uci_repository_info
+
+            # Test ucimlrepo repository reference
+            result = get_uci_repository_info()
+
+            # Assert clear ucimlrepo reference
+            assert isinstance(result, dict), "Should return repository information"
+            assert "repository_name" in result, "Should identify repository name"
+            assert "access_method" in result, "Should specify access method"
+            assert "repository_url" in result, "Should include repository URL"
+            assert "drift_analysis_support" in result, "Should reference robust drift analysis support"
+
+            # Assert specific content
+            assert result["repository_name"] == "UCI Machine Learning Repository", "Should clearly identify UCI ML Repository"
+            assert "ucimlrepo" in result["access_method"], "Should reference ucimlrepo package"
+            assert "robust drift analysis" in result["drift_analysis_support"].lower(), "Should mention robust drift analysis capabilities"
+            assert "500+ datasets" in str(result.get("dataset_count", "")), "Should reference comprehensive dataset collection"
+
+        except ImportError as e:
+            pytest.fail(f"Failed to test ucimlrepo repository reference: {e}")
 
 
 class TestThresholdDiscoveryInterface:

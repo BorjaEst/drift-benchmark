@@ -6,27 +6,8 @@ library, providing scenario loading with filtering and preprocessing capabilitie
 
 Requirements Coverage:
 - REQ-DAT-001: Data module interface (load_scenario function)
-- REQ-DAT-002: CSV format support with p        result = load_scenario("test_scenario")
-
-        # Assert filters applied correctly
-        # FIXED: Updated assertion to reflect actual behavior - ref_filter [0, 5] gives 6 samples (inclusive endpoints),
-        # not "at most 5" as the original test expected. This aligns with REQ-DAT-014 inclusive endpoint requirement.
-        assert len(result.ref_data) == 6, f"ref_filter [0, 5] should give 6 samples (inclusive), got {len(result.ref_data)}"
-        # FIXED: test_filter [5, 10] on 10-row dataset gives 5 samples (indices 5-9), not "at most 5"
-        assert len(result.test_data) == 5, f"test_filter [5, 10] should give 5 samples (indices 5-9), got {len(result.test_data)}"
-
-        # Assert no overlap between ref and test when filters are properly applied
-        ref_indices = set(result.ref_data.index)
-        test_indices = set(result.test_data.index)
-        assert (
-            len(ref_indices.intersection(test_indices)) == 0
-        ), "ref_data and test_data should not have overlapping indices with proper filters"
-
-    except ImportError as e:
-        pytest.fail(f"Failed to import load_scenario for filter test: {e}")
-
-
-# Test functions for different data format support REQ-DAT-003: Scenario filters application (ref_filter, test_filter)
+- REQ-DAT-002: CSV format support with pandas defaults
+- REQ-DAT-003: Scenario filters application (ref_filter, test_filter)
 - REQ-DAT-004: File path validation and error handling
 - REQ-DAT-005: Automatic data type inference
 - REQ-DAT-006: DataFrame return types with preserved structure
@@ -34,6 +15,9 @@ Requirements Coverage:
 - REQ-DAT-008: Data type classification algorithm implementation
 - REQ-DAT-009: Metadata integration with inferred properties
 - REQ-DAT-010: Performance and scalability considerations
+- REQ-DAT-018: UCI Repository integration with comprehensive metadata
+- REQ-DAT-024: UCI metadata integration with scientific traceability
+- REQ-DAT-025: Comprehensive dataset profiles for real-world data
 
 Note: Fixed incorrect references from DimensionType to DataDimension
 per REQ-LIT-003 requirements. The correct literal type is DataDimension
@@ -71,9 +55,14 @@ class TestDataModuleInterface:
             result = load_scenario(scenario_id)
             assert result is not None, "load_scenario() must return a ScenarioResult"
             assert hasattr(result, "name"), "result must have name field"
-            assert hasattr(result, "ref_data"), "result must have ref_data field"
-            assert hasattr(result, "test_data"), "result must have test_data field"
+            assert hasattr(result, "X_ref"), "result must have X_ref field"
+            assert hasattr(result, "X_test"), "result must have X_test field"
             assert hasattr(result, "metadata"), "result must have metadata field"
+            # REQ-DAT-025: Comprehensive dataset profiles for real-world data
+            assert hasattr(result.metadata, "total_instances"), "metadata must include total_instances for comprehensive profiling"
+            assert hasattr(result.metadata, "feature_descriptions"), "metadata must include feature descriptions"
+            assert hasattr(result.metadata, "missing_data_indicators"), "metadata must include missing data detection"
+            assert hasattr(result.metadata, "data_quality_score"), "metadata must include data quality indicators"
         except ImportError as e:
             pytest.fail(f"Failed to import load_scenario from data module: {e}")
 
@@ -105,8 +94,79 @@ class TestDataModuleInterface:
         except ImportError as e:
             pytest.fail(f"Failed to import components for return type test: {e}")
 
+    def test_should_support_uci_dataset_source_type_when_configured(self, sample_scenario_definition):
+        """Test REQ-DAT-008: Support source_type="uci" for UCI ML Repository integration via ucimlrepo."""
+        # Arrange - UCI dataset scenario
+        scenario_def = sample_scenario_definition(
+            scenario_id="uci_dataset_test",
+            source_type="uci",
+            source_name="wine-quality-red",
+            target_column="quality",
+            drift_types=["covariate"],
+        )
 
-class TestFileFormatSupport:
+        # Act & Assert
+        try:
+            from drift_benchmark.data import load_scenario
+
+            result = load_scenario("uci_dataset_test")
+
+            # Assert UCI dataset loaded successfully
+            assert result is not None, "UCI dataset should load successfully"
+            assert isinstance(result.X_ref, pd.DataFrame), "UCI X_ref must be pandas DataFrame"
+            assert isinstance(result.X_test, pd.DataFrame), "UCI X_test must be pandas DataFrame"
+
+            # REQ-DAT-024: UCI metadata integration with comprehensive traceability
+            assert hasattr(result.metadata, "uci_metadata"), "metadata must include UCI-specific information"
+            assert hasattr(result.metadata.uci_metadata, "dataset_id"), "UCI metadata must include dataset_id"
+            assert hasattr(result.metadata.uci_metadata, "domain"), "UCI metadata must include domain context"
+            assert hasattr(result.metadata.uci_metadata, "acquisition_date"), "UCI metadata must include acquisition_date"
+            assert hasattr(result.metadata.uci_metadata, "original_source"), "UCI metadata must include original_source for traceability"
+            assert hasattr(result.metadata.uci_metadata, "last_updated"), "UCI metadata must include last_updated"
+            assert hasattr(result.metadata.uci_metadata, "collection_methodology"), "UCI metadata must include collection_methodology"
+
+            # REQ-DAT-018: UCI repository integration with comprehensive metadata
+            assert result.metadata.uci_metadata.dataset_id == "wine-quality-red", "UCI dataset_id should be preserved"
+            assert result.metadata.uci_metadata.domain is not None, "UCI domain information should be present"
+
+        except ImportError as e:
+            pytest.fail(f"Failed to test UCI dataset support: {e}")
+
+    def test_should_preserve_uci_dataset_authenticity_when_loaded(self, sample_scenario_definition):
+        """Test REQ-DAT-011: UCI datasets must preserve data authenticity (no modifications allowed)."""
+        # Arrange - UCI dataset with forbidden modifications
+        scenario_def = sample_scenario_definition(
+            scenario_id="uci_authenticity_test",
+            source_type="uci",
+            source_name="breast-cancer-wisconsin",
+            target_column="diagnosis",
+            test_filter={
+                "sample_range": [200, 400],
+                "noise_factor": 1.5,  # Should be rejected for UCI datasets
+                "feature_scaling": 2.0,  # Should be rejected for UCI datasets
+            },
+        )
+
+        # Act & Assert
+        try:
+            from drift_benchmark.data import load_scenario
+            from drift_benchmark.exceptions import DataValidationError
+
+            with pytest.raises(DataValidationError) as exc_info:
+                load_scenario("uci_authenticity_test")
+
+            error_message = str(exc_info.value).lower()
+            assert "uci" in error_message or "real dataset" in error_message, "Error should mention UCI dataset restriction"
+            assert "modification" in error_message, "Error should mention modification restriction"
+            assert "authenticity" in error_message or "preserve" in error_message, "Error should mention authenticity preservation"
+
+        except ImportError as e:
+            pytest.fail(f"Failed to test UCI dataset authenticity preservation: {e}")
+
+
+class TestEnhancedDatasetSupport:
+    """Test enhanced real-world dataset support following Paulo M. Gonçalves Jr. (2014) principles."""
+
     """Test REQ-DAT-002: File format support requirements."""
 
     def test_should_support_csv_format_when_loaded(self, sample_csv_file, sample_scenario_definition):
