@@ -9,6 +9,28 @@
 
 **🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same mathematical methods within well-defined "Scenarios" which include ground-truth drift information and **statistical validation**, to identify which library provides better performance, accuracy, or resource efficiency for your specific use case with scientific rigor.
 
+## 🔬 Scientific Foundation
+
+The integration of real-world data scenarios in **drift-benchmark** is grounded in established drift detection evaluation principles, particularly following the comprehensive comparative study by Gonçalves Jr. et al. (2014) that highlighted the importance of evaluating drift detection methods across diverse dataset characteristics and authentic drift patterns.
+
+### 📊 Evidence-Based Evaluation Approach
+
+As demonstrated in the seminal work "A comparative study on concept drift detectors" (Expert Systems with Applications, 2014), effective drift detection evaluation requires:
+
+- **Diverse Dataset Characteristics**: Testing across both artificial and real-world datasets to capture different drift patterns and complexities
+- **Quantitative Metrics**: Moving beyond qualitative descriptors ("moderate", "severe") to precise measurements (KL divergence, effect sizes, Mahalanobis distances)
+- **Statistical Rigor**: Incorporating power analysis, confidence intervals, and significance testing using methods like the Friedman non-parametric test
+- **Authentic Data Preservation**: Maintaining the integrity of real-world datasets while creating realistic drift scenarios through intelligent sampling
+
+The framework's enhancement with UCI ML Repository integration provides access to **over 500 diverse real-world datasets** spanning domains such as healthcare, finance, environmental science, and social sciences, enabling comprehensive evaluation that reflects the true complexity of production drift detection scenarios.
+
+### 🎯 Key Scientific Improvements
+
+1. **Quantitative Drift Measurement**: Replacing qualitative intensity descriptions with measurable metrics (KL divergence, Cohen's d effect sizes)
+2. **Statistical Validation Integration**: Built-in power analysis and significance testing following established statistical protocols
+3. **Data Authenticity Preservation**: Strict separation of synthetic (modifiable) and real (filtering-only) datasets to maintain scientific validity
+4. **Comprehensive Metadata Capture**: Complete provenance tracking for scientific reproducibility and traceability
+
 ## 🏗️ Framework Architecture
 
 **drift-benchmark** acts as a **standardization layer** that enables fair comparison of drift detection implementations across different libraries. Our framework provides:
@@ -77,11 +99,12 @@ graph TD
 ### Data Format Support
 
 - **Scenario Files**: TOML-based scenario definitions with ground-truth drift information
-- **Multiple Data Sources**: Support for sklearn datasets and CSV files
+- **Multiple Data Sources**: Support for sklearn datasets, CSV files, and UCI ML Repository integration
 - **Univariate & Multivariate**: Support for single and multiple feature scenarios
 - **Advanced Filtering**: Configurable reference/test data filtering through scenario definitions with support for feature-based filtering and authentic drift scenarios
 - **Ground Truth Integration**: Specify drift periods and types for evaluation metrics
 - **Dataset Categorization**: Intelligent handling of synthetic vs. real datasets to preserve data authenticity
+- **UCI Repository Access**: Direct integration with ucimlrepo for accessing diverse real-world datasets with comprehensive metadata
 
 ## 🚀 Quick Start
 
@@ -92,11 +115,14 @@ graph TD
 git clone https://github.com/BorjaEst/drift-benchmark.git
 cd drift-benchmark
 
-# Install dependencies
+# Install dependencies (includes UCI ML Repository integration)
 pip install -r requirements.txt
 
 # Install in development mode
 pip install -e .
+
+# Optional: For UCI dataset access, ensure ucimlrepo is available
+pip install ucimlrepo
 ```
 
 ### Basic Usage
@@ -179,7 +205,8 @@ drift_types = ["covariate"]
 # Ground truth specification for evaluation
 [ground_truth]
 drift_periods = [[0, 569]]           # Drift through feature-based sampling
-drift_intensity = "moderate"
+kl_divergence = 0.35                 # Expected quantitative drift measurement
+effect_size = 0.50                   # Expected Cohen's d effect size
 
 [ref_filter]
 # Reference data: smaller tumors (authentic low-risk population)
@@ -197,6 +224,54 @@ feature_filters = [
     {column = "mean texture", condition = ">", value = 20.0}
 ]
 # Note: No noise_factor or other modifications allowed for real datasets
+```
+
+**UCI Repository Dataset Example** (comprehensive real-world data):
+
+```toml
+description = "UCI Wine Quality dataset with authentic drift based on alcohol content"
+source_type = "uci"
+source_name = "wine-quality-red"      # UCI dataset identifier
+target_column = "quality"
+drift_types = ["covariate"]
+
+# Ground truth specification for evaluation
+[ground_truth]
+drift_periods = [[0, 1599]]           # Drift through feature-based sampling
+kl_divergence = 0.42                  # Expected quantitative drift measurement
+effect_size = 0.58                    # Expected Cohen's d effect size
+
+# Optional: UCI-specific metadata for scientific traceability
+[uci_metadata]
+dataset_id = "wine-quality-red"
+domain = "food_beverage_chemistry"
+feature_descriptions = "Chemical properties affecting wine quality"
+data_quality_score = 0.92
+original_source = "Paulo Cortez, University of Minho"
+acquisition_date = "2009-10-07"
+last_updated = "2009-10-07"
+collection_methodology = "Laboratory chemical analysis"
+
+# Statistical validation for scientific rigor
+[statistical_validation]
+expected_effect_size = 0.58           # Quantitative effect size expectation
+minimum_power = 0.80                  # Statistical power requirement (80%)
+alpha_level = 0.05                    # Significance level (5%)
+
+[ref_filter]
+# Reference data: low alcohol wines (authentic light wine population)
+sample_range = [0, 1599]
+feature_filters = [
+    {column = "alcohol", condition = "<=", value = 10.5}
+]
+
+[test_filter]
+# Test data: high alcohol wines (authentic strong wine population)
+sample_range = [0, 1599]
+feature_filters = [
+    {column = "alcohol", condition = ">", value = 12.0}
+]
+# Note: No modifications allowed for UCI datasets - preserves data authenticity
 ```
 
 #### Baseline Scenarios for Scientific Validation
@@ -243,6 +318,8 @@ The framework maintains data authenticity by treating synthetic and real dataset
 
 **Real Datasets** (`load_*`): Preserve data authenticity by using only feature-based filtering to create drift scenarios. This leverages natural variation and correlations already present in real-world data, providing more realistic drift detection challenges.
 
+**UCI Datasets** (`uci` source_type): Access diverse real-world datasets from the UCI Machine Learning Repository with comprehensive metadata. Similar to real datasets, only feature-based filtering is allowed to preserve data authenticity.
+
 **Supported Filter Operations**:
 
 **For all datasets**:
@@ -259,10 +336,13 @@ The framework maintains data authenticity by treating synthetic and real dataset
 - `random_state: int` - Control randomness for reproducibility
 - Other sklearn-specific parameters as supported by the dataset function
 
-**For real datasets** (`load_*` functions):
+**For real datasets** (`load_*` functions) and **UCI datasets**:
 
 - ❌ **No modification parameters allowed** - preserves data authenticity
 - ✅ **Only filtering through sample_range and feature_filters**
+- 📊 **Enhanced metadata capture** for UCI datasets with provenance tracking
+
+**Backward Compatibility**: Existing scenario files remain fully compatible. The framework automatically detects legacy qualitative drift descriptors and suggests quantitative alternatives while maintaining functionality.
 
 **Security Note**: No support for arbitrary Python expressions - only predefined filter operations
 
@@ -479,14 +559,16 @@ results/20250720_143022/
 
 ### Summary Statistics
 
-With scenario-based ground truth information using set-level evaluation:
+With scenario-based ground truth information using set-level evaluation and enhanced scientific rigor following Gonçalves Jr. et al. (2014):
 
 - **Accuracy**: Correct drift detection rate compared to ground truth across scenarios
 - **Precision**: True positive rate among positive predictions (scenarios correctly identified as having drift)
 - **Recall**: True positive rate among actual positives (drift scenarios correctly detected)
-- **Statistical Significance**: P-values and confidence intervals for performance comparisons
-- **Effect Size**: Quantitative measurement of performance differences between detectors
+- **Statistical Significance**: P-values and confidence intervals for performance comparisons using Friedman non-parametric tests
+- **Effect Size**: Quantitative measurement of performance differences (Cohen's d, Hedges' g, Cliff's delta)
 - **Scenario Performance**: Detailed breakdown by drift type and scenario characteristics
+- **Dataset Provenance**: Complete metadata tracking for UCI and real-world datasets ensuring scientific reproducibility
+- **Power Analysis**: Statistical power validation for meaningful comparisons across diverse data sources
 
 ## 🔧 Configuration
 
