@@ -172,7 +172,7 @@ class TestEnhancedDatasetSupport:
     def test_should_support_csv_format_when_loaded(self, sample_csv_file, sample_scenario_definition):
         """Test CSV format support using pandas.read_csv() with default parameters."""
         # Arrange
-        scenario_definition = sample_scenario_definition(source_type="file", source_name=str(sample_csv_file))
+        scenario_definition = sample_scenario_definition(scenario_id="test_scenario", source_type="file", source_name=str(sample_csv_file))
 
         # Act
         try:
@@ -549,7 +549,7 @@ def test_should_apply_scenario_filters_when_loaded(sample_csv_file, sample_scena
 def test_should_validate_file_path_when_loading(sample_scenario_definition):
     """Test REQ-DAT-004: File loading must validate file exists and is readable, raising DataLoadingError with descriptive message"""
     # Arrange
-    scenario_def = sample_scenario_definition(source_type="file", source_name="non_existent_file.csv")
+    scenario_def = sample_scenario_definition(scenario_id="test_scenario", source_type="file", source_name="non_existent_file.csv")
 
     # Act & Assert
     try:
@@ -557,7 +557,7 @@ def test_should_validate_file_path_when_loading(sample_scenario_definition):
         from drift_benchmark.exceptions import DataLoadingError
 
         with pytest.raises(DataLoadingError) as exc_info:
-            load_scenario("non_existent_scenario")
+            load_scenario("test_scenario")
 
         error_message = str(exc_info.value).lower()
         assert "non_existent_file.csv" in error_message, "Error should mention the missing file"
@@ -574,17 +574,21 @@ def test_should_infer_data_types_when_loaded(numeric_only_csv_file, categorical_
         from drift_benchmark.data import load_scenario
 
         # Test continuous data type inference
-        numeric_scenario = sample_scenario_definition(source_type="file", source_name=str(numeric_only_csv_file))
+        numeric_scenario = sample_scenario_definition(
+            scenario_id="numeric_scenario", source_type="file", source_name=str(numeric_only_csv_file)
+        )
         numeric_result = load_scenario("numeric_scenario")
         assert "continuous" in str(numeric_result.metadata), "numeric-only dataset should be inferred as continuous"
 
         # Test categorical data type inference
-        categorical_scenario = sample_scenario_definition(source_type="file", source_name=str(categorical_only_csv_file))
+        categorical_scenario = sample_scenario_definition(
+            scenario_id="categorical_scenario", source_type="file", source_name=str(categorical_only_csv_file)
+        )
         categorical_result = load_scenario("categorical_scenario")
         assert "categorical" in str(categorical_result.metadata), "categorical-only dataset should be inferred as categorical"
 
         # Test mixed data type inference
-        mixed_scenario = sample_scenario_definition(source_type="file", source_name=str(sample_csv_file))
+        mixed_scenario = sample_scenario_definition(scenario_id="mixed_scenario", source_type="file", source_name=str(sample_csv_file))
         mixed_result = load_scenario("mixed_scenario")
         assert "mixed" in str(mixed_result.metadata), "mixed dataset should be inferred as mixed"
 
@@ -678,7 +682,9 @@ class TestMissingDataHandling:
         missing_data_csv_path = Path(__file__).parent.parent / "assets" / "datasets" / "missing_values_test.csv"
 
         try:
-            scenario_def = sample_scenario_definition(source_type="file", source_name=str(missing_data_csv_path))
+            scenario_def = sample_scenario_definition(
+                scenario_id="missing_data_scenario", source_type="file", source_name=str(missing_data_csv_path)
+            )
 
             # Act
             from drift_benchmark.data import load_scenario
@@ -731,7 +737,9 @@ class TestDataTypeClassification:
             from drift_benchmark.data import load_scenario
 
             # Test continuous: numeric dtypes only
-            numeric_scenario = sample_scenario_definition(source_type="file", source_name=str(numeric_only_csv_file))
+            numeric_scenario = sample_scenario_definition(
+                scenario_id="numeric_scenario", source_type="file", source_name=str(numeric_only_csv_file)
+            )
             numeric_result = load_scenario("numeric_scenario")
 
             # Verify all columns are numeric
@@ -741,7 +749,9 @@ class TestDataTypeClassification:
             assert numeric_result.metadata.data_type == "continuous", "should be inferred as continuous"
 
             # Test categorical: object/string dtypes only
-            categorical_scenario = sample_scenario_definition(source_type="file", source_name=str(categorical_only_csv_file))
+            categorical_scenario = sample_scenario_definition(
+                scenario_id="categorical_scenario", source_type="file", source_name=str(categorical_only_csv_file)
+            )
             categorical_result = load_scenario("categorical_scenario")
 
             # Verify all columns are object/string
@@ -751,7 +761,7 @@ class TestDataTypeClassification:
             assert categorical_result.metadata.data_type == "categorical", "should be inferred as categorical"
 
             # Test mixed: both numeric and object dtypes
-            mixed_scenario = sample_scenario_definition(source_type="file", source_name=str(sample_csv_file))
+            mixed_scenario = sample_scenario_definition(scenario_id="mixed_scenario", source_type="file", source_name=str(sample_csv_file))
             mixed_result = load_scenario("mixed_scenario")
 
             # Verify mix of column types
@@ -881,7 +891,7 @@ class TestPerformanceAndScalability:
             temp_path = Path(f.name)
 
         try:
-            scenario_def = sample_scenario_definition(source_type="file", source_name=str(temp_path))
+            scenario_def = sample_scenario_definition(scenario_id="large_scenario", source_type="file", source_name=str(temp_path))
 
             from drift_benchmark.data import load_scenario
 
@@ -921,7 +931,7 @@ class TestPerformanceAndScalability:
             temp_path = Path(f.name)
 
         try:
-            scenario_def = sample_scenario_definition(source_type="file", source_name=str(temp_path))
+            scenario_def = sample_scenario_definition(scenario_id="memory_test_scenario", source_type="file", source_name=str(temp_path))
 
             from drift_benchmark.data import load_scenario
 
@@ -970,7 +980,7 @@ def test_should_infer_data_types_when_loaded_parameterized(
         from drift_benchmark.data import load_scenario
 
         # Create scenario definition for this dataset type
-        scenario_def = sample_scenario_definition(source_type="file", source_name=str(csv_file))
+        scenario_def = sample_scenario_definition(scenario_id=f"{dataset_type}_scenario", source_type="file", source_name=str(csv_file))
         result = load_scenario(f"{dataset_type}_scenario")
         assert expected_data_type in str(result.metadata), description
 

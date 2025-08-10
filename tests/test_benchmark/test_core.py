@@ -44,9 +44,17 @@ def test_should_define_benchmark_class_interface_when_imported(mock_benchmark_co
 def test_should_validate_detector_configurations_when_initialized(mock_benchmark_config):
     """Test REQ-BEN-002: Benchmark.__init__(config: BenchmarkConfig) must validate all detector configurations exist in registry"""
     # Arrange
-    with patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector:
+    with (
+        patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
+    ):
         # Mock successful detector lookups
         mock_get_detector.return_value = Mock
+
+        # Mock successful scenario loading
+        mock_scenario_result = Mock()
+        mock_scenario_result.metadata.name = "test_scenario"
+        mock_load_scenario.return_value = mock_scenario_result
 
         # Act & Assert
         try:
@@ -327,8 +335,8 @@ def test_should_maintain_detector_isolation_when_run(mock_benchmark_config, mock
             return detector
 
         def detector_factory(method_id, variant_id, library_id):
-            # Make evidently detector succeed, others fail to test isolation
-            if library_id == "evidently":
+            # Make scipy detectors succeed, others fail to test isolation
+            if library_id == "scipy":
                 return lambda *args, **kwargs: successful_detector
             else:
                 return failing_detector_factory

@@ -37,8 +37,8 @@ def test_should_load_benchmark_config_from_toml_when_called(valid_benchmark_conf
     assert config is not None, "load_config() must return BenchmarkConfig instance"
     assert hasattr(config, "scenarios"), "loaded config must have scenarios field"
     assert hasattr(config, "detectors"), "loaded config must have detectors field"
-    assert len(config.scenarios) == 2, "config should load 2 scenarios from test file"
-    assert len(config.detectors) == 2, "config should load 2 detectors from test file"
+    assert len(config.scenarios) == 3, "config should load 3 scenarios from test file"
+    assert len(config.detectors) == 3, "config should load 3 detectors from test file"
 
     # Assert first scenario configuration
     first_scenario = config.scenarios[0]
@@ -49,7 +49,7 @@ def test_should_load_benchmark_config_from_toml_when_called(valid_benchmark_conf
     # Assert first detector configuration
     first_detector = config.detectors[0]
     assert first_detector.method_id == "ks_test"
-    assert first_detector.variant_id == "scipy"
+    assert first_detector.variant_id == "default"
 
 
 def test_should_use_pydantic_v2_validation_when_loading(standard_test_configurations):

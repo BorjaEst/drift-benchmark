@@ -10,7 +10,49 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
+# Graceful pytest import
+try:
+    import pytest
+
+    PYTEST_AVAILABLE = True
+except ImportError:
+    # Provide minimal pytest fallback for testing
+    class pytest:
+        @staticmethod
+        def fixture(*args, **kwargs):
+            def decorator(func):
+                return func
+
+            return decorator
+
+        @staticmethod
+        def mark(*args, **kwargs):
+            def decorator(func):
+                return func
+
+            return decorator
+
+        @staticmethod
+        def skip(reason):
+            """Skip test with given reason"""
+            print(f"SKIPPED: {reason}")
+            return
+
+        class raises:
+            def __init__(self, exception_type):
+                self.exception_type = exception_type
+
+            def __enter__(self):
+                self.value = None
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                if exc_type is not None and issubclass(exc_type, self.exception_type):
+                    self.value = exc_val
+                    return True
+                return False
+
+    PYTEST_AVAILABLE = False
 
 
 @pytest.fixture(autouse=True)

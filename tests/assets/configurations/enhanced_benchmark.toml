@@ -1,0 +1,36 @@
+description = "Enhanced configuration for comprehensive testing"
+
+[benchmark_settings]
+    timeout_seconds    = 300
+    retry_failed       = true
+    parallel_execution = false
+
+[[scenarios]]
+    id          = "uci_wine_quality_comprehensive"
+    description = "UCI wine quality with comprehensive metadata"
+
+[[scenarios]]
+    id          = "uci_breast_cancer_authenticity_test"
+    description = "UCI breast cancer authenticity testing"
+
+[[scenarios]]
+    id          = "comprehensive_realworld"
+    description = "Real-world scenario with enhanced metadata"
+
+[[detectors]]
+    method_id  = "ks_test"
+    variant_id = "enhanced"
+    library_id = "scipy"
+    parameters = { significance_level = 0.05, alternative = "two-sided" }
+
+[[detectors]]
+    method_id  = "mmd_test"
+    variant_id = "gaussian_rbf"
+    library_id = "alibi-detect"
+    parameters = { kernel = "rbf", gamma = 1.0 }
+
+[[detectors]]
+    method_id  = "pca_drift"
+    variant_id = "reconstruction"
+    library_id = "evidently"
+    parameters = { n_components = 0.95, threshold = 0.01 }

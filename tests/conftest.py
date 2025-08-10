@@ -1,12 +1,13 @@
 # Session and module-scoped fixtures for shared testing infrastructure
 # Aligned with README examples and REQUIREMENTS.md Phase 1 implementation
 # REFACTORED: Asset-driven testing approach - all shared data loaded from tests/assets/
+# ENHANCED: TDD best practices with comprehensive real-world data integration support
 
 import json
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
 from unittest.mock import Mock, patch
 
 import pandas as pd
@@ -618,6 +619,20 @@ def simple_dataframe_factory():
                     {"numeric_col": [4.2, 5.1, 6.8], "categorical_col": ["D", "E", "F"], "mixed_col": ["text2", 2, 2.71]}
                 )
                 return {"ref": ref_data, "test": test_data}
+        elif df_type == "enhanced_realworld":
+            # Enhanced real-world data with comprehensive characteristics
+            try:
+                return load_asset_csv("enhanced_realworld_data.csv")
+            except:
+                # Fallback for enhanced real-world data simulation
+                return pd.DataFrame(
+                    {
+                        "feature1": [1.2, 2.5, 3.7, 4.1, 5.3, 6.2],
+                        "feature2": ["A", "B", "C", "A", "B", "C"],
+                        "feature3": [10.5, 15.2, 20.1, 25.4, 30.8, 35.2],
+                        "target": [0, 1, 0, 1, 0, 1],
+                    }
+                )
         else:
             raise ValueError(f"Unknown df_type: {df_type}")
 
@@ -640,3 +655,386 @@ def standard_test_configurations():
             raise ValueError(f"Unknown config_type: {config_type}")
 
     return _get_config
+
+
+# =====================================
+# ENHANCED TDD FIXTURES FOR REAL-WORLD DATA INTEGRATION
+# Supporting REQ-DAT-018, REQ-DAT-024, REQ-DAT-025, REQ-DAT-029
+# =====================================
+
+
+@pytest.fixture
+def sample_csv_file():
+    """Provide sample CSV file for testing - uses asset-driven approach."""
+    return Path(__file__).parent / "assets" / "datasets" / "comprehensive_mixed.csv"
+
+
+@pytest.fixture
+def numeric_only_csv_file():
+    """Provide numeric-only CSV file for data type inference testing."""
+    return Path(__file__).parent / "assets" / "datasets" / "numeric_only.csv"
+
+
+@pytest.fixture
+def categorical_only_csv_file():
+    """Provide categorical-only CSV file for data type inference testing."""
+    return Path(__file__).parent / "assets" / "datasets" / "categorical_only.csv"
+
+
+@pytest.fixture
+def univariate_csv_file():
+    """Provide univariate CSV file for dimension testing."""
+    return Path(__file__).parent / "assets" / "datasets" / "univariate.csv"
+
+
+@pytest.fixture
+def missing_values_csv_file():
+    """Provide CSV file with missing values for pandas defaults testing."""
+    return Path(__file__).parent / "assets" / "datasets" / "comprehensive_missing.csv"
+
+
+@pytest.fixture
+def boolean_csv_file():
+    """Provide CSV file with boolean features for edge case testing."""
+    return Path(__file__).parent / "assets" / "datasets" / "boolean_mixed.csv"
+
+
+@pytest.fixture
+def uci_wine_sample_file():
+    """Provide UCI wine quality sample file for UCI integration testing."""
+    return Path(__file__).parent / "assets" / "datasets" / "uci_wine_quality_red_sample.csv"
+
+
+@pytest.fixture
+def uci_breast_cancer_sample_file():
+    """Provide UCI breast cancer sample file for authenticity testing."""
+    return Path(__file__).parent / "assets" / "datasets" / "uci_breast_cancer_sample.csv"
+
+
+@pytest.fixture
+def tdd_scenario_factory():
+    """
+    Factory for creating TDD-compliant scenario definitions with comprehensive metadata.
+
+    Supports:
+    - REQ-DAT-018: UCI Repository integration
+    - REQ-DAT-024: UCI metadata integration with scientific traceability
+    - REQ-DAT-025: Comprehensive dataset profiles
+    - REQ-DAT-029: Enhanced schema with scientific metadata sections
+    """
+    created_files = []
+
+    def _create_tdd_scenario(scenario_id: str = "tdd_test_scenario", **kwargs) -> Dict:
+        """Create TDD-compliant scenario with comprehensive metadata support."""
+
+        # Default enhanced scenario structure
+        default_scenario = {
+            "description": kwargs.get("description", "TDD-compliant test scenario with enhanced metadata"),
+            "source_type": kwargs.get("source_type", "file"),
+            "source_name": kwargs.get("source_name", "tests/assets/datasets/comprehensive_mixed.csv"),
+            "target_column": kwargs.get("target_column", "target"),
+            "drift_types": kwargs.get("drift_types", ["covariate"]),
+            "ground_truth": {
+                "drift_periods": kwargs.get("drift_periods", [[5, 9]]),
+                "drift_intensity": kwargs.get("drift_intensity", "moderate"),
+                "kl_divergence": kwargs.get("kl_divergence", 0.35),
+                "effect_size": kwargs.get("effect_size", 0.42),
+                "cohens_d": kwargs.get("cohens_d", 0.55),
+            },
+            "ref_filter": kwargs.get("ref_filter", {"sample_range": [0, 4]}),
+            "test_filter": kwargs.get("test_filter", {"sample_range": [5, 9]}),
+        }
+
+        # Add UCI metadata if source_type is "uci"
+        if kwargs.get("source_type") == "uci":
+            uci_name = kwargs.get("source_name", "wine-quality-red")
+            default_scenario["uci_metadata"] = {
+                "dataset_id": uci_name,
+                "domain": kwargs.get("domain", "test_domain"),
+                "original_source": kwargs.get("original_source", "Test University"),
+                "acquisition_date": kwargs.get("acquisition_date", "2020-01-01"),
+                "last_updated": kwargs.get("last_updated", "2020-01-01"),
+                "collection_methodology": kwargs.get("collection_methodology", "Automated testing"),
+                "data_authenticity": "real",
+                "total_instances": kwargs.get("total_instances", 100),
+                "feature_descriptions": kwargs.get("feature_descriptions", ["Test feature descriptions"]),
+                "missing_data_indicators": kwargs.get("missing_data_indicators", ["none"]),
+                "data_quality_score": kwargs.get("data_quality_score", 0.95),
+            }
+
+        # Add enhanced metadata for comprehensive testing
+        if kwargs.get("enhanced_metadata", True):
+            default_scenario["enhanced_metadata"] = {
+                "total_instances": kwargs.get("total_instances", 10),
+                "feature_descriptions": kwargs.get(
+                    "feature_descriptions",
+                    [
+                        "feature_1: primary numerical feature",
+                        "feature_2: secondary numerical feature",
+                        "categorical_feature: categorical classification",
+                    ],
+                ),
+                "missing_data_indicators": kwargs.get("missing_data_indicators", ["none"]),
+                "data_quality_score": kwargs.get("data_quality_score", 0.92),
+                "data_authenticity": kwargs.get("data_authenticity", "synthetic"),
+                "scientific_traceability": kwargs.get("scientific_traceability", True),
+            }
+
+        # Override with any additional kwargs
+        default_scenario.update(
+            {
+                k: v
+                for k, v in kwargs.items()
+                if k
+                not in [
+                    "enhanced_metadata",
+                    "total_instances",
+                    "feature_descriptions",
+                    "missing_data_indicators",
+                    "data_quality_score",
+                    "data_authenticity",
+                    "scientific_traceability",
+                ]
+            }
+        )
+
+        # Write scenario to file
+        scenarios_dir = Path("scenarios")
+        scenarios_dir.mkdir(exist_ok=True)
+        scenario_file = scenarios_dir / f"{scenario_id}.toml"
+
+        with open(scenario_file, "w") as f:
+            toml.dump(default_scenario, f)
+
+        created_files.append(scenario_file)
+        return default_scenario
+
+    yield _create_tdd_scenario
+
+    # Cleanup
+    for file_path in created_files:
+        if file_path.exists():
+            file_path.unlink()
+
+
+@pytest.fixture
+def comprehensive_metadata_factory():
+    """
+    Factory for creating comprehensive metadata objects for testing.
+
+    Supports all enhanced requirements:
+    - REQ-DAT-025: Total instances, feature descriptions, data quality scores
+    - REQ-DAT-024: Scientific traceability with acquisition dates, sources
+    - REQ-DAT-018: UCI repository integration metadata
+    """
+
+    def _create_metadata(metadata_type: str = "enhanced", **kwargs):
+        """Create comprehensive metadata for testing."""
+
+        if metadata_type == "uci":
+            return {
+                "dataset_id": kwargs.get("dataset_id", "wine-quality-red"),
+                "domain": kwargs.get("domain", "food_beverage_chemistry"),
+                "original_source": kwargs.get("original_source", "Paulo Cortez, University of Minho"),
+                "acquisition_date": kwargs.get("acquisition_date", "2009-10-07"),
+                "last_updated": kwargs.get("last_updated", "2009-10-07"),
+                "collection_methodology": kwargs.get("collection_methodology", "Laboratory analysis"),
+                "total_instances": kwargs.get("total_instances", 1599),
+                "feature_descriptions": kwargs.get(
+                    "feature_descriptions",
+                    [
+                        "fixed_acidity: tartaric acid concentration",
+                        "volatile_acidity: acetic acid concentration",
+                        "quality: wine quality score (0-10)",
+                    ],
+                ),
+                "missing_data_indicators": kwargs.get("missing_data_indicators", ["none"]),
+                "data_quality_score": kwargs.get("data_quality_score", 0.95),
+            }
+
+        elif metadata_type == "enhanced":
+            return {
+                "total_instances": kwargs.get("total_instances", 100),
+                "feature_descriptions": kwargs.get(
+                    "feature_descriptions", ["feature_1: primary numerical feature", "feature_2: secondary numerical feature"]
+                ),
+                "missing_data_indicators": kwargs.get("missing_data_indicators", ["none"]),
+                "data_quality_score": kwargs.get("data_quality_score", 0.92),
+                "scientific_traceability": kwargs.get("scientific_traceability", True),
+                "baseline_scenario": kwargs.get("baseline_scenario", None),
+            }
+
+        elif metadata_type == "quantitative":
+            return {
+                "kl_divergence": kwargs.get("kl_divergence", 0.42),
+                "effect_size": kwargs.get("effect_size", 0.58),
+                "cohens_d": kwargs.get("cohens_d", 0.72),
+                "statistical_power": kwargs.get("statistical_power", 0.8),
+                "significance_level": kwargs.get("significance_level", 0.05),
+            }
+
+        else:
+            raise ValueError(f"Unknown metadata_type: {metadata_type}")
+
+    return _create_metadata
+
+
+@pytest.fixture
+def paulo_goncalves_evaluation_framework():
+    """
+    Provide evaluation framework aligned with Paulo M. Gonçalves Jr. (2014) methodology.
+
+    Supports scientific rigor requirements for drift detection evaluation.
+    """
+
+    class PauloGoncalvesFramework:
+        """Evaluation framework following Paulo M. Gonçalves Jr. (2014) principles."""
+
+        @staticmethod
+        def validate_statistical_measures(result_metadata):
+            """Validate that quantitative statistical measures are present."""
+            required_measures = ["kl_divergence", "effect_size", "cohens_d"]
+            return all(measure in result_metadata for measure in required_measures)
+
+        @staticmethod
+        def validate_experimental_design(scenario_definition):
+            """Validate experimental design follows scientific principles."""
+            required_elements = ["ground_truth", "drift_periods", "baseline_comparison"]
+            # Check if scenario has proper experimental design elements
+            has_ground_truth = "ground_truth" in scenario_definition
+            has_drift_periods = has_ground_truth and "drift_periods" in scenario_definition["ground_truth"]
+            has_baseline = "baseline_metadata" in scenario_definition or "baseline_scenario" in scenario_definition.get(
+                "enhanced_metadata", {}
+            )
+
+            return {
+                "has_ground_truth": has_ground_truth,
+                "has_drift_periods": has_drift_periods,
+                "has_baseline": has_baseline,
+                "is_scientifically_valid": has_ground_truth and has_drift_periods,
+            }
+
+        @staticmethod
+        def validate_diversity_requirements(dataset_collection):
+            """Validate that dataset collection meets diversity requirements."""
+            # Paulo Gonçalves emphasizes diverse evaluation across different domains
+            domains = set()
+            data_types = set()
+
+            for dataset in dataset_collection:
+                if "uci_metadata" in dataset:
+                    domains.add(dataset["uci_metadata"].get("domain", "unknown"))
+                if "enhanced_metadata" in dataset:
+                    data_types.add(dataset.get("data_type", "unknown"))
+
+            return {
+                "domain_diversity": len(domains),
+                "data_type_diversity": len(data_types),
+                "meets_diversity_threshold": len(domains) >= 3 and len(data_types) >= 2,
+            }
+
+    return PauloGoncalvesFramework()
+
+
+# =====================================
+# BACKWARD COMPATIBILITY FIXTURES
+# Maintaining existing test interfaces while adding enhancements
+# =====================================
+
+
+@pytest.fixture
+def sample_scenario_definition():
+    """Enhanced version of sample_scenario_definition with TDD support."""
+    # Keep existing functionality but enhance with TDD capabilities
+    created_files = []
+
+    def _create_scenario_definition(scenario_id="test_scenario", **kwargs):
+        """Create scenario definition with enhanced TDD support."""
+
+        # Enhanced defaults with comprehensive metadata support
+        source_type = kwargs.get("source_type", "file")
+        source_name = kwargs.get("source_name", "tests/assets/datasets/comprehensive_mixed.csv")
+
+        # Determine appropriate sample ranges based on known asset file sizes
+        if source_type == "file" and "comprehensive_mixed.csv" in source_name:
+            # Known to have 10 rows (indices 0-9)
+            default_ref_filter = {"sample_range": [0, 4]}
+            default_test_filter = {"sample_range": [5, 9]}
+        elif source_type == "file" and "missing_values_test.csv" in source_name:
+            # Known to have 5 rows (indices 0-4)
+            default_ref_filter = {"sample_range": [0, 2]}
+            default_test_filter = {"sample_range": [3, 4]}
+        elif scenario_id == "large_scenario" and source_type == "file" and ("/tmp/" in source_name or "tmp" in source_name):
+            # Large dataset test - assume 1000 rows
+            default_ref_filter = {"sample_range": [0, 499]}
+            default_test_filter = {"sample_range": [500, 999]}
+        elif scenario_id == "memory_test_scenario" and source_type == "file" and ("/tmp/" in source_name or "tmp" in source_name):
+            # Memory test scenario - assume 500 rows
+            default_ref_filter = {"sample_range": [0, 249]}
+            default_test_filter = {"sample_range": [250, 499]}
+        elif source_type == "uci":
+            # UCI datasets - use larger ranges
+            default_ref_filter = {"sample_range": [0, 49]}
+            default_test_filter = {"sample_range": [50, 99]}
+        else:
+            # Use original logic as fallback
+            default_ref_filter = {"sample_range": [0, 4]}
+            default_test_filter = {"sample_range": [5, 9]}
+
+        default_data = {
+            "description": kwargs.get("description", "Enhanced test scenario definition with TDD support"),
+            "source_type": source_type,
+            "source_name": source_name,
+            "target_column": kwargs.get("target_column", "target"),
+            "drift_types": kwargs.get("drift_types", ["covariate"]),
+            "ground_truth": kwargs.get("ground_truth", {"drift_periods": [[5, 9]], "drift_intensity": "moderate"}),
+            "ref_filter": kwargs.get("ref_filter", default_ref_filter),
+            "test_filter": kwargs.get("test_filter", default_test_filter),
+        }
+
+        # Add enhanced metadata if requested
+        if kwargs.get("enhanced_metadata", source_type == "uci"):
+            if source_type == "uci":
+                default_data["uci_metadata"] = {
+                    "dataset_id": source_name or "test-dataset",
+                    "domain": kwargs.get("domain", "test_domain"),
+                    "original_source": "Test Source",
+                    "acquisition_date": "2020-01-01",
+                    "last_updated": "2020-01-01",
+                    "collection_methodology": "Test methodology",
+                }
+
+            default_data["enhanced_metadata"] = {
+                "total_instances": kwargs.get("total_instances", 10),
+                "feature_descriptions": kwargs.get("feature_descriptions", ["feature_1: test feature", "feature_2: test feature"]),
+                "missing_data_indicators": ["none"],
+                "data_quality_score": 0.9,
+            }
+
+        # Override with provided kwargs
+        default_data.update(
+            {k: v for k, v in kwargs.items() if k not in ["enhanced_metadata", "domain", "total_instances", "feature_descriptions"]}
+        )
+
+        # Write to TOML file
+        scenarios_dir = Path("scenarios")
+        scenarios_dir.mkdir(exist_ok=True)
+        scenario_file = scenarios_dir / f"{scenario_id}.toml"
+
+        with open(scenario_file, "w") as f:
+            toml.dump(default_data, f)
+
+        created_files.append(scenario_file)
+        return default_data
+
+    yield _create_scenario_definition
+
+    # Cleanup
+    for file_path in created_files:
+        if file_path.exists():
+            file_path.unlink()
+
+
+# =====================================
+# EXISTING FIXTURES (PRESERVED FOR COMPATIBILITY)
+# =====================================

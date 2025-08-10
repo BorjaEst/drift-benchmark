@@ -1,13 +1,26 @@
-[[scenarios]]
-    id = "covariate_drift_example"
+description = "Basic test configuration for TDD testing"
 
 [[scenarios]]
-    id = "concept_drift_example"
+    id          = "test_scenario"
+    description = "Simple test scenario"
+
+[[scenarios]]
+    id          = "covariate_drift_example"
+    description = "Covariate drift scenario"
+
+[[scenarios]]
+    id          = "concept_drift_example"
+    description = "Concept drift scenario"
 
 [[detectors]]
     method_id  = "ks_test"
-    variant_id = "scipy"
-    library_id = "evidently"
+    variant_id = "default"
+    library_id = "scipy"
+
+[[detectors]]
+    method_id  = "chi2_test"
+    variant_id = "default"
+    library_id = "scipy"
 
 [[detectors]]
     method_id  = "drift_detector"

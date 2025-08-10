@@ -1,0 +1,37 @@
+description   = "UCI Wine Quality dataset with covariate drift for real-world testing"
+source_type   = "uci"
+source_name   = "wine-quality-red"
+target_column = "quality"
+drift_types   = ["covariate"]
+
+[ground_truth]
+    drift_periods   = [[5, 10]]
+    drift_intensity = "moderate"
+    kl_divergence   = 0.42
+    effect_size     = 0.58
+    cohens_d        = 0.72
+
+[ref_filter]
+    sample_range = [0, 4]
+
+[test_filter]
+    sample_range = [5, 9]
+
+[uci_metadata]
+    dataset_id = "wine-quality-red"
+    domain = "food_beverage_chemistry"
+    original_source = "Paulo Cortez, University of Minho"
+    acquisition_date = "2009-10-07"
+    last_updated = "2009-10-07"
+    collection_methodology = "Laboratory chemical analysis of Portuguese wines"
+    data_authenticity = "real"
+    total_instances = 1599
+    feature_descriptions = [
+        "fixed_acidity: tartaric acid concentration",
+        "volatile_acidity: acetic acid concentration",
+        "citric_acid: citric acid concentration",
+        "residual_sugar: sugar remaining after fermentation",
+        "quality: wine quality score (0-10)",
+    ]
+    missing_data_indicators = ["none"]
+    data_quality_score = 0.95

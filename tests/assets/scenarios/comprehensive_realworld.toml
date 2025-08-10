@@ -1,0 +1,32 @@
+description   = "Comprehensive real-world data scenario with enhanced metadata"
+source_type   = "file"
+source_name   = "tests/assets/datasets/comprehensive_mixed.csv"
+target_column = "target"
+drift_types   = ["covariate", "concept"]
+
+[ground_truth]
+    drift_periods   = [[5, 10]]
+    drift_intensity = "moderate"
+    kl_divergence   = 0.35
+    effect_size     = 0.42
+    cohens_d        = 0.55
+
+[ref_filter]
+    sample_range = [0, 4]
+
+[test_filter]
+    sample_range = [5, 9]
+
+[enhanced_metadata]
+    total_instances = 10
+    feature_descriptions = [
+        "feature_1: primary numerical feature",
+        "feature_2: secondary numerical feature",
+        "feature_3: tertiary numerical feature",
+        "categorical_feature: categorical classification",
+    ]
+    missing_data_indicators = ["none"]
+    data_quality_score = 0.92
+    data_authenticity = "synthetic"
+    scientific_traceability = true
+    baseline_scenario = "comprehensive_baseline"

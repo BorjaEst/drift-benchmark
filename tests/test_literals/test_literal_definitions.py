@@ -21,7 +21,7 @@ def test_should_define_drift_type_literals_when_imported():
         pytest.fail(f"Failed to import DriftType from literals module: {e}")
 
     # Assert
-    expected_values = {"covariate", "concept", "prior"}
+    expected_values = {"covariate", "concept", "prior", "none"}
     actual_values = set(drift_type_values)
 
     assert actual_values == expected_values, f"DriftType literal must have exactly {expected_values}, " f"but found {actual_values}"
@@ -123,7 +123,7 @@ def test_should_define_scenario_source_type_literals_when_imported():
         pytest.fail(f"Failed to import ScenarioSourceType from literals module: {e}")
 
     # Assert
-    expected_values = {"sklearn", "file"}
+    expected_values = {"sklearn", "file", "uci"}
     actual_values = set(source_values)
 
     assert actual_values == expected_values, (

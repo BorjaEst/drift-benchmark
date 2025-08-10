@@ -1,0 +1,39 @@
+description   = "UCI Breast Cancer dataset for authenticity preservation testing"
+source_type   = "uci"
+source_name   = "breast-cancer-wisconsin"
+target_column = "diagnosis"
+drift_types   = ["covariate"]
+
+[ground_truth]
+    drift_periods   = [[200, 400]]
+    drift_intensity = "severe"
+    kl_divergence   = 0.85
+    effect_size     = 1.2
+    cohens_d        = 1.45
+
+[ref_filter]
+    sample_range = [0, 199]
+
+[test_filter]
+    sample_range = [200, 400]
+    # These modification parameters should be rejected for UCI datasets
+    noise_factor      = 1.5
+    feature_scaling   = 2.0
+    data_modification = "forbidden"
+
+[uci_metadata]
+    dataset_id = "breast-cancer-wisconsin"
+    domain = "medical_diagnosis"
+    original_source = "University of Wisconsin Hospitals"
+    acquisition_date = "1995-11-01"
+    last_updated = "1995-11-01"
+    collection_methodology = "Fine needle aspirate analysis"
+    data_authenticity = "real"
+    total_instances = 569
+    feature_descriptions = [
+        "radius_mean: mean distance from center to perimeter",
+        "texture_mean: standard deviation of gray-scale values",
+        "diagnosis: malignant (M) or benign (B)",
+    ]
+    missing_data_indicators = ["none"]
+    data_quality_score = 0.98
