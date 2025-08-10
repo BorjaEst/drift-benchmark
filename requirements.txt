@@ -4,3 +4,5 @@ pydantic-settings ~= 2.7.1
 rich ~= 13.9.4
 rich-argparse ~= 1.7.0
 ucimlrepo  ~= 0.0.7
+numpy ~= 1.26.4
+toml ~= 0.10.2

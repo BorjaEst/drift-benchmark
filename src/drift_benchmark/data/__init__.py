@@ -8,12 +8,15 @@ from .scenario_loader import load_scenario
 from .value_discovery import (
     analyze_feature_correlations,
     analyze_feature_distribution,
+    analyze_uci_data_quality,
     discover_feature_thresholds,
     explain_filtering_implications,
     get_dataset_documentation,
     get_feature_description,
     get_filtering_examples,
     get_filtering_recommendations,
+    get_uci_dataset_metadata,
+    get_uci_repository_info,
     identify_feature_clusters,
     suggest_filtering_thresholds,
     validate_filter_reasonableness,
@@ -32,4 +35,7 @@ __all__ = [
     "get_filtering_examples",
     "validate_filter_reasonableness",
     "get_filtering_recommendations",
+    "get_uci_dataset_metadata",
+    "analyze_uci_data_quality",
+    "get_uci_repository_info",
 ]

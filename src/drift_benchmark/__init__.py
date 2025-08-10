@@ -74,6 +74,13 @@ def get_benchmark():
     return Benchmark
 
 
+def get_data_module():
+    """Get data module - lazy import to avoid heavy dependencies"""
+    import importlib
+
+    return importlib.import_module("drift_benchmark.data")
+
+
 def get_base_detector():
     """Get BaseDetector class - lazy import for adapters"""
     from .adapters import BaseDetector
@@ -123,10 +130,8 @@ def save_results(results):
     return _save_results(results)
 
 
-# Convenience access to lazy-loaded classes
-BenchmarkRunner = property(get_benchmark_runner)
-Benchmark = property(get_benchmark)
-BaseDetector = property(get_base_detector)
+# Convenience access to lazy-loaded classes - now handled by __getattr__
+# BenchmarkRunner, Benchmark, BaseDetector, data available as module attributes
 
 __version__ = "0.1.0"
 __all__ = [
@@ -182,3 +187,23 @@ __all__ = [
     "BenchmarkRunner",
     "save_results",
 ]
+
+
+# REQ-INI-006: Dynamic module attribute access for lazy loading
+_cached_modules = {}
+
+
+def __getattr__(name: str):
+    """Handle dynamic module attribute access for lazy-loaded components"""
+    if name == "data":
+        if "data" not in _cached_modules:
+            _cached_modules["data"] = get_data_module()
+        return _cached_modules["data"]
+    elif name == "BenchmarkRunner":
+        return get_benchmark_runner()
+    elif name == "Benchmark":
+        return get_benchmark()
+    elif name == "BaseDetector":
+        return get_base_detector()
+    else:
+        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

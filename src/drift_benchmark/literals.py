@@ -8,7 +8,7 @@ the drift-benchmark library.
 from typing_extensions import Literal
 
 # REQ-LIT-001: Drift Type Literals
-DriftType = Literal["covariate", "concept", "prior"]
+DriftType = Literal["covariate", "concept", "prior", "none"]
 
 # REQ-LIT-002: Data Type Literals
 DataType = Literal["continuous", "categorical", "mixed"]
@@ -29,7 +29,7 @@ MethodFamily = Literal["statistical-test", "distance-based", "change-detection",
 DatasetSource = Literal["file", "synthetic"]
 
 # REQ-LIT-011: Scenario Source Type Literals
-ScenarioSourceType = Literal["sklearn", "file"]
+ScenarioSourceType = Literal["sklearn", "file", "uci"]
 
 # REQ-LIT-008: File Format Literals
 FileFormat = Literal["csv"]
