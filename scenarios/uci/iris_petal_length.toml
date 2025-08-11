@@ -23,12 +23,12 @@ drift_types   = ["covariate"]
 # Reference data: short petal length flowers
 [ref_filter]
     sample_range    = [0, 150]
-    feature_filters = [{ column = "petal_length", condition = "<=", value = 2.0 }]
+    feature_filters = [{ column = "petal length", condition = "<=", value = 2.0 }]
 
 # Test data: long petal length flowers
 [test_filter]
     sample_range    = [0, 150]
-    feature_filters = [{ column = "petal_length", condition = ">", value = 4.5 }]
+    feature_filters = [{ column = "petal length", condition = ">", value = 4.5 }]
 
 # Enhanced metadata
 [enhanced_metadata]

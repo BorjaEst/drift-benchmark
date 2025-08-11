@@ -1,7 +1,7 @@
 # Adult income dataset with authentic drift based on age
 description   = "UCI Adult Income dataset with authentic covariate drift based on age demographics"
 source_type   = "uci"
-source_name   = "adult"
+source_name   = "2"
 target_column = "income"
 drift_types   = ["covariate"]
 
