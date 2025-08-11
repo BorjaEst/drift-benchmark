@@ -7,39 +7,17 @@
 
 **drift-benchmark** is a unified framework for evaluating and comparing drift detection methods across different datasets and scenarios. It provides a standardized interface for benchmarking various drift detection algorithms, enabling researchers and practitioners to objectively assess performance and choose the most suitable methods for their specific use cases.
 
-**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same mathematical methods within well-defined "Scenarios" which include ground-truth drift information and **statistical validation**, to identify which library provides better performance, accuracy, or resource efficiency for your specific use case with scientific rigor.
-
-## 🔬 Scientific Foundation
-
-The integration of real-world data scenarios in **drift-benchmark** is grounded in established drift detection evaluation principles, particularly following the comprehensive comparative study by Gonçalves Jr. et al. (2014) that highlighted the importance of evaluating drift detection methods across diverse dataset characteristics and authentic drift patterns.
-
-### 📊 Evidence-Based Evaluation Approach
-
-As demonstrated in the seminal work "A comparative study on concept drift detectors" (Expert Systems with Applications, 2014), effective drift detection evaluation requires:
-
-- **Diverse Dataset Characteristics**: Testing across both artificial and real-world datasets to capture different drift patterns and complexities
-- **Quantitative Metrics**: Moving beyond qualitative descriptors ("moderate", "severe") to precise measurements (KL divergence, effect sizes, Mahalanobis distances)
-- **Statistical Rigor**: Incorporating power analysis, confidence intervals, and significance testing using methods like the Friedman non-parametric test
-- **Authentic Data Preservation**: Maintaining the integrity of real-world datasets while creating realistic drift scenarios through intelligent sampling
-
-The framework's enhancement with UCI ML Repository integration provides access to **over 500 diverse real-world datasets** spanning domains such as healthcare, finance, environmental science, and social sciences, enabling comprehensive evaluation that reflects the true complexity of production drift detection scenarios.
-
-### 🎯 Key Scientific Improvements
-
-1. **Quantitative Drift Measurement**: Replacing qualitative intensity descriptions with measurable metrics (KL divergence, Cohen's d effect sizes)
-2. **Statistical Validation Integration**: Built-in power analysis and significance testing following established statistical protocols
-3. **Data Authenticity Preservation**: Strict separation of synthetic (modifiable) and real (filtering-only) datasets to maintain scientific validity
-4. **Comprehensive Metadata Capture**: Complete provenance tracking for scientific reproducibility and traceability
+**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn, River) implement the same mathematical methods within well-defined "Scenarios" to identify which library provides better performance, accuracy, or resource efficiency for your specific use case.
 
 ## 🏗️ Framework Architecture
 
-**drift-benchmark** acts as a **standardization layer** that enables fair comparison of drift detection implementations across different libraries. Our framework provides:
+**drift-benchmark** acts as a **standardization layer** that enables fair comparison of drift detection implementations across different libraries. The framework provides:
 
-- **📋 Standardized Method+Variant Definitions**: We define consistent algorithmic approaches (variants) for each mathematical method
-- **⚙️ Library-Agnostic Interface**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn) implement the same method+variant
+- **📋 Standardized Method+Variant Definitions**: Consistent algorithmic approaches (variants) for each mathematical method
+- **⚙️ Library-Agnostic Interface**: Compare how different libraries implement the same method+variant
 - **📊 Performance Benchmarking**: Evaluate speed, accuracy, and resource usage across implementations
-- **� Statistical Validation**: Ensure scientifically rigorous comparisons with power analysis and effect size measurements
-- **�🔄 Fair Comparisons**: Ensure all libraries are tested under identical conditions and data preprocessing
+- **🔬 Statistical Validation**: Scientifically rigorous comparisons with quantitative measurements
+- **🔄 Fair Comparisons**: All libraries tested under identical conditions and data preprocessing
 
 ### 📚 Core Concepts
 
@@ -51,14 +29,14 @@ The framework's enhancement with UCI ML Repository integration provides access t
 
 ### 🎯 Framework Roles
 
-#### **For drift-benchmark developers (us):**
+#### **Framework Provides:**
 
 - Design and maintain the `methods.toml` registry that standardizes drift detection methods across libraries
 - Provide the `BaseDetector` abstract interface for consistent detector integration
 - Implement core benchmarking infrastructure (scenario loading, execution, results)
 - Define standardized scenario formats with ground-truth drift information
 
-#### **For end users (researchers/practitioners):**
+#### **Users Implement:**
 
 - Create **adapter classes** by extending `BaseDetector` to integrate their preferred drift detection libraries
 - Configure benchmarks using our standardized method+variant identifiers and scenario definitions
@@ -78,7 +56,9 @@ graph TD
     H[Evidently/scikit-learn/River] --> C
 ```
 
-**Key Insight**: Libraries like Evidently or Alibi-Detect don't define variants themselves. Instead, **drift-benchmark defines standardized variants** (like "batch" or "incremental"), and users create adapters that map their library's specific implementation to match our variant specifications.## 🎯 Features
+**Key Insight**: Libraries like Evidently or Alibi-Detect don't define variants themselves. Instead, **drift-benchmark defines standardized variants** (like "batch" or "incremental"), and users create adapters that map their library's specific implementation to match our variant specifications.
+
+## 🎯 Features
 
 ### Core Capabilities
 
@@ -86,7 +66,7 @@ graph TD
 - **🔌 Unified Interface**: Consistent `BaseDetector` API for integrating any drift detection library
 - **📊 Flexible Data Handling**: Support for pandas DataFrames and automatic conversion to library-specific formats
 - **📈 Comprehensive Evaluation**: Performance metrics including accuracy, precision, recall, and execution time
-- **🧪 Statistical Rigor**: Power analysis, effect size measurements, and significance testing for scientifically valid comparisons
+- **🧪 Statistical Rigor**: Quantitative measurements and power analysis for scientifically valid comparisons
 - **🗂️ Multiple Data Types**: Support for continuous, categorical, and mixed data types
 - **⚙️ Configurable Benchmarks**: TOML-based configuration for reproducible experiments
 
@@ -99,12 +79,12 @@ graph TD
 ### Data Format Support
 
 - **Scenario Files**: TOML-based scenario definitions with ground-truth drift information
-- **Multiple Data Sources**: Support for sklearn datasets, CSV files, and UCI ML Repository integration
+- **Multiple Data Sources**: Support for synthetic datasets, CSV files, and UCI ML Repository integration
 - **Univariate & Multivariate**: Support for single and multiple feature scenarios
-- **Advanced Filtering**: Configurable reference/test data filtering through scenario definitions with support for feature-based filtering and authentic drift scenarios
+- **Advanced Filtering**: Configurable reference/test data filtering through scenario definitions
 - **Ground Truth Integration**: Specify drift periods and types for evaluation metrics
-- **Dataset Categorization**: Intelligent handling of synthetic vs. real datasets to preserve data authenticity
-- **UCI Repository Access**: Direct integration with ucimlrepo for accessing diverse real-world datasets with comprehensive metadata
+- **Dataset Categorization**: Intelligent handling of synthetic vs. real datasets (UCI and CSV files)
+- **UCI Repository Access**: Direct integration with ucimlrepo for accessing over 500 diverse real-world datasets
 
 ## 🚀 Quick Start
 
@@ -121,7 +101,7 @@ pip install -r requirements.txt
 # Install in development mode
 pip install -e .
 
-# Optional: For UCI dataset access, ensure ucimlrepo is available
+# For UCI dataset access
 pip install ucimlrepo
 ```
 
@@ -163,70 +143,36 @@ Create scenario definition files (e.g., `scenarios/covariate_drift_example.toml`
 
 ```toml
 description = "Synthetic classification with artificial covariate drift"
-source_type = "sklearn"
-source_name = "make_classification"
+source_type = "synthetic"
+source_name = "classification"
 target_column = "target"
 drift_types = ["covariate"]
 
 # Ground truth specification for evaluation
 [ground_truth]
 drift_periods = [[500, 1000]]  # Drift occurs in samples 500-1000
-# Enhanced: quantitative measurement replaces qualitative "moderate"
 kl_divergence = 0.45           # Expected KL divergence between distributions
 effect_size = 0.65             # Expected Cohen's d effect size
 
-# Optional: Statistical validation for scientific rigor
+# Statistical validation for scientific rigor
 [statistical_validation]
 expected_effect_size = 0.65    # Quantitative effect size expectation
 minimum_power = 0.80           # Statistical power requirement (80%)
 alpha_level = 0.05             # Significance level (5%)
 
-[ref_filter]
 # Filter conditions for reference data (non-drift period)
+[ref_filter]
 sample_range = [0, 500]               # Use samples 0-500 as reference
 
-[test_filter]
 # Filter conditions for test data (with artificial drift)
+[test_filter]
 sample_range = [500, 1000]            # Use samples 500-1000 as test
 noise_factor = 1.5                    # Synthetic datasets: increase noise
 n_samples = 1500                      # Synthetic datasets: control generation
 random_state = 42                     # Synthetic datasets: reproducibility
 ```
 
-**Real Dataset Example** (feature-based filtering only):
-
-```toml
-description = "Breast cancer dataset with authentic covariate drift"
-source_type = "sklearn"
-source_name = "load_breast_cancer"
-target_column = "target"
-drift_types = ["covariate"]
-
-# Ground truth specification for evaluation
-[ground_truth]
-drift_periods = [[0, 569]]           # Drift through feature-based sampling
-kl_divergence = 0.35                 # Expected quantitative drift measurement
-effect_size = 0.50                   # Expected Cohen's d effect size
-
-[ref_filter]
-# Reference data: smaller tumors (authentic low-risk population)
-sample_range = [0, 569]              # Use all samples, filter by features
-feature_filters = [
-    {column = "mean radius", condition = "<=", value = 14.0},
-    {column = "mean texture", condition = "<=", value = 20.0}
-]
-
-[test_filter]
-# Test data: larger tumors (authentic high-risk population) 
-sample_range = [0, 569]              # Use all samples, filter by features
-feature_filters = [
-    {column = "mean radius", condition = ">", value = 14.0},
-    {column = "mean texture", condition = ">", value = 20.0}
-]
-# Note: No noise_factor or other modifications allowed for real datasets
-```
-
-**UCI Repository Dataset Example** (comprehensive real-world data):
+**UCI Repository Dataset Example** (feature-based filtering only):
 
 ```toml
 description = "UCI Wine Quality dataset with authentic drift based on alcohol content"
@@ -241,48 +187,70 @@ drift_periods = [[0, 1599]]           # Drift through feature-based sampling
 kl_divergence = 0.42                  # Expected quantitative drift measurement
 effect_size = 0.58                    # Expected Cohen's d effect size
 
-# Optional: UCI-specific metadata for scientific traceability
-[uci_metadata]
-dataset_id = "wine-quality-red"
-domain = "food_beverage_chemistry"
-feature_descriptions = "Chemical properties affecting wine quality"
-data_quality_score = 0.92
-original_source = "Paulo Cortez, University of Minho"
-acquisition_date = "2009-10-07"
-last_updated = "2009-10-07"
-collection_methodology = "Laboratory chemical analysis"
-
 # Statistical validation for scientific rigor
 [statistical_validation]
 expected_effect_size = 0.58           # Quantitative effect size expectation
 minimum_power = 0.80                  # Statistical power requirement (80%)
 alpha_level = 0.05                    # Significance level (5%)
 
-[ref_filter]
 # Reference data: low alcohol wines (authentic light wine population)
+[ref_filter]
 sample_range = [0, 1599]
 feature_filters = [
     {column = "alcohol", condition = "<=", value = 10.5}
 ]
 
-[test_filter]
 # Test data: high alcohol wines (authentic strong wine population)
+[test_filter]
 sample_range = [0, 1599]
 feature_filters = [
     {column = "alcohol", condition = ">", value = 12.0}
 ]
-# Note: No modifications allowed for UCI datasets - preserves data authenticity
 ```
 
-#### Baseline Scenarios for Scientific Validation
+**CSV File Dataset Example** (feature-based filtering only):
+
+```toml
+description = "CSV file dataset with authentic drift patterns"
+source_type = "file"
+source_name = "datasets/my_dataset.csv"    # Path to CSV file
+target_column = "target"
+drift_types = ["covariate"]
+
+# Ground truth specification for evaluation
+[ground_truth]
+drift_periods = [[0, 1000]]           # Drift through feature-based sampling
+kl_divergence = 0.38                  # Expected quantitative drift measurement
+effect_size = 0.55                    # Expected Cohen's d effect size
+
+# Statistical validation for scientific rigor
+[statistical_validation]
+expected_effect_size = 0.55           # Quantitative effect size expectation
+minimum_power = 0.80                  # Statistical power requirement (80%)
+alpha_level = 0.05                    # Significance level (5%)
+
+# Reference data: filtered by feature conditions
+[ref_filter]
+sample_range = [0, 1000]
+feature_filters = [
+    {column = "feature_1", condition = "<=", value = 0.5}
+]
+
+# Test data: different feature conditions for drift
+[test_filter]
+sample_range = [0, 1000]
+feature_filters = [
+    {column = "feature_1", condition = ">", value = 0.5}
+]
+```
 
 **Important**: Each drift scenario should have a corresponding no-drift baseline scenario for statistical validation:
 
 ```toml
 # Example: covariate_drift_baseline.toml (companion to covariate_drift_example.toml)
 description = "No-drift baseline for statistical comparison"
-source_type = "sklearn"
-source_name = "make_classification"
+source_type = "synthetic"
+source_name = "classification"
 target_column = "target"
 drift_types = ["none"]
 
@@ -290,6 +258,7 @@ drift_types = ["none"]
 drift_periods = []              # No drift periods
 expected_detection = false      # Should NOT detect drift
 
+# Statistical validation
 [statistical_validation]
 minimum_power = 0.80           # Validate false positive rate < 5%
 
@@ -298,10 +267,9 @@ sample_range = [0, 500]
 
 [test_filter]
 sample_range = [501, 1000]     # Different samples, no drift modifications
-# NO noise_factor or other drift-inducing parameters
 ```
 
-#### Set-Level Evaluation Approach
+#### Set-Level Evaluation
 
 Each scenario is designed to test either **drift** or **non-drift** conditions:
 
@@ -310,41 +278,29 @@ Each scenario is designed to test either **drift** or **non-drift** conditions:
 
 Detectors provide a single boolean prediction per scenario, enabling meaningful accuracy/precision/recall calculations across multiple scenarios.
 
-#### Authentic Drift Scenarios
+#### Data Authenticity
 
-The framework maintains data authenticity by treating synthetic and real datasets differently:
+The framework maintains data authenticity by treating synthetic datasets differently from real data sources:
 
-**Synthetic Datasets** (`make_*`): Generate artificial drift through parameter modifications (noise injection, feature scaling, etc.). These scenarios test detector sensitivity to controlled, artificial changes.
+**Synthetic Datasets** (`classification`, `regression`, `blobs`, etc.): Generate artificial drift through parameter modifications (noise injection, feature scaling, etc.). These scenarios test detector sensitivity to controlled, artificial changes.
 
-**Real Datasets** (`load_*`): Preserve data authenticity by using only feature-based filtering to create drift scenarios. This leverages natural variation and correlations already present in real-world data, providing more realistic drift detection challenges.
+**UCI Datasets** (`uci` source_type): Access diverse real-world datasets from the UCI Machine Learning Repository with comprehensive metadata. Only feature-based filtering is allowed to preserve data authenticity, leveraging natural variation and correlations already present in real-world data.
 
-**UCI Datasets** (`uci` source_type): Access diverse real-world datasets from the UCI Machine Learning Repository with comprehensive metadata. Similar to real datasets, only feature-based filtering is allowed to preserve data authenticity.
+**CSV File Datasets** (`file` source_type): Load datasets from local CSV files. Similar to UCI datasets, only feature-based filtering is allowed to preserve data authenticity and leverage existing patterns in your data.
 
 **Supported Filter Operations**:
-
-**For all datasets**:
 
 - `sample_range: [start, end]` - Use specific index range with inclusive endpoints
 - `feature_filters: [{column, condition, value}, ...]` - Feature-based filtering with AND logic
   - Supported conditions: `"<="`, `">="`, `">"`, `"<"`, `"=="`, `"!="`
   - Multiple filters applied with AND logic (all conditions must be true)
-
-**For synthetic datasets only** (`make_*` functions):
-
 - `noise_factor: float` - Control noise level for artificial drift
 - `n_samples: int` - Control dataset generation size  
 - `random_state: int` - Control randomness for reproducibility
 - Other sklearn-specific parameters as supported by the dataset function
 
-**For real datasets** (`load_*` functions) and **UCI datasets**:
-
-- ❌ **No modification parameters allowed** - preserves data authenticity
-- ✅ **Only filtering through sample_range and feature_filters**
-- 📊 **Enhanced metadata capture** for UCI datasets with provenance tracking
-
-**Backward Compatibility**: Existing scenario files remain fully compatible. The framework automatically detects legacy qualitative drift descriptors and suggests quantitative alternatives while maintaining functionality.
-
-**Security Note**: No support for arbitrary Python expressions - only predefined filter operations
+> **Note**: For scenarios with real datasets, avoid modification parameters like `noise_factor` to preserve data authenticity.  
+> **Security**: No support for arbitrary Python expressions - only predefined filter operations
 
 #### 2. Run Benchmark
 
@@ -559,16 +515,15 @@ results/20250720_143022/
 
 ### Summary Statistics
 
-With scenario-based ground truth information using set-level evaluation and enhanced scientific rigor following Gonçalves Jr. et al. (2014):
+With scenario-based ground truth information using set-level evaluation:
 
 - **Accuracy**: Correct drift detection rate compared to ground truth across scenarios
 - **Precision**: True positive rate among positive predictions (scenarios correctly identified as having drift)
 - **Recall**: True positive rate among actual positives (drift scenarios correctly detected)
-- **Statistical Significance**: P-values and confidence intervals for performance comparisons using Friedman non-parametric tests
+- **Statistical Significance**: P-values and confidence intervals for performance comparisons
 - **Effect Size**: Quantitative measurement of performance differences (Cohen's d, Hedges' g, Cliff's delta)
 - **Scenario Performance**: Detailed breakdown by drift type and scenario characteristics
-- **Dataset Provenance**: Complete metadata tracking for UCI and real-world datasets ensuring scientific reproducibility
-- **Power Analysis**: Statistical power validation for meaningful comparisons across diverse data sources
+- **Dataset Provenance**: Complete metadata tracking for reproducibility
 
 ## 🔧 Configuration
 
@@ -642,33 +597,24 @@ pytest -v --tb=short tests/
 
 All requirements are traceable through test identifiers that match the REQ-XXX-YYY pattern in REQUIREMENTS.md.
 
-## 🧪 Scientific Rigor and Statistical Validation
+## 🧪 Statistical Validation
 
 **drift-benchmark** incorporates scientific best practices for experimental design and statistical validation:
 
-### Enhanced Scenario Format
+### Quantitative Measurements
 
-- **Quantitative Measurements**: Replace subjective drift intensity ("moderate", "severe") with measurable effect sizes
-- **Statistical Power Analysis**: Validate scenarios have adequate sample sizes for reliable detection
+- **Effect Sizes**: Replace subjective drift intensity descriptions with measurable effect sizes
+- **Statistical Power Analysis**: Validate scenarios have adequate sample sizes for reliable detection  
 - **Baseline Requirements**: Each drift scenario should include a no-drift baseline for statistical comparison
 
-### Backward Compatibility
+### Configuration
 
-- **Graceful Degradation**: Existing scenarios without statistical validation fields continue to work
-- **Optional Enhancement**: Statistical validation fields are optional - add them when scientific rigor is required
-- **Incremental Adoption**: Enhance scenarios individually as needed
-
-### Migration Path
-
-1. **Current scenarios remain valid** - no immediate changes required
-2. **Add statistical validation** to new scenarios using the enhanced format shown above
-3. **Create baseline scenarios** for existing drift scenarios when statistical comparison is needed
-
-This approach ensures the framework supports both quick prototyping and publication-ready research.
+- **Statistical validation fields are optional** - add them when scientific rigor is required
+- **Incremental adoption** - enhance scenarios individually as needed
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License Version 3 - see the [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
@@ -677,13 +623,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: [Coming Soon]
 - **Issue Tracker**: [GitHub Issues](https://github.com/BorjaEst/drift-benchmark/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/BorjaEst/drift-benchmark/discussions)
-
-## 🙏 Acknowledgments
-
-- [scikit-learn](https://scikit-learn.org/) for statistical methods
-- [River](https://riverml.xyz/) for online learning algorithms
-- [Evidently](https://www.evidentlyai.com/) for data drift monitoring
-- [Pydantic](https://pydantic-docs.helpmanual.io/) for data validation
 
 ## 📝 Citation
 
