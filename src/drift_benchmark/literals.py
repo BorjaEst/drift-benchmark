@@ -29,7 +29,7 @@ MethodFamily = Literal["statistical-test", "distance-based", "change-detection",
 DatasetSource = Literal["file", "synthetic"]
 
 # REQ-LIT-011: Scenario Source Type Literals
-ScenarioSourceType = Literal["sklearn", "file", "uci"]
+ScenarioSourceType = Literal["synthetic", "file", "uci"]
 
 # REQ-LIT-008: File Format Literals
 FileFormat = Literal["csv"]

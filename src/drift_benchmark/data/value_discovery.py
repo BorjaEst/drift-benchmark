@@ -562,7 +562,10 @@ def get_filtering_recommendations(dataset_name: str, drift_type: str = "covariat
 
 def _load_dataset_for_analysis(dataset_name: str) -> pd.DataFrame:
     """Load dataset for analysis purposes."""
-    from .scenario_loader import _load_sklearn_data
+    import numpy as np
+    import pandas as pd
+    import sklearn.datasets
+    from sklearn import datasets
 
     # Support UCI datasets
     if dataset_name.startswith("uci:"):
@@ -574,10 +577,47 @@ def _load_dataset_for_analysis(dataset_name: str) -> pd.DataFrame:
         except Exception as e:
             raise DataLoadingError(f"Failed to load UCI dataset {uci_name}: {e}")
 
-    if dataset_name not in REAL_DATASETS and dataset_name not in SYNTHETIC_DATASETS:
+    # Load sklearn datasets directly for analysis
+    if dataset_name == "load_breast_cancer":
+        data = datasets.load_breast_cancer(as_frame=True)
+        df = data.data.copy()
+        df["target"] = data.target
+        return df
+    elif dataset_name == "load_iris":
+        data = datasets.load_iris(as_frame=True)
+        df = data.data.copy()
+        df["target"] = data.target
+        return df
+    elif dataset_name == "load_wine":
+        data = datasets.load_wine(as_frame=True)
+        df = data.data.copy()
+        df["target"] = data.target
+        return df
+    elif dataset_name == "load_diabetes":
+        data = datasets.load_diabetes(as_frame=True)
+        df = data.data.copy()
+        df["target"] = data.target
+        return df
+    elif dataset_name == "make_classification":
+        # Generate synthetic classification data
+        X, y = datasets.make_classification(n_samples=1000, n_features=10, random_state=42, n_informative=5)
+        df = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(X.shape[1])])
+        df["target"] = y
+        return df
+    elif dataset_name == "make_regression":
+        # Generate synthetic regression data
+        X, y = datasets.make_regression(n_samples=1000, n_features=10, random_state=42, noise=0.1)
+        df = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(X.shape[1])])
+        df["target"] = y
+        return df
+    elif dataset_name == "make_blobs":
+        # Generate synthetic blob data
+        X, y = datasets.make_blobs(n_samples=1000, centers=3, random_state=42)
+        df = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(X.shape[1])])
+        df["target"] = y
+        return df
+    else:
         raise DataLoadingError(f"Unknown dataset: {dataset_name}. Supported datasets: {REAL_DATASETS | SYNTHETIC_DATASETS}")
-
-    return _load_sklearn_data(dataset_name)
 
 
 def get_uci_dataset_metadata(dataset_name: str) -> Dict[str, Any]:
