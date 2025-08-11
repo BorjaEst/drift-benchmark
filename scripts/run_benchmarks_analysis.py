@@ -38,6 +38,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import components.alibidetect_detectors
+import components.evidently_detectors
+import components.river_detectors
+
 # Configure path for imports
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
