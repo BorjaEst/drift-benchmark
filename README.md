@@ -244,6 +244,8 @@ feature_filters = [
 ]
 ```
 
+> **Note**: For CSV file scenarios, you'll need to provide your own dataset files in the `datasets/` directory. Only feature-based filtering is allowed to preserve data authenticity.
+
 **Important**: Each drift scenario should have a corresponding no-drift baseline scenario for statistical validation:
 
 ```toml
