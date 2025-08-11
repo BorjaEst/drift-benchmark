@@ -3,7 +3,7 @@
 
 # Simple CSV-based scenario for quick testing
 [[scenarios]]
-    id = "synthetic_covariate"
+    id = "synthetic/concept_drift_gradual"
 
 # Test different drift detection methods with custom implementations
 [[detectors]]

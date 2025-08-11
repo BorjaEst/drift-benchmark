@@ -1,0 +1,50 @@
+# Synthetic classification with weak covariate drift
+description   = "Synthetic classification with weak artificial covariate drift"
+source_type   = "synthetic"
+source_name   = "classification"
+target_column = "target"
+drift_types   = ["covariate"]
+
+# Ground truth specification for evaluation
+[ground_truth]
+    drift_periods        = [[500, 1000]]
+    drift_intensity      = "weak"
+    expected_effect_size = 0.2
+    kl_divergence        = 0.15
+    expected_detection   = true
+    drift_confidence     = 0.6
+
+# Statistical validation for scientific rigor
+[statistical_validation]
+    expected_effect_size = 0.2
+    minimum_power        = 0.80
+    significance_level   = 0.05
+
+# Reference data (non-drift period)
+[ref_filter]
+    sample_range = [0, 500]
+    n_samples    = 1000
+    n_features   = 4
+    n_classes    = 2
+    random_state = 42
+
+# Test data (with weak artificial drift)
+[test_filter]
+    sample_range    = [500, 1000]
+    noise_factor    = 1.2
+    feature_scaling = 0.9
+    random_state    = 24
+
+# Enhanced metadata
+[enhanced_metadata]
+    total_instances = 1000
+    feature_descriptions = [
+        "feature_1: Primary numerical feature for drift analysis",
+        "feature_2: Secondary numerical feature",
+        "feature_3: Tertiary numerical feature",
+        "feature_4: Quaternary numerical feature",
+        "target: Binary classification target (0/1)",
+    ]
+    data_quality_score = 1.0
+    data_authenticity = "synthetic"
+    scientific_traceability = true

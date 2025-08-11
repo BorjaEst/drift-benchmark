@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from components import simple_detectors  # fmt: skip
 from components import alibidetect_detectors, evidently_detectors, river_detectors
 from drift_benchmark import get_benchmark_runner
 
