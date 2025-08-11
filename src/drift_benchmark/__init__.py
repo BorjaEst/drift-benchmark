@@ -199,6 +199,12 @@ def __getattr__(name: str):
         if "data" not in _cached_modules:
             _cached_modules["data"] = get_data_module()
         return _cached_modules["data"]
+    elif name == "benchmark":
+        if "benchmark" not in _cached_modules:
+            import importlib
+
+            _cached_modules["benchmark"] = importlib.import_module("drift_benchmark.benchmark")
+        return _cached_modules["benchmark"]
     elif name == "BenchmarkRunner":
         return get_benchmark_runner()
     elif name == "Benchmark":

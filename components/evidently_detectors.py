@@ -43,20 +43,33 @@ Additional Evidently tests (not registered, need methods.toml entries):
 from typing import Any, Dict, Optional
 
 import pandas as pd
-from evidently.test_suite import TestSuite
-from evidently.tests import (
-    TestAllFeaturesValueDrift,
-    TestColumnDrift,
-    TestCustomFeaturesValueDrift,
-    TestEmbeddingsDrift,
-    TestNumberOfDriftedColumns,
-    TestShareOfDriftedColumns,
-)
+
+try:
+    from evidently.test_suite import TestSuite
+    from evidently.tests import (
+        TestAllFeaturesValueDrift,
+        TestColumnDrift,
+        TestCustomFeaturesValueDrift,
+        TestEmbeddingsDrift,
+        TestNumberOfDriftedColumns,
+        TestShareOfDriftedColumns,
+    )
+
+    EVIDENTLY_AVAILABLE = True
+except ImportError:
+    EVIDENTLY_AVAILABLE = False
+    TestSuite = None
+    TestAllFeaturesValueDrift = None
+    TestColumnDrift = None
+    TestCustomFeaturesValueDrift = None
+    TestEmbeddingsDrift = None
+    TestNumberOfDriftedColumns = None
+    TestShareOfDriftedColumns = None
 
 from drift_benchmark.adapters.base_detector import BaseDetector
 from drift_benchmark.adapters.registry import register_detector
 from drift_benchmark.literals import LibraryId
-from drift_benchmark.models.results import DatasetResult
+from drift_benchmark.models.results import ScenarioResult
 from drift_benchmark.settings import get_logger
 
 logger = get_logger(__name__)
@@ -97,7 +110,7 @@ class BaseEvidentlyDetector(BaseDetector):
         self._fitted = False
         self._reference_data: Optional[pd.DataFrame] = None
         self._last_score: Optional[float] = None
-        self._test_suite: Optional[TestSuite] = None
+        self._test_suite: Optional[Any] = None  # TestSuite when available
 
     @property
     def method_id(self) -> str:
@@ -114,29 +127,29 @@ class BaseEvidentlyDetector(BaseDetector):
         """Get the library implementation identifier."""
         return self._library_id
 
-    def preprocess(self, data: DatasetResult, phase: str = "reference", **kwargs) -> pd.DataFrame:
+    def preprocess(self, data: ScenarioResult, phase: str = "detect", **kwargs) -> pd.DataFrame:
         """
-        Convert DatasetResult to format expected by Evidently.
+        Convert ScenarioResult to format expected by Evidently.
 
         Evidently works best with pandas DataFrames directly.
 
         Args:
-            data: Dataset containing reference and test data
-            phase: "reference" for training, "test" for detection
+            data: Scenario containing reference and test data
+            phase: "train" for training, "detect" for detection
             **kwargs: Additional preprocessing parameters
 
         Returns:
             Pandas DataFrame for the appropriate phase
 
         Raises:
-            ValueError: If phase is not "reference" or "test"
+            ValueError: If phase is not "train" or "detect"
         """
-        if phase == "reference":
+        if phase == "train":
             return data.X_ref
-        elif phase == "test":
+        elif phase == "detect":
             return data.X_test
         else:
-            raise ValueError(f"Invalid phase '{phase}'. Must be 'reference' or 'test'.")
+            raise ValueError(f"Invalid phase '{phase}'. Must be 'train' or 'detect'.")
 
     def fit(self, preprocessed_data: pd.DataFrame, **kwargs) -> "BaseEvidentlyDetector":
         """
@@ -183,7 +196,11 @@ class BaseEvidentlyDetector(BaseDetector):
             RuntimeError: If detector not fitted or reference data not available
             ValueError: If preprocessed_data is None or empty
             TypeError: If preprocessed_data is not a pandas DataFrame
+            ImportError: If Evidently library is not available
         """
+        if not EVIDENTLY_AVAILABLE:
+            raise ImportError("Evidently library is required but not installed. Install with: pip install evidently")
+
         if not self._fitted:
             raise RuntimeError("Detector must be fitted before detection")
 
@@ -360,6 +377,9 @@ class EvidentlyAllFeaturesDriftDetector(BaseEvidentlyDetector):
         Returns:
             Boolean indicating whether drift was detected in any feature
         """
+        if not EVIDENTLY_AVAILABLE:
+            raise ImportError("Evidently library is required but not installed. Install with: pip install evidently")
+
         if not self._fitted:
             raise RuntimeError("Detector must be fitted before detection")
 

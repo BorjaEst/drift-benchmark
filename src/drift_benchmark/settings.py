@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     REQ-SET-002: All settings configurable via DRIFT_BENCHMARK_ prefixed environment variables
     """
 
+    model_config = {"env_prefix": "DRIFT_BENCHMARK_", "case_sensitive": False, "extra": "ignore"}
+
     # REQ-SET-101: Datasets directory setting
     datasets_dir: Path = Field(default=Path("datasets"), description="Directory containing dataset files")
 
@@ -35,6 +37,9 @@ class Settings(BaseSettings):
 
     # REQ-SET-104: Log level setting with enum validation
     log_level: LogLevel = Field(default="info", description="Logging level for the application")
+
+    # REQ-SET-107: Scenarios directory setting
+    scenarios_dir: Path = Field(default=Path("scenarios"), description="Directory containing scenario definition files")
 
     # REQ-SET-105: Random seed setting for reproducibility
     random_seed: Optional[int] = Field(default=42, description="Random seed for reproducible results")
@@ -51,11 +56,6 @@ class Settings(BaseSettings):
     methods_registry_path: Path = Field(
         default=Path("src/drift_benchmark/detectors/methods.toml"), description="Path to methods configuration file"
     )
-
-    # REQ-SET-107: Scenarios directory setting
-    scenarios_dir: Path = Field(default=Path("scenarios"), description="Directory containing scenario definition files")
-
-    model_config = {"env_prefix": "DRIFT_BENCHMARK_", "case_sensitive": False, "extra": "ignore"}
 
     def model_post_init(self, __context) -> None:
         """

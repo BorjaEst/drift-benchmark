@@ -18,7 +18,7 @@ import pandas as pd
 from drift_benchmark.adapters.base_detector import BaseDetector
 from drift_benchmark.adapters.registry import register_detector
 from drift_benchmark.literals import LibraryId
-from drift_benchmark.models.results import DatasetResult
+from drift_benchmark.models.results import ScenarioResult
 from drift_benchmark.settings import get_logger
 
 logger = get_logger(__name__)
@@ -86,24 +86,24 @@ class RiverStreamingDetector(BaseDetector):
 
         return overall_drift
 
-    def preprocess(self, data: DatasetResult, phase: str = "reference", **kwargs) -> np.ndarray:
+    def preprocess(self, data: ScenarioResult, phase: str = "detect", **kwargs) -> np.ndarray:
         """
         Convert pandas DataFrames to numpy arrays for streaming simulation.
 
         Args:
-            data: DatasetResult containing X_ref and X_test DataFrames
-            phase: Either "reference" for training or "test" for detection
+            data: ScenarioResult containing X_ref and X_test DataFrames
+            phase: Either "train" for training or "detect" for detection
             **kwargs: Additional preprocessing parameters
 
         Returns:
             np.ndarray: Preprocessed data array suitable for streaming
         """
-        if phase == "reference":
+        if phase == "train":
             X_data = data.X_ref
-        elif phase == "test":
+        elif phase == "detect":
             X_data = data.X_test
         else:
-            raise ValueError(f"Invalid phase '{phase}'. Must be 'reference' or 'test'.")
+            raise ValueError(f"Invalid phase '{phase}'. Must be 'train' or 'detect'.")
 
         if isinstance(X_data, pd.DataFrame):
             # Select numeric columns and handle missing values

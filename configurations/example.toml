@@ -1,12 +1,11 @@
-# Minimal Test Configuration  
-# Using only existing detectors to test the framework
+# Simple Test Configuration for drift-benchmark
+# Tests basic framework functionality with multiple test detectors
 
-[[datasets]]
-    path            = "datasets/example.csv"
-    format          = "csv"
-    reference_split = 0.5
+# Simple CSV-based scenario for quick testing
+[[scenarios]]
+    id = "synthetic_covariate"
 
-# Evidently Detectors
+# Test different drift detection methods with custom implementations
 [[detectors]]
     method_id  = "kolmogorov_smirnov"
     variant_id = "ks_batch"
