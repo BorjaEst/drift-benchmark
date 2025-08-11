@@ -7,7 +7,7 @@
 
 **drift-benchmark** is a unified framework for evaluating and comparing drift detection methods across different datasets and scenarios. It provides a standardized interface for benchmarking various drift detection algorithms, enabling researchers and practitioners to objectively assess performance and choose the most suitable methods for their specific use cases.
 
-**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, scikit-learn, River) implement the same mathematical methods within well-defined "Scenarios" to identify which library provides better performance, accuracy, or resource efficiency for your specific use case.
+**🎯 Primary Goal**: Compare how different libraries (Evidently, Alibi-Detect, River, etc.) implement the same mathematical methods within well-defined "Scenarios" to identify which library provides better performance, accuracy, or resource efficiency for your specific use case.
 
 ## 🏗️ Framework Architecture
 

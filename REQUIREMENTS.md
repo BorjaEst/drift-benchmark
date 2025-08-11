@@ -65,7 +65,7 @@ This module defines architectural principles and dependency management for the d
 | **REQ-LIT-008** | **File Format Literals**          | Must define `FileFormat` literal with values: "csv"                                                                                                     |
 | **REQ-LIT-009** | **Log Level Literals**            | Must define `LogLevel` literal with values: "debug", "info", "warning", "error", "critical"                                                             |
 | **REQ-LIT-010** | **Library ID Literals**           | Must define `LibraryId` literal with values: "evidently", "alibi-detect", "scikit-learn", "river", "scipy", "custom"                                    |
-| **REQ-LIT-011** | **Scenario Source Type Literals** | Must define `ScenarioSourceType` literal with values: "sklearn", "file", "uci"                                                                          |
+| **REQ-LIT-011** | **Scenario Source Type Literals** | Must define `ScenarioSourceType` literal with values: "synthetic", "file", "uci"                                                                        |
 | **REQ-LIT-012** | **Statistical Validation Literals** | Must define `StatisticalTest` literal with values: "t_test", "wilcoxon", "mcnemar", "friedman"                                                           |
 | **REQ-LIT-013** | **Effect Size Literals**           | Must define `EffectSizeMetric` literal with values: "cohens_d", "hedges_g", "glass_delta", "cliff_delta"                                                |
 
@@ -413,7 +413,7 @@ This document contains all core requirements needed to implement a working drift
 ### 🎯 **Enhanced Dataset Handling:**
 
 - **Synthetic Dataset Support**: Full parameter modification capabilities for `make_*` functions to generate artificial drift scenarios
-- **Real Dataset Preservation**: Feature-based filtering only for `load_*` datasets to maintain data authenticity while creating realistic drift scenarios  
+- **Real Dataset Preservation**: Feature-based filtering only for real datasets (UCI and CSV files) to maintain data authenticity while creating realistic drift scenarios  
 - **UCI Repository Integration**: Comprehensive support for UCI ML Repository datasets via ucimlrepo with complete metadata preservation for scientific traceability
 - **Intelligent Drift Creation**: Leveraging natural correlations in real datasets (e.g., BMI vs. diabetes risk) for authentic drift detection challenges
 - **Comprehensive Validation**: Automatic detection and prevention of inappropriate modifications to real datasets
