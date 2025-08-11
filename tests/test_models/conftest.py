@@ -1,86 +1,58 @@
 # Feature-specific fixtures for models module testing
+# REFACTORED: Asset-driven approach using tests/assets/configurations/
+# UPDATED: Using TOML format for all configuration assets
+# Aligned with README TOML examples and REQUIREMENTS REQ-CFM-002 flat structure
 
+import sys
+
+# Import asset loaders from main conftest
+from pathlib import Path
 from typing import Any, Dict
 
 import pandas as pd
 import pytest
 
+# Add parent path for imports
+parent_path = Path(__file__).parent.parent
+sys.path.insert(0, str(parent_path))
 
-@pytest.fixture
-def sample_benchmark_config_data():
-    """Provide sample data for BenchmarkConfig testing"""
-    return {
-        "datasets": [{"path": "datasets/test_data.csv", "format": "csv", "reference_split": 0.6}],
-        "detectors": [
-            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"},
-            {"method_id": "drift_detector", "variant_id": "custom", "library_id": "custom"},
-        ],
-    }
+from conftest import configuration_assets_path, load_asset_config, load_asset_csv
 
 
 @pytest.fixture
-def sample_dataset_config_data():
-    """Provide sample data for DatasetConfig testing"""
-    return {"path": "datasets/example.csv", "format": "csv", "reference_split": 0.7}
+def sample_benchmark_config_data(configuration_assets_path):
+    """Provide sample data for BenchmarkConfig testing from assets - Given-When-Then pattern"""
+    # Given: We have a benchmark config asset in TOML format
+    # When: A test needs benchmark configuration data
+    # Then: Load it from TOML assets for consistency
+    return load_asset_config("sample_benchmark_config", "configurations")
 
 
 @pytest.fixture
-def sample_detector_config_data():
-    """Provide sample data for DetectorConfig testing"""
-    return {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"}
+def sample_detector_config_data(configuration_assets_path):
+    """Provide sample data for DetectorConfig testing from assets"""
+    return load_asset_config("sample_detector_config", "configurations")
 
 
 @pytest.fixture
-def sample_dataset_result_data():
-    """Provide sample data for DatasetResult testing"""
-    ref_data = pd.DataFrame({"feature_1": [1.0, 2.0, 3.0], "feature_2": ["A", "B", "C"]})
-    test_data = pd.DataFrame({"feature_1": [4.0, 5.0, 6.0], "feature_2": ["D", "E", "F"]})
-
-    metadata = {"name": "test_dataset", "data_type": "mixed", "dimension": "multivariate", "n_samples_ref": 3, "n_samples_test": 3}
-
-    return {"X_ref": ref_data, "X_test": test_data, "metadata": metadata}
+def sample_detector_result_data(configuration_assets_path):
+    """Provide sample data for DetectorResult testing from assets"""
+    return load_asset_config("sample_detector_result", "configurations")
 
 
 @pytest.fixture
-def sample_detector_result_data():
-    """Provide sample data for DetectorResult testing"""
-    return {
-        "detector_id": "ks_test_scipy",
-        "library_id": "scipy",
-        "dataset_name": "test_dataset",
-        "drift_detected": True,
-        "execution_time": 0.0123,
-        "drift_score": 0.85,
-    }
+def sample_dataset_metadata_data(configuration_assets_path):
+    """Provide sample data for DatasetMetadata testing from assets"""
+    return load_asset_config("sample_dataset_metadata", "configurations")
 
 
 @pytest.fixture
-def sample_dataset_metadata_data():
-    """Provide sample data for DatasetMetadata testing"""
-    return {"name": "test_dataset", "data_type": "continuous", "dimension": "multivariate", "n_samples_ref": 1000, "n_samples_test": 500}
+def sample_detector_metadata_data(configuration_assets_path):
+    """Provide sample data for DetectorMetadata testing from assets"""
+    return load_asset_config("sample_detector_metadata", "configurations")
 
 
 @pytest.fixture
-def sample_detector_metadata_data():
-    """Provide sample data for DetectorMetadata testing"""
-    return {
-        "method_id": "ks_test",
-        "variant_id": "scipy",
-        "library_id": "scipy",
-        "name": "Kolmogorov-Smirnov Test",
-        "family": "statistical-test",
-    }
-
-
-@pytest.fixture
-def sample_benchmark_summary_data():
-    """Provide sample data for BenchmarkSummary testing"""
-    return {
-        "total_detectors": 5,
-        "successful_runs": 4,
-        "failed_runs": 1,
-        "avg_execution_time": 0.125,
-        "accuracy": 0.8,
-        "precision": 0.75,
-        "recall": 0.9,
-    }
+def sample_benchmark_summary_data(configuration_assets_path):
+    """Provide sample data for BenchmarkSummary testing from assets"""
+    return load_asset_config("sample_benchmark_summary", "configurations")

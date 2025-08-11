@@ -62,5 +62,14 @@ def list_detectors() -> List[Tuple[str, str, LibraryId]]:
     return list(_detector_registry.keys())
 
 
+def list_available_detectors() -> List[Tuple[str, str, LibraryId]]:
+    """
+    List all available detector combinations.
+
+    REQ-REG-006: Available detectors listing functionality
+    """
+    return list_detectors()
+
+
 # REQ-REG-002: Maintain mapping from (method_id, variant_id, library_id) to detector class
 # This is implemented through the _detector_registry global variable above

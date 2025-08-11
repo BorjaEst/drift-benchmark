@@ -4,32 +4,27 @@ Configuration models for drift-benchmark - REQ-CFM-XXX
 Pydantic models for configuration management and validation.
 """
 
-from pathlib import Path
-from typing import List, Union
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..literals import FileFormat, LibraryId
+from ..literals import LibraryId
 
 
-class DatasetConfig(BaseModel):
+class ScenarioConfig(BaseModel):
     """
-    Configuration for individual dataset.
+    Configuration for individual scenario.
 
-    REQ-CFM-002: DatasetConfig with fields: path, format, reference_split
+    REQ-CFM-004: ScenarioConfig with field: id to identify scenario definition file
     """
 
-    path: str = Field(..., description="Path to dataset file")
-    format: FileFormat = Field(default="csv", description="Dataset file format")
-    reference_split: float = Field(..., description="Ratio for reference/test split (0.0 to 1.0)")
+    id: str = Field(..., description="Scenario identifier to locate definition file")
 
-    @field_validator("reference_split")
-    @classmethod
-    def validate_split_ratio(cls, v):
-        """REQ-CFG-005: Validate reference_split is between 0.0 and 1.0 (exclusive)"""
-        if not (0.0 < v < 1.0):
-            raise ValueError("reference_split must be between 0.0 and 1.0 (exclusive)")
-        return v
+
+# REQ-CFM-002: DatasetConfig is DEPRECATED - Dataset configuration is now handled within scenario definitions
+# class DatasetConfig(BaseModel):
+#     """DEPRECATED: Use scenario definitions instead"""
+#     pass
 
 
 class DetectorConfig(BaseModel):
@@ -42,25 +37,26 @@ class DetectorConfig(BaseModel):
     method_id: str = Field(..., description="Method identifier from registry")
     variant_id: str = Field(..., description="Variant variant identifier")
     library_id: LibraryId = Field(..., description="Library implementation identifier")
+    hyperparameters: Optional[Dict[str, Any]] = Field(None, description="Optional hyperparameters for detector")
 
 
 class BenchmarkConfig(BaseModel):
     """
     Configuration for complete benchmark.
 
-    REQ-CFM-001: BenchmarkConfig with basic fields: datasets, detectors
+    REQ-CFM-001: BenchmarkConfig with basic fields: scenarios, detectors
     REQ-CFG-007: Pure data model without file I/O operations
     """
 
-    datasets: List[DatasetConfig] = Field(..., description="List of datasets to benchmark")
+    scenarios: List[ScenarioConfig] = Field(..., description="List of scenarios to benchmark")
     detectors: List[DetectorConfig] = Field(..., description="List of detectors to evaluate")
 
-    @field_validator("datasets")
+    @field_validator("scenarios")
     @classmethod
-    def validate_datasets_not_empty(cls, v):
-        """Validate that datasets list is not empty"""
+    def validate_scenarios_not_empty(cls, v):
+        """Validate that scenarios list is not empty"""
         if len(v) == 0:
-            raise ValueError("datasets list cannot be empty")
+            raise ValueError("scenarios list cannot be empty")
         return v
 
     @field_validator("detectors")

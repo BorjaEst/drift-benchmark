@@ -1,0 +1,52 @@
+# No-drift baseline scenario with synthetic data
+description   = "Synthetic baseline scenario with no drift for statistical comparison"
+source_type   = "synthetic"
+source_name   = "classification"
+target_column = "target"
+drift_types   = ["none"]
+
+# Ground truth specification for evaluation
+[ground_truth]
+    drift_periods        = []
+    drift_intensity      = "none"
+    expected_effect_size = 0.0
+    kl_divergence        = 0.0
+    expected_detection   = false
+    drift_confidence     = 0.0
+
+# Statistical validation for false positive rate testing
+[statistical_validation]
+    expected_effect_size = 0.0
+    minimum_power        = 0.80
+    significance_level   = 0.05
+    baseline_scenario    = "no_drift_synthetic"
+
+# Reference data
+[ref_filter]
+    sample_range = [0, 500]
+    n_samples    = 1000
+    n_features   = 4
+    n_classes    = 2
+    random_state = 42
+
+# Test data (different samples, no drift modifications)
+[test_filter]
+    sample_range = [501, 1000]
+    n_samples    = 1000
+    n_features   = 4
+    n_classes    = 2
+    random_state = 42
+
+# Enhanced metadata
+[enhanced_metadata]
+    total_instances = 1000
+    feature_descriptions = [
+        "feature_1: Primary numerical feature",
+        "feature_2: Secondary numerical feature",
+        "feature_3: Tertiary numerical feature",
+        "feature_4: Quaternary numerical feature",
+        "target: Binary classification target (0/1)",
+    ]
+    data_quality_score = 1.0
+    data_authenticity = "synthetic"
+    scientific_traceability = true

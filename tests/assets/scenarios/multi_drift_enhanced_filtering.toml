@@ -1,0 +1,46 @@
+# REQ-DAT-009 to REQ-DAT-017: Enhanced filtering system testing
+# Multiple drift types and complex filtering scenarios
+description   = "Multi-drift scenario with enhanced filtering capabilities"
+source_type   = "file"
+source_name   = "tests/assets/datasets/comprehensive_mixed.csv"
+target_column = "target"
+drift_types   = ["covariate", "prior", "concept"]
+
+[ref_filter]
+    sample_range = [0, 3]
+    # REQ-DAT-010: AND logic implementation
+    feature_filters = [
+        { column = "feature_1", condition = ">=", value = 0.0 },
+        { column = "feature_2", condition = "<=", value = 5.0 },
+    ]
+
+[test_filter]
+    sample_range = [6, 9]
+    # REQ-DAT-012: Feature-based filtering
+    feature_filters = [{ column = "feature_1", condition = ">=", value = 4.0 }]
+
+[ground_truth]
+    drift_periods        = [[6, 9]]
+    drift_intensity      = "strong"
+    expected_effect_size = 0.7
+    kl_divergence        = 0.65
+    cohens_d             = 0.8
+
+# REQ-DAT-021: Quantitative drift measurement
+[quantitative_metrics]
+    kl_divergence      = 0.65
+    effect_size        = 0.7
+    cohens_d           = 0.8
+    statistical_power  = 0.9
+    significance_level = 0.01
+
+[enhanced_metadata]
+    total_instances = 10
+    feature_descriptions = [
+        "feature_1: Primary numerical feature for covariate drift",
+        "feature_2: Secondary numerical feature for concept drift",
+        "categorical_feature: Categorical feature for label drift",
+    ]
+    missing_data_indicators = ["none"]
+    data_quality_score = 0.95
+    scientific_traceability = true

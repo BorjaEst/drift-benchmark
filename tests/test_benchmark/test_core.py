@@ -17,7 +17,19 @@ def test_should_define_benchmark_class_interface_when_imported(mock_benchmark_co
     try:
         from drift_benchmark.benchmark import Benchmark
 
-        benchmark = Benchmark(mock_benchmark_config)
+        # Mock the detector registry to avoid dependency on actual detectors
+        with patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector:
+            from unittest.mock import Mock
+
+            mock_get_detector.return_value = Mock
+
+            # Mock scenario loading to avoid dependency on actual scenario files
+            with patch("drift_benchmark.data.load_scenario") as mock_load_scenario:
+                mock_scenario_result = Mock()
+                mock_scenario_result.name = "test_scenario"
+                mock_load_scenario.return_value = mock_scenario_result
+
+                benchmark = Benchmark(mock_benchmark_config)
     except ImportError as e:
         pytest.fail(f"Failed to import Benchmark from benchmark module: {e}")
 
@@ -32,9 +44,17 @@ def test_should_define_benchmark_class_interface_when_imported(mock_benchmark_co
 def test_should_validate_detector_configurations_when_initialized(mock_benchmark_config):
     """Test REQ-BEN-002: Benchmark.__init__(config: BenchmarkConfig) must validate all detector configurations exist in registry"""
     # Arrange
-    with patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector:
+    with (
+        patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
+    ):
         # Mock successful detector lookups
         mock_get_detector.return_value = Mock
+
+        # Mock successful scenario loading
+        mock_scenario_result = Mock()
+        mock_scenario_result.metadata.name = "test_scenario"
+        mock_load_scenario.return_value = mock_scenario_result
 
         # Act & Assert
         try:
@@ -42,8 +62,11 @@ def test_should_validate_detector_configurations_when_initialized(mock_benchmark
 
             benchmark = Benchmark(mock_benchmark_config)
 
-            # Verify detector lookups were called
-            expected_calls = [("ks_test", "scipy", "scipy"), ("drift_detector", "custom", "custom")]
+            # Verify detector lookups were called - match the mock_benchmark_config detector IDs
+            # Asset-driven: Get expected calls from the mock_benchmark_config (loaded from assets)
+            expected_calls = [
+                (detector.method_id, detector.variant_id, detector.library_id) for detector in mock_benchmark_config.detectors
+            ]
             actual_calls = [call[0] for call in mock_get_detector.call_args_list]
 
             for expected_call in expected_calls:
@@ -53,18 +76,18 @@ def test_should_validate_detector_configurations_when_initialized(mock_benchmark
             pytest.fail(f"Failed to import Benchmark for validation test: {e}")
 
 
-def test_should_load_datasets_when_initialized(mock_benchmark_config):
-    """Test REQ-BEN-003: Benchmark.__init__(config: BenchmarkConfig) must successfully load all datasets specified in config"""
+def test_should_load_scenarios_when_initialized(mock_benchmark_config):
+    """Test REQ-BEN-003: Benchmark.__init__(config: BenchmarkConfig) must successfully load all scenarios specified in config"""
     # Arrange
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
     ):
 
         # Mock successful data loading
-        mock_dataset_result = Mock()
-        mock_dataset_result.metadata.name = "test_dataset"
-        mock_load_dataset.return_value = mock_dataset_result
+        mock_scenario_result = Mock()
+        mock_scenario_result.metadata.name = "test_scenario"
+        mock_load_scenario.return_value = mock_scenario_result
         mock_get_detector.return_value = Mock
 
         # Act & Assert
@@ -73,24 +96,24 @@ def test_should_load_datasets_when_initialized(mock_benchmark_config):
 
             benchmark = Benchmark(mock_benchmark_config)
 
-            # Verify dataset loading was called for each dataset
-            assert mock_load_dataset.call_count == len(
-                mock_benchmark_config.datasets
-            ), "load_dataset should be called for each dataset in config"
+            # Verify scenario loading was called for each scenario
+            assert mock_load_scenario.call_count == len(
+                mock_benchmark_config.scenarios
+            ), "load_scenario should be called for each scenario in config"
 
         except ImportError as e:
-            pytest.fail(f"Failed to import Benchmark for dataset loading test: {e}")
+            pytest.fail(f"Failed to import Benchmark for scenario loading test: {e}")
 
 
 def test_should_instantiate_detectors_when_initialized(mock_benchmark_config, mock_detector):
     """Test REQ-BEN-004: Benchmark.__init__(config: BenchmarkConfig) must successfully instantiate all configured detectors"""
     # Arrange
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
     ):
 
-        mock_load_dataset.return_value = Mock()
+        mock_load_scenario.return_value = Mock()
         mock_get_detector.return_value = mock_detector
 
         # Act & Assert
@@ -100,8 +123,8 @@ def test_should_instantiate_detectors_when_initialized(mock_benchmark_config, mo
             benchmark = Benchmark(mock_benchmark_config)
 
             # Verify detector instantiation
-            total_detector_instances = len(mock_benchmark_config.datasets) * len(mock_benchmark_config.detectors)
-            # Each detector should be instantiated for each dataset
+            total_detector_instances = len(mock_benchmark_config.scenarios) * len(mock_benchmark_config.detectors)
+            # Each detector should be instantiated for each scenario
             assert mock_get_detector.call_count >= len(
                 mock_benchmark_config.detectors
             ), "get_detector_class should be called for each detector type"
@@ -110,15 +133,15 @@ def test_should_instantiate_detectors_when_initialized(mock_benchmark_config, mo
             pytest.fail(f"Failed to import Benchmark for detector instantiation test: {e}")
 
 
-def test_should_execute_detectors_sequentially_when_run(mock_benchmark_config, mock_detector, mock_dataset_result):
-    """Test REQ-BEN-005: Benchmark.run() must execute detectors sequentially on each dataset"""
+def test_should_execute_detectors_sequentially_when_run(mock_benchmark_config, mock_detector, mock_scenario_result):
+    """Test REQ-BEN-005: Benchmark.run() must execute detectors sequentially on each scenario"""
     # Arrange
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
     ):
 
-        mock_load_dataset.return_value = mock_dataset_result
+        mock_load_scenario.return_value = mock_scenario_result
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
 
@@ -141,16 +164,16 @@ def test_should_execute_detectors_sequentially_when_run(mock_benchmark_config, m
         assert mock_detector_instance._execution_count > 0, "detectors should perform detection"
 
 
-def test_should_handle_detector_errors_when_run(mock_benchmark_config, mock_detector, mock_failing_detector, mock_dataset_result):
+def test_should_handle_detector_errors_when_run(mock_benchmark_config, mock_detector, mock_failing_detector, mock_scenario_result):
     """Test REQ-BEN-006: Benchmark.run() must catch detector errors, log them, and continue with remaining detectors"""
     # Arrange
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
         patch("drift_benchmark.benchmark.core.logger") as mock_logger,
     ):
 
-        mock_load_dataset.return_value = mock_dataset_result
+        mock_load_scenario.return_value = mock_scenario_result
 
         # Setup mixed detectors - some succeed, some fail
         def detector_factory(method_id, variant_id, **kwargs):
@@ -181,15 +204,15 @@ def test_should_handle_detector_errors_when_run(mock_benchmark_config, mock_dete
         assert hasattr(result, "detector_results"), "result should have detector_results"
 
 
-def test_should_aggregate_results_when_run(mock_benchmark_config, mock_detector, mock_dataset_result):
+def test_should_aggregate_results_when_run(mock_benchmark_config, mock_detector, mock_scenario_result):
     """Test REQ-BEN-007: Benchmark.run() must collect all detector results and return consolidated BenchmarkResult with computed summary"""
     # Arrange
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
     ):
 
-        mock_load_dataset.return_value = mock_dataset_result
+        mock_load_scenario.return_value = mock_scenario_result
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
 
@@ -210,7 +233,7 @@ def test_should_aggregate_results_when_run(mock_benchmark_config, mock_detector,
 
         # Assert - detector results collected
         assert isinstance(result.detector_results, list), "detector_results must be list"
-        expected_result_count = len(mock_benchmark_config.datasets) * len(mock_benchmark_config.detectors)
+        expected_result_count = len(mock_benchmark_config.scenarios) * len(mock_benchmark_config.detectors)
         assert len(result.detector_results) == expected_result_count, f"should have {expected_result_count} detector results"
 
         # Assert - summary computed
@@ -220,16 +243,16 @@ def test_should_aggregate_results_when_run(mock_benchmark_config, mock_detector,
         assert hasattr(result.summary, "avg_execution_time"), "summary must have avg_execution_time"
 
 
-def test_should_track_execution_time_when_run(mock_benchmark_config, mock_detector, mock_dataset_result):
+def test_should_track_execution_time_when_run(mock_benchmark_config, mock_detector, mock_scenario_result):
     """Test REQ-BEN-008: Benchmark.run() must measure execution time for each detector using time.perf_counter() with second precision"""
     # Arrange
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
         patch("time.perf_counter") as mock_perf_counter,
     ):
 
-        mock_load_dataset.return_value = mock_dataset_result
+        mock_load_scenario.return_value = mock_scenario_result
         mock_detector_instance = mock_detector("test_method", "test_impl")
         mock_get_detector.return_value = lambda *args, **kwargs: mock_detector_instance
 
@@ -265,7 +288,7 @@ def test_should_support_empty_configuration_when_run():
     # Arrange - empty configuration
     class EmptyBenchmarkConfig:
         def __init__(self):
-            self.datasets = []
+            self.scenarios = []
             self.detectors = []
 
     empty_config = EmptyBenchmarkConfig()
@@ -287,15 +310,15 @@ def test_should_support_empty_configuration_when_run():
         pytest.fail(f"Failed to import Benchmark for empty config test: {e}")
 
 
-def test_should_maintain_detector_isolation_when_run(mock_benchmark_config, mock_detector, mock_dataset_result):
+def test_should_maintain_detector_isolation_when_run(mock_benchmark_config, mock_detector, mock_scenario_result):
     """Test that detector failures don't affect other detector executions"""
     # Arrange
     with (
-        patch("drift_benchmark.data.load_dataset") as mock_load_dataset,
+        patch("drift_benchmark.data.load_scenario") as mock_load_scenario,
         patch("drift_benchmark.adapters.get_detector_class") as mock_get_detector,
     ):
 
-        mock_load_dataset.return_value = mock_dataset_result
+        mock_load_scenario.return_value = mock_scenario_result
 
         # Create detectors with different behaviors
         successful_detector = mock_detector("successful_method", "successful_impl")
@@ -312,7 +335,8 @@ def test_should_maintain_detector_isolation_when_run(mock_benchmark_config, mock
             return detector
 
         def detector_factory(method_id, variant_id, library_id):
-            if method_id == "ks_test":
+            # Make scipy detectors succeed, others fail to test isolation
+            if library_id == "scipy":
                 return lambda *args, **kwargs: successful_detector
             else:
                 return failing_detector_factory

@@ -1,0 +1,6 @@
+method_id   = "kolmogorov_smirnov"
+variant_id  = "batch"
+library_id  = "custom"
+name        = "Kolmogorov-Smirnov Test"
+family      = "statistical-test"
+description = "Two-sample test for equality of distributions"

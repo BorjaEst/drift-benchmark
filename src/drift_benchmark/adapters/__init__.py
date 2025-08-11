@@ -6,23 +6,12 @@ libraries with the drift-benchmark framework.
 """
 
 from .base_detector import BaseDetector
-from .registry import get_detector_class, list_detectors, register_detector
-
-# Import test detectors to register them
-try:
-    from . import test_detectors  # This will execute the decorators
-except ImportError:
-    pass  # Test detectors are optional
-
-# Import real detector variants
-try:
-    from . import statistical_detectors  # Statistical test-based detectors
-except ImportError:
-    pass  # Real detectors are optional
+from .registry import get_detector_class, list_available_detectors, list_detectors, register_detector
 
 __all__ = [
     "BaseDetector",
     "register_detector",
     "get_detector_class",
     "list_detectors",
+    "list_available_detectors",
 ]

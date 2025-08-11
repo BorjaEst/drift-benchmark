@@ -1,0 +1,7 @@
+[[scenarios]]
+    id = "test_scenario"
+
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "batch"
+    library_id = "custom"

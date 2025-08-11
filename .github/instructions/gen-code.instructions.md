@@ -2,19 +2,22 @@
 
 ## Role
 
-Python expert implementing **minimal code to make tests pass**. Follow TDD strictly:
+Python expert implementing **minimal code to make tests pass** using strict **Red → Green → Refactor**.
 
-- **Green first**: Write only enough code to pass failing test
-- **YAGNI**: Don't implement features not required by tests
-- **Question complexity**: Alert if implementation feels overly complex
+- Start from a failing test (Red)
+- Add the _least_ code required to make that test pass (Green)
+- Refactor only while tests stay green (Refactor)
+- **Never** add generalized abstractions before at least two tests demand them.
 
 ## Test Modification Policy
 
-**Avoid modifying tests**. If test seems incorrect:
+1. Assume tests are correct.
+2. If a test contradicts documented behavior (README.md / REQUIREMENTS.md), pause.
+3. Provide a short justification referencing exact spec lines.
+4. Propose the _smallest_ targeted change to the test.
+5. Only add new tests when introducing net-new behavior explicitly requested.
 
-1. **Stop** - Read `README.md` and `REQUIREMENTS.md`
-2. **Justify** - Explain why modification needed, reference requirements
-3. **Modify** - Update test to align with documentation
+✅ You may add helper fixtures / parametrizations (not behavior changes) without prior justification.
 
 ## Required Stack (Foundation Only)
 
@@ -26,6 +29,38 @@ Python expert implementing **minimal code to make tests pass**. Follow TDD stric
 - **pytest**: Testing
 
 **Add additional dependencies freely:** FastAPI, SQLAlchemy, httpx, pandas, numpy, etc. - whatever your tests and requirements need.
+
+### Dependency Management (Governance for Added Dependencies)
+
+Add a new dependency ONLY when all apply:
+
+1. Directly required by a current failing test (cannot make test green otherwise).
+2. Standard library or existing deps cannot reasonably satisfy need.
+3. Smallest suitable lib (avoid pulling large frameworks for narrow use-case).
+4. Version pinned with compatible upper bound (e.g. `aiohttp>=3.9,<4.0`).
+
+Process before adding:
+
+- Write justification (in PR or commit message):
+  - Failing test name(s)
+  - Why existing code insufficient
+  - Alternatives considered (and rejected)
+  - Chosen version constraint
+- Run vulnerability & license check (e.g. `pip install pip-audit && pip-audit`)
+- Update lock / requirements files accordingly
+
+Template:
+
+```
+Dependency: <name>
+Failing test(s): test_x_y
+Need: <one line>
+Alternatives: stdlib(<reason rejected>), libA(<reason>), libB(<reason>)
+Chosen version: >=X.Y,<X+1.0
+Risk Mitigation: pinned + audit clean
+```
+
+Removal rule: If no test imports or exercises a dependency after refactor → remove it immediately.
 
 ## Core Patterns (ADAPT TO YOUR DOMAIN)
 
@@ -103,39 +138,13 @@ def create_user(username: str):  # Replace with YOUR domain command
         raise click.ClickException(str(e))
 ```
 
-## Project Structure (Evolve Based on Tests)
+## Project Structure
 
-**⚠️ DON'T create structure upfront - let tests drive what you need:**
+Grow only when pressure appears:
 
-**Start simple, evolve when needed:**
-
-```
-project/
-├── src/
-│   ├── __main__.py    # When you have an entry point
-│   ├── [module].py    # When you have a domain model
-│   └── [service].py   # When you have a service
-├── tests/
-└── pyproject.toml
-```
-
-**Create subpackages only when you have 3+ related files.**
-
-**As tests require more structure:**
-
-```
-project_example/
-├── src/
-│   ├── models_example/         # Only when you have 3+ models
-│   │   ├── configuration.py
-│   │   └── metadata.py
-│   ├── services_example/       # Only when you have 3+ services
-│   │   ├── user_service.py
-│   │   └── order_service.py
-│   └── repositories/           # Only when tests need data abstraction
-├── tests/
-└── pyproject.toml
-```
+- 1–2 modules: keep flat
+- Introduce packages at ≥3 cohesive modules
+- Repositories/services only after multiple call sites or test pain
 
 ## Standard Exceptions
 
@@ -164,40 +173,141 @@ class ProcessingError(Exception):
 
 ## TDD Workflow
 
-1. **Run tests** → see failures
-2. **Write minimal code** → make test pass
-3. **Verify green** → all tests pass
-4. **Refactor** → improve while staying green
-5. **Repeat** → next failing test
+1. RED: Write (or identify) the smallest failing test exposing the next required behavior.
+2. GREEN: Implement only the narrowest code to satisfy current failing test set.
+   - Prefer a hard‑coded return → then gradual generalization when a second test forces it.
+3. REFACTOR: Improve readability, remove duplication, inline or extract as needed—while staying green.
+4. REPEAT: Introduce next failing test that pushes design pressure.
+5. STOP: When all tests green and no new behavior required.
+
+Guardrails:
+
+- One behavior change per cycle.
+- If refactor causes a failure → revert / fix before continuing.
+- Avoid "future proofing".
+
+### Quality Gates (Run Every Cycle Before Commit)
+
+Commands (suggested):
+
+1. `pytest -x` (all must pass)
+2. `mypy src/` (types stay sound when typing exists)
+3. `ruff check src/ tests/` (lint)
+4. `ruff format --check src/ tests/` (format)
+5. (Optional) `pip-audit` if dependencies changed
+
+Commit types:
+
+- Red: `test: add failing test for <behavior>`
+- Green: `feat: implement <behavior>`
+- Refactor: `refactor: <description>` (no behavior change)
+
+## Minimal Implementation Heuristics
+
+Use in order:
+
+1. Fake it (return constant / simplest path).
+2. Triangulate (add second test to force variable behavior).
+3. Generalize (only after duplication / contradiction emerges).
+4. Optimize last (only with a performance test or explicit requirement).
+
+If an implementation needs > ~15 lines for a single new assertion to pass → reassess necessity (raise a complexity alert).
+
+### Abstraction Extraction Trigger Rules
+
+Extract helper/function/class ONLY when ALL true:
+
+1. **Duplication**: ≥3 identical (or near-identical) lines across ≥2 tests or production call sites.
+2. **Behavioral Pressure**: Two tests assert different outcomes requiring branching.
+3. **Cohesion**: Extracted code has a single, nameable responsibility.
+
+Introduce an interface / ABC ONLY when:
+
+1. Two concrete implementations with identical public method signatures exist.
+2. Calling code treats them polymorphically (swappable in a test without changing assertions).
+3. A third implementation is planned OR duplication > 15 lines between two implementations.
+
+Prohibited premature abstractions:
+
+- Creating strategy/factory patterns for a single concrete case
+- Adding repositories/services with only one caller
+- Introducing config objects around ≤3 primitive parameters unless duplication appears
+
+Refactor checklist before extraction:
+
+- Can duplication be tolerated until a third instance appears? If yes → delay.
+- Can a hard-coded branch satisfy both tests? If yes → postpone generalization.
+
+Document abstraction decision in commit message:
+
+```
+abstract: extracted <HelperName>
+Reason: duplication across tests test_a, test_b (5 lines) + divergent assertions
+Alternatives: inline duplication (rejected: growing to 20 lines soon)
+```
+
+## Test Assets & Fixtures
+
+Centralize reusable test data & configuration under:  
+`tests/assets/`
+
+Rules:
+
+- Treat files as read-only during tests (no mutation in place).
+- Use fixtures to load assets; never hardcode large literals inline.
+- Parametrize tests via directory scans when variation is data-driven.
+- Keep asset names descriptive: `sample_config_valid.yaml`, `sample_config_missing_field.yaml`, etc.
+- Large JSON/CSV/parquet inputs belong in assets; keep code-focused tests minimal.
+
+Example fixture pattern:
+
+```python
+# tests/conftest.py
+import json, pathlib, pytest
+
+ASSETS = pathlib.Path(__file__).parent / "assets"
+
+@pytest.fixture
+def config_valid_path():
+    return ASSETS / "sample_config_valid.yaml"
+
+@pytest.fixture(params=(ASSETS / "sample_config_valid.yaml", ASSETS / "sample_config_missing_field.yaml"))
+def config_path(request):
+    return request.param
+```
+
+When adding a new scenario:
+
+1. Add file to `tests/assets/`
+2. Reuse existing parametrized fixture OR extend its param list
+3. Add/adjust only the asserting test logic
+
+## Fixture Design Guidance
+
+- Prefer narrow fixtures (single purpose)
+- Compose fixtures instead of monoliths
+- Avoid side effects; if temp mutation required, copy asset to tmp_path first
+
+## Rich Output Policy
+
+- Only produce console output when a test asserts it OR a CLI path requires it.
+- No ornamental output—utility first.
 
 ## Complexity Alerts
 
-Warn if implementation needs:
+Raise an alert if:
 
-- More than 3 abstraction levels for simple features
-- Multiple design patterns for one test
-- Significantly more complexity than test suggests
+- A single test triggers >2 new classes
+- You need mocks for something not yet abstracted
+- Circular imports appear
+- More than one pattern (factory + strategy etc.) for current scope
 
-## Testing Patterns
-
-```python
-@pytest.fixture
-def sample_data():
-    return {"name": "Test Item", "value": 42}
-
-def test_valid_creation(sample_data):
-    item = DataModel(**sample_data)  # Adapt to YOUR domain
-    assert item.name == "Test Item"
-
-def test_validation_error():
-    with pytest.raises(ValidationError):
-        DataModel(name="", value=2000)
-```
+Format alert:
+`COMPLEXITY ALERT: <one-line reason>. Proposed simplification: <suggestion>.`
 
 ## Remember
 
-- **Tests are sacred** - only modify with strong justification
-- **Examples are templates** - replace `DataModel` with YOUR domain models
-- **Structure evolves** - don't pre-create folders
-- **Stack is baseline** - add more dependencies as needed
-- **Adapt everything** - patterns, not prescriptions
+- Tests drive design; assets drive parametrization
+- Strive for the _next_ passing test, not the final architecture
+- Delete dead code eagerly during refactor
+- Prefer clarity over cleverness

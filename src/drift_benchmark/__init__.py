@@ -37,12 +37,12 @@ try:
         BenchmarkConfig,
         BenchmarkResult,
         BenchmarkSummary,
-        DatasetConfig,
         DatasetMetadata,
-        DatasetResult,
         DetectorConfig,
         DetectorMetadata,
         DetectorResult,
+        ScenarioConfig,
+        ScenarioResult,
     )
     from .settings import Settings, get_logger, settings, setup_logging
 
@@ -74,18 +74,32 @@ def get_benchmark():
     return Benchmark
 
 
-def get_detector_class(method_id: str, variant_id: str):
+def get_data_module():
+    """Get data module - lazy import to avoid heavy dependencies"""
+    import importlib
+
+    return importlib.import_module("drift_benchmark.data")
+
+
+def get_base_detector():
+    """Get BaseDetector class - lazy import for adapters"""
+    from .adapters import BaseDetector
+
+    return BaseDetector
+
+
+def get_detector_class(method_id: str, variant_id: str, library_id: str):
     """Get detector class - lazy import for registry"""
     from .adapters import get_detector_class as _get_detector_class
 
-    return _get_detector_class(method_id, variant_id)
+    return _get_detector_class(method_id, variant_id, library_id)
 
 
-def register_detector(method_id: str, variant_id: str):
+def register_detector(method_id: str, variant_id: str, library_id: str):
     """Register detector decorator - lazy import for registry"""
     from .adapters import register_detector as _register_detector
 
-    return _register_detector(method_id, variant_id)
+    return _register_detector(method_id, variant_id, library_id)
 
 
 def list_detectors():
@@ -102,11 +116,11 @@ def load_config(path: str):
     return _load_config(path)
 
 
-def load_dataset(config):
-    """Load dataset - lazy import to avoid heavy dependencies"""
-    from .data import load_dataset as _load_dataset
+def load_scenario(scenario_id: str):
+    """Load scenario - lazy import to avoid heavy dependencies"""
+    from .data import load_scenario as _load_scenario
 
-    return _load_dataset(config)
+    return _load_scenario(scenario_id)
 
 
 def save_results(results):
@@ -116,9 +130,8 @@ def save_results(results):
     return _save_results(results)
 
 
-# Convenience access to lazy-loaded classes
-BenchmarkRunner = property(get_benchmark_runner)
-Benchmark = property(get_benchmark)
+# Convenience access to lazy-loaded classes - now handled by __getattr__
+# BenchmarkRunner, Benchmark, BaseDetector, data available as module attributes
 
 __version__ = "0.1.0"
 __all__ = [
@@ -149,11 +162,11 @@ __all__ = [
     "LogLevel",
     # Data models
     "BenchmarkConfig",
-    "DatasetConfig",
     "DetectorConfig",
-    "DatasetResult",
+    "ScenarioConfig",
     "DetectorResult",
     "BenchmarkResult",
+    "ScenarioResult",
     "DatasetMetadata",
     "DetectorMetadata",
     "BenchmarkSummary",
@@ -168,9 +181,35 @@ __all__ = [
     "get_detector_class",
     "list_detectors",
     # High-level components
-    "load_dataset",
+    "load_scenario",
     "load_config",
     "Benchmark",
     "BenchmarkRunner",
     "save_results",
 ]
+
+
+# REQ-INI-006: Dynamic module attribute access for lazy loading
+_cached_modules = {}
+
+
+def __getattr__(name: str):
+    """Handle dynamic module attribute access for lazy-loaded components"""
+    if name == "data":
+        if "data" not in _cached_modules:
+            _cached_modules["data"] = get_data_module()
+        return _cached_modules["data"]
+    elif name == "benchmark":
+        if "benchmark" not in _cached_modules:
+            import importlib
+
+            _cached_modules["benchmark"] = importlib.import_module("drift_benchmark.benchmark")
+        return _cached_modules["benchmark"]
+    elif name == "BenchmarkRunner":
+        return get_benchmark_runner()
+    elif name == "Benchmark":
+        return get_benchmark()
+    elif name == "BaseDetector":
+        return get_base_detector()
+    else:
+        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

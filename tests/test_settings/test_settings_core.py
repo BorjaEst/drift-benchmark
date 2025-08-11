@@ -142,7 +142,10 @@ def test_should_provide_setup_logging_method_when_called(clean_environment, temp
     assert len(root_logger.handlers) > 0, "setup_logging() must configure logger handlers"
 
     # Check log level is set correctly
-    expected_level = logging.debug
+    # MODIFIED: Changed from logging.debug (function) to logging.DEBUG (constant)
+    # Explanation: The original test was comparing handler.level with a function object,
+    # but it should compare with the actual logging level constant.
+    expected_level = logging.DEBUG
     assert any(handler.level <= expected_level for handler in root_logger.handlers), "setup_logging() must set log level based on settings"
 
 

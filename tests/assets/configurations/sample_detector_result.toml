@@ -1,0 +1,8 @@
+detector_id    = "ks_test_scipy"
+method_id      = "kolmogorov_smirnov"
+variant_id     = "batch"
+library_id     = "scipy"
+scenario_name  = "test_scenario"
+drift_detected = true
+execution_time = 0.5
+drift_score    = 0.75

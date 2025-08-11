@@ -12,7 +12,7 @@ from pathlib import Path
 import toml
 
 from ..exceptions import ConfigurationError
-from ..models.configurations import BenchmarkConfig, DatasetConfig
+from ..models.configurations import BenchmarkConfig, ScenarioConfig
 
 
 def load_config(path: str) -> BenchmarkConfig:
@@ -48,10 +48,10 @@ def load_config(path: str) -> BenchmarkConfig:
         # Create BenchmarkConfig instance with validation
         config = BenchmarkConfig(**data)
 
-        # REQ-CFG-003: Resolve relative file paths to absolute paths
+        # REQ-CFG-003: Resolve relative scenario definition paths to absolute paths (if needed)
         _resolve_paths(config)
 
-        # REQ-CFG-006: Validate dataset file paths exist during configuration loading
+        # REQ-CFG-006: Validate scenario definition files exist during configuration loading
         _validate_file_existence(config)
 
         # REQ-CFG-004: Validate detector method_id/variant_id exist in methods registry
@@ -65,28 +65,30 @@ def load_config(path: str) -> BenchmarkConfig:
 
 def _resolve_paths(config: BenchmarkConfig) -> None:
     """
-    REQ-CFG-003: Resolve relative file paths to absolute paths using pathlib.
+    REQ-CFG-003: Resolve relative scenario definition paths to absolute paths using pathlib.
     """
-    for dataset_config in config.datasets:
-        path_obj = Path(dataset_config.path)
-        # Convert to absolute path and expand user home directory
-        resolved_path = path_obj.expanduser().resolve()
-        dataset_config.path = str(resolved_path)
+    # Scenario configs only contain IDs, no path resolution needed
+    # This function maintained for compatibility but scenarios use ID-based loading
+    pass
 
 
 def _validate_file_existence(config: BenchmarkConfig) -> None:
     """
-    REQ-CFG-006: Validate dataset file paths exist during configuration loading.
+    REQ-CFG-006: Validate scenario definition files exist during configuration loading.
     """
     # Skip validation if in test mode (for TDD)
     skip_validation = os.environ.get("DRIFT_BENCHMARK_SKIP_VALIDATION", "0")
     if skip_validation not in ("0", "false", "False", "FALSE"):
         return
 
-    for dataset_config in config.datasets:
-        path_obj = Path(dataset_config.path)
-        if not path_obj.exists():
-            raise ConfigurationError(f"Dataset file not found: {dataset_config.path}")
+    from ..settings import settings
+
+    scenarios_dir = Path(settings.scenarios_dir if hasattr(settings, "scenarios_dir") else "scenarios")
+
+    for scenario_config in config.scenarios:
+        scenario_file = scenarios_dir / f"{scenario_config.id}.toml"
+        if not scenario_file.exists():
+            raise ConfigurationError(f"Scenario definition file not found: {scenario_file}")
 
 
 def _validate_detector_configurations(config: BenchmarkConfig) -> None:

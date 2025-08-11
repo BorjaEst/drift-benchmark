@@ -1,0 +1,31 @@
+[methods.kolmogorov_smirnov]
+    name            = "Kolmogorov-Smirnov Test"
+    description     = "Two-sample test for equality of continuous distributions"
+    drift_types     = ["covariate"]
+    family          = "statistical-test"
+    data_dimension  = "univariate"
+    data_types      = ["continuous"]
+    requires_labels = false
+    references      = ["https://doi.org/10.2307/2281868"]
+
+    [methods.kolmogorov_smirnov.variants.batch]
+        name            = "Batch Processing"
+        execution_mode  = "batch"
+        hyperparameters = ["threshold"]
+        references      = ["Standard KS implementation"]
+
+[methods.chi_square]
+    name            = "Chi-Square Test"
+    description     = "Test for independence in categorical data"
+    drift_types     = ["covariate"]
+    family          = "statistical-test"
+    data_dimension  = "multivariate"
+    data_types      = ["categorical"]
+    requires_labels = false
+    references      = ["Standard chi-square test"]
+
+    [methods.chi_square.variants.batch]
+        name            = "Batch Processing"
+        execution_mode  = "batch"
+        hyperparameters = ["significance_level"]
+        references      = ["Standard chi-square implementation"]

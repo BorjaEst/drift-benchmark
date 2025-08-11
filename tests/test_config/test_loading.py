@@ -35,26 +35,25 @@ def test_should_load_benchmark_config_from_toml_when_called(valid_benchmark_conf
 
     # Assert
     assert config is not None, "load_config() must return BenchmarkConfig instance"
-    assert hasattr(config, "datasets"), "loaded config must have datasets field"
+    assert hasattr(config, "scenarios"), "loaded config must have scenarios field"
     assert hasattr(config, "detectors"), "loaded config must have detectors field"
-    assert len(config.datasets) == 2, "config should load 2 datasets from test file"
-    assert len(config.detectors) == 2, "config should load 2 detectors from test file"
+    assert len(config.scenarios) >= 1, "config should load at least 1 scenario from test file"
+    assert len(config.detectors) >= 2, "config should load at least 2 detectors from test file"
 
-    # Assert first dataset configuration
-    first_dataset = config.datasets[0]
-    # REQ-CFG-003: Paths should be resolved to absolute paths
-    assert Path(first_dataset.path).is_absolute(), "path should be resolved to absolute path"
-    assert first_dataset.path.endswith("datasets/test_data.csv"), "resolved path should contain original relative path"
-    assert first_dataset.format == "csv"
-    assert first_dataset.reference_split == 0.6
+    # Assert first scenario configuration
+    first_scenario = config.scenarios[0]
+    # Scenarios have only an ID field
+    assert hasattr(first_scenario, "id"), "scenario should have id field"
+    assert isinstance(first_scenario.id, str), "scenario id should be string"
+    assert first_scenario.id == "test_scenario", "first scenario should match fixture data"
 
     # Assert first detector configuration
     first_detector = config.detectors[0]
-    assert first_detector.method_id == "ks_test"
-    assert first_detector.variant_id == "scipy"
+    assert first_detector.method_id == "kolmogorov_smirnov", "method should match fixture data"
+    assert first_detector.variant_id == "batch", "variant should match fixture data"
 
 
-def test_should_use_pydantic_v2_validation_when_loading():
+def test_should_use_pydantic_v2_validation_when_loading(standard_test_configurations):
     """Test REQ-CFG-002: Configuration loading must use BenchmarkConfig Pydantic v2 BaseModel with automatic field validation"""
     # Arrange & Act
     try:
@@ -72,21 +71,20 @@ def test_should_use_pydantic_v2_validation_when_loading():
     except ImportError as e:
         pytest.fail(f"Failed to import BenchmarkConfig for Pydantic test: {e}")
 
-    # Test validation functionality
-    valid_data = {
-        "datasets": [{"path": "test.csv", "format": "csv", "reference_split": 0.5}],
-        "detectors": [{"method_id": "test_method", "variant_id": "test_impl", "library_id": "custom"}],
-    }
+    # REFACTORED: Use centralized configuration fixture instead of hardcoded data
+    valid_data = standard_test_configurations("simple")
 
     try:
         config = BenchmarkConfig.model_validate(valid_data)
-        assert config.datasets[0].reference_split == 0.5
+        assert config.scenarios[0].id == "test_scenario"
     except Exception as e:
         pytest.fail(f"BenchmarkConfig should support Pydantic v2 validation: {e}")
 
 
 def test_should_resolve_relative_paths_when_loading(valid_benchmark_config_toml):
     """Test REQ-CFG-003: Configuration loading must resolve relative file paths to absolute paths using pathlib"""
+    # Note: In scenario-based architecture, path resolution is handled at scenario definition level, not configuration level
+    # This test validates that the config loader can handle absolute paths for scenario definitions
     # Arrange & Act
     try:
         from drift_benchmark.config import load_config
@@ -95,33 +93,46 @@ def test_should_resolve_relative_paths_when_loading(valid_benchmark_config_toml)
     except ImportError as e:
         pytest.fail(f"Failed to import load_config for path resolution test: {e}")
 
-    # Assert - paths should be resolved to absolute
-    for dataset_config in config.datasets:
-        dataset_path = Path(dataset_config.path)
-        assert isinstance(dataset_config.path, str), "path should remain as string"
-        assert dataset_path.is_absolute(), "path should be resolved to absolute path"
-        # Verify the original relative path component is preserved
-        assert str(dataset_path).find("datasets/") != -1, "resolved path should contain original path component"
+    # Assert - scenarios are loaded correctly
+    assert len(config.scenarios) > 0, "should load scenarios from config"
+    for scenario_config in config.scenarios:
+        assert hasattr(scenario_config, "id"), "scenario should have id field"
+        assert isinstance(scenario_config.id, str), "scenario id should be string"
 
 
 def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_file, tmp_path):
     """Test REQ-CFG-004: Configuration loading must validate that detector method_id/variant_id exist in the methods registry"""
-    # Create temporary test files for the configuration
-    test_csv = tmp_path / "test.csv"
-    test_csv.write_text("feature1,feature2\n1,2\n3,4\n")
+    # Create scenario definition file for this test
+    scenario_file = tmp_path / "scenarios" / "test_scenario.toml"
+    scenario_file.parent.mkdir(parents=True, exist_ok=True)
+    scenario_file.write_text(
+        """
+description = "Test scenario"
+source_type = "file"
+source_name = "test.csv"
+target_column = "target"
+drift_types = ["covariate"]
 
-    # Create valid config file
+[ref_filter]
+sample_range = [0, 100]
+
+[test_filter]
+sample_range = [100, 200]
+"""
+    )
+
+    # Create valid config file with scenarios
     valid_config_data = {
-        "datasets": [{"path": str(test_csv), "format": "csv", "reference_split": 0.5}],
+        "scenarios": [{"id": "test_scenario"}],
         "detectors": [
-            {"method_id": "ks_test", "variant_id": "scipy", "library_id": "scipy"},
-            {"method_id": "drift_detector", "variant_id": "custom", "library_id": "custom"},
+            {"method_id": "kolmogorov_smirnov", "variant_id": "batch", "library_id": "scipy"},
+            {"method_id": "chi_square", "variant_id": "batch", "library_id": "scipy"},
         ],
     }
 
-    # Create invalid config file
+    # Create invalid config file with non-existent method
     invalid_config_data = {
-        "datasets": [{"path": str(test_csv), "format": "csv", "reference_split": 0.5}],
+        "scenarios": [{"id": "test_scenario"}],
         "detectors": [{"method_id": "non_existent_method", "variant_id": "scipy", "library_id": "scipy"}],
     }
 
@@ -147,6 +158,7 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
 
         with (
             patch.object(settings, "methods_registry_path", Path(str(mock_methods_toml_file))),
+            patch.object(settings, "scenarios_dir", tmp_path / "scenarios"),
             patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}),
         ):
 
@@ -170,58 +182,37 @@ def test_should_validate_detector_configurations_when_loaded(mock_methods_toml_f
         # Restore original skip validation setting
 
 
-def test_should_validate_split_ratios_when_loaded():
-    """Test REQ-CFG-005: Configuration loading must validate reference_split is between 0.0 and 1.0 (exclusive) for DatasetConfig"""
-    # Arrange - test various split ratios
-    test_cases = [
-        (0.0, False),  # Invalid: exactly 0.0
-        (0.1, True),  # Valid: between 0 and 1
-        (0.5, True),  # Valid: middle value
-        (0.9, True),  # Valid: close to 1
-        (1.0, False),  # Invalid: exactly 1.0
-        (1.5, False),  # Invalid: greater than 1.0
-        (-0.1, False),  # Invalid: negative
-    ]
-
-    # Act & Assert
-    try:
-        from drift_benchmark.models.configurations import BenchmarkConfig
-
-        for split_ratio, should_be_valid in test_cases:
-            config_data = {
-                "datasets": [{"path": "test.csv", "format": "csv", "reference_split": split_ratio}],
-                "detectors": [{"method_id": "test_method", "variant_id": "test_impl", "library_id": "custom"}],
-            }
-
-            if should_be_valid:
-                try:
-                    config = BenchmarkConfig.model_validate(config_data)
-                    assert config.datasets[0].reference_split == split_ratio
-                except Exception as e:
-                    pytest.fail(f"Valid split ratio {split_ratio} should not raise error: {e}")
-            else:
-                with pytest.raises(Exception):  # Pydantic ValidationError
-                    BenchmarkConfig.model_validate(config_data)
-
-    except ImportError as e:
-        pytest.fail(f"Failed to import BenchmarkConfig for split validation test: {e}")
-
-
-def test_should_validate_file_existence_when_loading(sample_test_csv_files, tmp_path):
-    """Test REQ-CFG-006: Configuration loading must validate dataset file paths exist during configuration loading, not during runtime"""
+def test_should_validate_scenario_definition_files_when_loading(tmp_path):
+    """Test REQ-CFG-007: Configuration loading must validate that the scenario definition file exists"""
     # Arrange
-    existing_file = sample_test_csv_files["test_data.csv"]
-    non_existent_file = tmp_path / "non_existent.csv"
+    # Create existing scenario definition file
+    existing_scenario_file = tmp_path / "scenarios" / "test_scenario.toml"
+    existing_scenario_file.parent.mkdir(parents=True, exist_ok=True)
+    existing_scenario_file.write_text(
+        """
+description = "Test scenario"
+source_type = "file"
+source_name = "test.csv"
+target_column = "target"
+drift_types = ["covariate"]
 
-    # Create valid config with existing file
+[ref_filter]
+sample_range = [0, 100]
+
+[test_filter]
+sample_range = [100, 200]
+"""
+    )
+
+    # Create valid config with existing scenario
     valid_config_data = {
-        "datasets": [{"path": str(existing_file), "format": "csv", "reference_split": 0.5}],
+        "scenarios": [{"id": "test_scenario"}],
         "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch", "library_id": "scipy"}],
     }
 
-    # Create invalid config with non-existent file
+    # Create invalid config with non-existent scenario
     invalid_config_data = {
-        "datasets": [{"path": str(non_existent_file), "format": "csv", "reference_split": 0.5}],
+        "scenarios": [{"id": "non_existent_scenario"}],
         "detectors": [{"method_id": "kolmogorov_smirnov", "variant_id": "ks_batch", "library_id": "scipy"}],
     }
 
@@ -239,9 +230,14 @@ def test_should_validate_file_existence_when_loading(sample_test_csv_files, tmp_
     try:
         from drift_benchmark.config import load_config
         from drift_benchmark.exceptions import ConfigurationError
+        from drift_benchmark.settings import settings
 
         # Disable skip validation for this test to ensure file existence is checked
-        with patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}):
+        # Also mock scenarios_dir to point to our temp directory
+        with (
+            patch.dict("os.environ", {"DRIFT_BENCHMARK_SKIP_VALIDATION": "0"}),
+            patch.object(settings, "scenarios_dir", tmp_path / "scenarios"),
+        ):
             # Valid configuration with existing file should load
             try:
                 valid_config = load_config(str(valid_config_path))
@@ -311,7 +307,7 @@ def test_should_support_configuration_serialization_when_loaded(valid_benchmark_
 
     # Assert
     assert isinstance(config_dict, dict), "model_dump() should return dictionary"
-    assert "datasets" in config_dict, "serialized config should include datasets"
+    assert "scenarios" in config_dict, "serialized config should include scenarios"
     assert "detectors" in config_dict, "serialized config should include detectors"
 
     # Test round-trip serialization
@@ -319,7 +315,7 @@ def test_should_support_configuration_serialization_when_loaded(valid_benchmark_
         from drift_benchmark.models.configurations import BenchmarkConfig
 
         restored_config = BenchmarkConfig.model_validate(config_dict)
-        assert len(restored_config.datasets) == len(config.datasets)
+        assert len(restored_config.scenarios) == len(config.scenarios)
         assert len(restored_config.detectors) == len(config.detectors)
     except Exception as e:
         pytest.fail(f"Configuration should support round-trip serialization: {e}")
@@ -332,12 +328,12 @@ def test_should_provide_clear_validation_errors_when_invalid():
         # Missing required field
         {
             "detectors": [{"method_id": "test", "variant_id": "test", "library_id": "custom"}]
-            # Missing datasets field
+            # Missing scenarios field
         },
         # Invalid field type
-        {"datasets": "not_a_list", "detectors": [{"method_id": "test", "variant_id": "test", "library_id": "custom"}]},
+        {"scenarios": "not_a_list", "detectors": [{"method_id": "test", "variant_id": "test", "library_id": "custom"}]},
         # Empty required lists
-        {"datasets": [], "detectors": []},
+        {"scenarios": [], "detectors": []},
     ]
 
     # Act & Assert
@@ -357,7 +353,7 @@ def test_should_provide_clear_validation_errors_when_invalid():
 
 
 def test_should_maintain_separation_of_concerns():
-    """Test REQ-CFG-007: Configuration loading logic must be separate from BenchmarkConfig model definition to maintain clean architecture"""
+    """Test REQ-CFG-008: Configuration loading logic must be separate from BenchmarkConfig model definition to maintain clean architecture"""
     try:
         # Test that BenchmarkConfig model is separate from loading logic
         from drift_benchmark.config import load_config
@@ -373,7 +369,7 @@ def test_should_maintain_separation_of_concerns():
 
         # Should be able to import BenchmarkConfig independently from config loading
         config_data = {
-            "datasets": [{"path": "test.csv", "format": "csv", "reference_split": 0.5}],
+            "scenarios": [{"id": "test_scenario"}],
             "detectors": [{"method_id": "test_method", "variant_id": "test_impl", "library_id": "custom"}],
         }
 

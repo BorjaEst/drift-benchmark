@@ -12,33 +12,22 @@ REFACTORED to match drift-benchmark Adapter API v0.1.0:
 - Added comprehensive docstrings
 - Mapped variant IDs to actual methods.toml entries
 
-Mapping between Alibi-Detect methods and drift-benchmark methods:
-==============================================================
+IMPORTANT: Method and Variant ID Constraints
+============================================
 
-Registered detectors (available in methods.toml):
+All detector registrations MUST use method_id and variant_id combinations that are
+explicitly defined in src/drift_benchmark/detectors/methods.toml. You cannot create
+custom method/variant combinations.
+
+Registered Alibi-Detect detectors (valid per methods.toml):
 - kolmogorov_smirnov + ks_batch: Uses alibi_detect.cd.KSDrift
-- cramer_von_mises + cvm_batch: Uses alibi_detect.cd.CVMDrift
-- anderson_darling + ad_batch: Uses alibi_detect.cd.KSDrift (AD variant)
-- mann_whitney + mw_batch: Uses alibi_detect.cd.KSDrift (MW variant)
-- chi_square + chi_batch: Uses alibi_detect.cd.ChiSquareDrift
-- t_test + ttest_batch: Uses scipy backend for t-test
-
-Advanced/Kernel Methods:
-- maximum_mean_discrepancy + mmd_rbf: Uses alibi_detect.cd.MMDDrift with RBF kernel
-- maximum_mean_discrepancy + mmd_linear: Uses alibi_detect.cd.MMDDrift with linear kernel
-- least_squares_density_difference + lsdd_batch: Uses alibi_detect.cd.LSDDDrift
-- classifier_drift + classifier_batch: Uses alibi_detect.cd.ClassifierDrift
-- learned_kernel + learned_batch: Uses alibi_detect.cd.LearnedKernelDrift
-
-Online Methods:
 - kolmogorov_smirnov + ks_online: Uses alibi_detect.cd.KSDriftOnline
-- cramer_von_mises + cvm_online: Uses alibi_detect.cd.CVMDriftOnline
-- maximum_mean_discrepancy + mmd_online: Uses alibi_detect.cd.MMDDriftOnline
-- least_squares_density_difference + lsdd_online: Uses alibi_detect.cd.LSDDDriftOnline
+- cramer_von_mises + cvm_batch: Uses alibi_detect.cd.CVMDrift
+- chi_square + chi_batch: Uses alibi_detect.cd.ChiSquareDrift
 
-Text/Embedding Support:
-- maximum_mean_discrepancy + mmd_text: MMD with text preprocessing
-- learned_kernel + learned_text: Learned kernel with text preprocessing
+Note: Several advanced Alibi-Detect methods (MMD, LSDD, Classifier-based) are not
+registered because they do not have corresponding entries in methods.toml. These
+detector classes remain available but are commented out from registration.
 
 Note: Alibi-Detect requires numpy arrays as input format.
 All detectors support multiple backends: tensorflow, pytorch, sklearn
@@ -52,7 +41,7 @@ import pandas as pd
 from drift_benchmark.adapters.base_detector import BaseDetector
 from drift_benchmark.adapters.registry import register_detector
 from drift_benchmark.literals import LibraryId
-from drift_benchmark.models.results import DatasetResult
+from drift_benchmark.models.results import ScenarioResult
 from drift_benchmark.settings import get_logger
 
 logger = get_logger(__name__)
@@ -102,12 +91,12 @@ class BaseAlibiDetectDetector(BaseDetector):
         self._last_score: Optional[float] = None
         self._last_result: Optional[Dict] = None
 
-    def preprocess(self, data: DatasetResult, **kwargs) -> np.ndarray:
+    def preprocess(self, data: ScenarioResult, **kwargs) -> np.ndarray:
         """
         Convert pandas DataFrames to numpy arrays for Alibi-Detect.
 
         Args:
-            data: Dataset containing X_ref and X_test DataFrames
+            data: Scenario containing X_ref and X_test DataFrames
             **kwargs: Phase-specific parameters:
                 - phase (str): 'train' for reference data, 'detect' for test data
 
@@ -118,7 +107,7 @@ class BaseAlibiDetectDetector(BaseDetector):
             ValueError: If data cannot be converted to numeric format
         """
         try:
-            phase = kwargs.get("phase", "train")
+            phase = kwargs.get("phase", "detect")
             df = data.X_ref if phase == "train" else data.X_test
 
             if df.empty:
@@ -413,10 +402,14 @@ class AlibiDetectChiSquareDetector(BaseAlibiDetectDetector):
 
 # =============================================================================
 # KERNEL-BASED DETECTORS
+# NOTE: These detectors are commented out because their methods are not yet
+#       defined in methods.toml. To use these detectors, first add the
+#       corresponding method definitions to methods.toml.
 # =============================================================================
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf", library_id="alibi-detect")
+# TODO: Add 'maximum_mean_discrepancy' method to methods.toml before uncommenting
+# @register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_rbf", library_id="alibi-detect")
 class AlibiDetectMMDDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of MMD with RBF kernel."""
 
@@ -463,7 +456,8 @@ class AlibiDetectMMDDetector(BaseAlibiDetectDetector):
             raise
 
 
-@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_batch", library_id="alibi-detect")
+# LSDD detectors removed - no corresponding method in methods.toml
+# @register_detector(method_id="least_squares_density_difference", variant_id="lsdd_batch", library_id="alibi-detect")
 class AlibiDetectLSDDDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of Least-Squares Density Difference."""
 
@@ -508,7 +502,8 @@ class AlibiDetectLSDDDetector(BaseAlibiDetectDetector):
 # =============================================================================
 
 
-@register_detector(method_id="classifier_drift", variant_id="classifier_batch", library_id="alibi-detect")
+# Classifier drift detectors removed - no corresponding method in methods.toml
+# @register_detector(method_id="classifier_drift", variant_id="classifier_batch", library_id="alibi-detect")
 class AlibiDetectClassifierDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of classifier-based drift detection."""
 
@@ -677,7 +672,8 @@ class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
             raise
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_online", library_id="alibi-detect")
+# MMD online detectors removed - no corresponding method in methods.toml
+# @register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_online", library_id="alibi-detect")
 class AlibiDetectMMDOnlineDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of online MMD detection."""
 
@@ -742,7 +738,8 @@ class AlibiDetectMMDOnlineDetector(BaseAlibiDetectDetector):
 # =============================================================================
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_tensorflow", library_id="alibi-detect")
+# MMD TensorFlow detectors removed - no corresponding method in methods.toml
+# @register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_tensorflow", library_id="alibi-detect")
 class AlibiDetectMMDTensorFlowDetector(AlibiDetectMMDDetector):
     """Alibi-Detect MMD detector specifically using TensorFlow backend."""
 
@@ -751,7 +748,8 @@ class AlibiDetectMMDTensorFlowDetector(AlibiDetectMMDDetector):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
 
-@register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_pytorch", library_id="alibi-detect")
+# MMD PyTorch detectors removed - no corresponding method in methods.toml
+# @register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_pytorch", library_id="alibi-detect")
 class AlibiDetectMMDPyTorchDetector(AlibiDetectMMDDetector):
     """Alibi-Detect MMD detector specifically using PyTorch backend."""
 
@@ -760,7 +758,8 @@ class AlibiDetectMMDPyTorchDetector(AlibiDetectMMDDetector):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
 
-@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_tensorflow", library_id="alibi-detect")
+# LSDD TensorFlow detectors removed - no corresponding method in methods.toml
+# @register_detector(method_id="least_squares_density_difference", variant_id="lsdd_tensorflow", library_id="alibi-detect")
 class AlibiDetectLSDDTensorFlowDetector(AlibiDetectLSDDDetector):
     """Alibi-Detect LSDD detector specifically using TensorFlow backend."""
 
@@ -769,7 +768,8 @@ class AlibiDetectLSDDTensorFlowDetector(AlibiDetectLSDDDetector):
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
 
-@register_detector(method_id="least_squares_density_difference", variant_id="lsdd_pytorch", library_id="alibi-detect")
+# LSDD PyTorch detectors removed - no corresponding method in methods.toml
+# @register_detector(method_id="least_squares_density_difference", variant_id="lsdd_pytorch", library_id="alibi-detect")
 class AlibiDetectLSDDPyTorchDetector(AlibiDetectLSDDDetector):
     """Alibi-Detect LSDD detector specifically using PyTorch backend."""
 

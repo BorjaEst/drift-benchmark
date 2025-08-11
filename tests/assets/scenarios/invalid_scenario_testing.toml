@@ -1,0 +1,17 @@
+# Invalid scenario for file path error testing  
+description   = "Invalid scenario for file path testing"
+source_type   = "file"
+source_name   = "nonexistent_file.csv"
+target_column = "target"
+drift_types   = ["covariate"] # Valid drift type
+
+[ref_filter]
+    sample_range = [0, 100]
+
+[test_filter]
+    sample_range = [200, 300]
+
+[ground_truth]
+    drift_periods        = [[200, 300]]
+    drift_intensity      = "medium"
+    expected_effect_size = 0.5

@@ -1,0 +1,175 @@
+# Batch Processing Comprehensive Configuration
+# All available batch processing drift detection methods
+# Focus on offline analysis with complete datasets
+
+# Diverse scenarios suitable for batch processing
+[[scenarios]]
+    id = "synthetic/covariate_drift_strong"
+
+[[scenarios]]
+    id = "synthetic/covariate_drift_weak"
+
+[[scenarios]]
+    id = "synthetic/concept_drift_gradual"
+
+[[scenarios]]
+    id = "uci/wine_quality_alcohol"
+
+[[scenarios]]
+    id = "uci/iris_petal_length"
+
+[[scenarios]]
+    id = "uci/adult_income_age"
+
+[[scenarios]]
+    id = "baselines/no_drift_synthetic"
+
+[[scenarios]]
+    id = "baselines/no_drift_uci"
+
+# === EVIDENTLY BATCH STATISTICAL TESTS ===
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "anderson_darling"
+    variant_id = "ad_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "mann_whitney"
+    variant_id = "mw_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "t_test"
+    variant_id = "ttest_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "welch_t_test"
+    variant_id = "welch_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "epps_singleton"
+    variant_id = "epps_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "kuiper"
+    variant_id = "kuiper_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "baumgartner_weiss_schindler"
+    variant_id = "bws_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "wasserstein_distance"
+    variant_id = "wasserstein_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === EVIDENTLY DISTANCE-BASED BATCH METHODS ===
+[[detectors]]
+    method_id  = "jensen_shannon_divergence"
+    variant_id = "js_evidently"
+    library_id = "evidently"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "jensen_shannon_divergence"
+    variant_id = "js_batch"
+    library_id = "scipy"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "kullback_leibler_divergence"
+    variant_id = "kl_evidently"
+    library_id = "evidently"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "kullback_leibler_divergence"
+    variant_id = "kl_batch"
+    library_id = "scipy"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === EVIDENTLY MULTIVARIATE BATCH METHODS ===
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "ks"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "chisquare"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "jensenshannon"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "anderson"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_batch"
+    library_id = "scipy"
+    threshold  = 0.05
+    stattest   = "ks"
+
+# === ALIBI-DETECT BATCH METHODS ===
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05

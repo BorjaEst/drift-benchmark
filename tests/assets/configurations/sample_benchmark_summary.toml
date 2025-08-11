@@ -1,0 +1,4 @@
+total_detectors    = 5
+successful_runs    = 5
+failed_runs        = 0
+avg_execution_time = 0.5

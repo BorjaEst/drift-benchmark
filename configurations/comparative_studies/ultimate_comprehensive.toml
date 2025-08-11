@@ -1,0 +1,289 @@
+# Ultimate Comprehensive Benc[[scenarios]]
+id = "uci/adult_income_age"
+
+# === EVIDENTLY BATCH METHODS - COMPREHENSIVE ===imum coverage evaluation across all scenarios, methods, and libraries
+# Complete comparison study with all available detectors
+
+# === ALL AVAILABLE SCENARIOS ===
+# Baseline scenarios (no drift)
+[[scenarios]]
+    id = "baselines/no_drift_synthetic"
+
+[[scenarios]]
+    id = "baselines/no_drift_uci"
+
+# Synthetic scenarios (controlled drift)
+[[scenarios]]
+    id = "synthetic/covariate_drift_strong"
+
+[[scenarios]]
+    id = "synthetic/covariate_drift_weak"
+
+[[scenarios]]
+    id = "synthetic/concept_drift_gradual"
+
+# UCI real-world scenarios
+[[scenarios]]
+    id = "uci/wine_quality_alcohol"
+
+[[scenarios]]
+    id = "uci/iris_petal_length"
+
+[[scenarios]]
+    id = "uci/adult_income_age"
+
+# Custom domain-specific scenarios
+[[scenarios]]
+
+[[scenarios]]
+
+# === EVIDENTLY - COMPREHENSIVE STATISTICAL TESTS ===
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "anderson_darling"
+    variant_id = "ad_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "mann_whitney"
+    variant_id = "mw_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "t_test"
+    variant_id = "ttest_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "welch_t_test"
+    variant_id = "welch_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "epps_singleton"
+    variant_id = "epps_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "kuiper"
+    variant_id = "kuiper_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "baumgartner_weiss_schindler"
+    variant_id = "bws_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "wasserstein_distance"
+    variant_id = "wasserstein_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === EVIDENTLY - DISTANCE-BASED METHODS ===
+[[detectors]]
+    method_id  = "jensen_shannon_divergence"
+    variant_id = "js_evidently"
+    library_id = "evidently"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "jensen_shannon_divergence"
+    variant_id = "js_batch"
+    library_id = "scipy"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "kullback_leibler_divergence"
+    variant_id = "kl_evidently"
+    library_id = "evidently"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "kullback_leibler_divergence"
+    variant_id = "kl_batch"
+    library_id = "scipy"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === EVIDENTLY - MULTIVARIATE METHODS ===
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "ks"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "chisquare"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "jensenshannon"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "anderson"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_batch"
+    library_id = "scipy"
+    threshold  = 0.05
+    stattest   = "ks"
+
+# === ALIBI-DETECT - BATCH METHODS ===
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+# === ALIBI-DETECT - ONLINE METHODS ===
+[[detectors]]
+    method_id   = "kolmogorov_smirnov"
+    variant_id  = "ks_online"
+    library_id  = "alibi-detect"
+    threshold   = 0.05
+    window_size = 100
+
+[[detectors]]
+    method_id   = "cramer_von_mises"
+    variant_id  = "cvm_online"
+    library_id  = "alibi-detect"
+    threshold   = 0.05
+    window_size = 100
+
+# === RIVER - ADAPTIVE METHODS ===
+[[detectors]]
+    method_id  = "adaptive_windowing"
+    variant_id = "adwin_standard"
+    library_id = "river"
+    delta      = 0.002
+
+# === RIVER - DRIFT DETECTION METHODS ===
+[[detectors]]
+    method_id     = "drift_detection_method"
+    variant_id    = "ddm_standard"
+    library_id    = "river"
+    warning_level = 2.0
+    drift_level   = 3.0
+
+[[detectors]]
+    method_id     = "early_drift_detection_method"
+    variant_id    = "eddm_standard"
+    library_id    = "river"
+    warning_level = 0.95
+    drift_level   = 0.90
+
+# === RIVER - CHANGE DETECTION METHODS ===
+[[detectors]]
+    method_id  = "page_hinkley"
+    variant_id = "ph_standard"
+    library_id = "river"
+    delta      = 0.005
+    lambda     = 50.0
+    alpha      = 0.9999
+
+[[detectors]]
+    method_id       = "cusum"
+    variant_id      = "cusum_standard"
+    library_id      = "river"
+    threshold       = 0.5
+    drift_threshold = 1.0
+
+[[detectors]]
+    method_id  = "geometric_moving_average"
+    variant_id = "gma_standard"
+    library_id = "river"
+    lambda     = 0.1
+    threshold  = 0.5
+
+[[detectors]]
+    method_id  = "exponential_cumulative_drift"
+    variant_id = "ecdd_standard"
+    library_id = "river"
+    lambda     = 0.1
+    threshold  = 0.5
+
+[[detectors]]
+    method_id         = "ewma_concept"
+    variant_id        = "ewma_standard"
+    library_id        = "river"
+    lambda            = 0.1
+    warning_threshold = 2.0
+    drift_threshold   = 3.0
+
+# === RIVER - HOEFFDING-BASED METHODS ===
+[[detectors]]
+    method_id  = "hoeffding_drift_detection_test_a"
+    variant_id = "hddm_a_standard"
+    library_id = "river"
+    delta      = 0.002
+
+[[detectors]]
+    method_id  = "hoeffding_drift_detection_test_w"
+    variant_id = "hddm_w_standard"
+    library_id = "river"
+    delta      = 0.002
+
+# === RIVER - WINDOW-BASED METHODS ===
+[[detectors]]
+    method_id   = "kswin"
+    variant_id  = "kswin_standard"
+    library_id  = "river"
+    alpha       = 0.005
+    window_size = 100
+    stat_size   = 30
+
+# === TEST/VALIDATION METHODS ===
+[[detectors]]
+    method_id  = "periodic_trigger"
+    variant_id = "periodic_trigger_standard"
+    library_id = "river"
+    interval   = 50

@@ -36,7 +36,7 @@ class DetectorNotFoundError(DriftBenchmarkError):
             super().__init__("Detector not found")
 
 
-class DuplicateDetectorError(DriftBenchmarkError):
+class DuplicateDetectorError(DriftBenchmarkError, ValueError):
     """
     Raised when attempting to register a detector that already exists.
 

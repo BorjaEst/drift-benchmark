@@ -7,8 +7,7 @@ Provides the base adapter framework for integrating drift detection libraries.
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from ..literals import LibraryId
-from ..models.results import DatasetResult
+from ..models.results import ScenarioResult
 
 
 class BaseDetector(ABC):
@@ -18,15 +17,15 @@ class BaseDetector(ABC):
     REQ-ADP-001: BaseDetector abstract class with abstract and concrete methods
     """
 
-    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
         """
         Initialize base detector.
 
         REQ-ADP-009: Accept method, variant, and library identifiers
         """
-        self._method_id = method_id
-        self._variant_id = variant_id
-        self._library_id = library_id
+        self._method_id = str(method_id)  # Ensure string conversion for test compatibility
+        self._variant_id = str(variant_id)  # Ensure string conversion for test compatibility
+        self._library_id = str(library_id)  # Ensure string conversion for test compatibility
         self._drift_score: Optional[float] = None
         self._kwargs = kwargs
 
@@ -49,7 +48,7 @@ class BaseDetector(ABC):
         return self._variant_id
 
     @property
-    def library_id(self) -> LibraryId:
+    def library_id(self) -> str:
         """
         Get the library implementation identifier.
 
@@ -57,28 +56,27 @@ class BaseDetector(ABC):
         """
         return self._library_id
 
-    def preprocess(self, data: DatasetResult, phase: str = "reference", **kwargs) -> Any:
+    def preprocess(self, data: ScenarioResult, phase: str = "detect", **kwargs) -> Any:
         """
         Handle data format conversion from pandas DataFrames to detector-specific format.
 
-        REQ-ADP-005: Preprocess method for data format conversion
-        REQ-ADP-010: Extract appropriate data from DatasetResult for training/detection phases
-        REQ-ADP-011: Format flexibility for different detector libraries
+        REQ-ADP-005: Preprocess method for data format conversion from ScenarioResult
+        REQ-ADP-010: Extract appropriate data from ScenarioResult for training/detection phases
 
         Args:
-            data: DatasetResult containing X_ref and X_test DataFrames
-            phase: Either "reference" for training or "test" for detection
+            data: ScenarioResult containing X_ref and X_test DataFrames
+            phase: Either "train" for training or "detect" for detection
             **kwargs: Additional preprocessing parameters
 
         Returns:
             Processed data in detector-specific format
         """
-        if phase == "reference":
+        if phase == "train":
             return data.X_ref  # Return reference data for training
-        elif phase == "test":
+        elif phase == "detect":
             return data.X_test  # Return test data for detection
         else:
-            raise ValueError(f"Invalid phase '{phase}'. Must be 'reference' or 'test'.")
+            raise ValueError(f"Invalid phase '{phase}'. Must be 'train' or 'detect'.")
 
     @abstractmethod
     def fit(self, preprocessed_data: Any, **kwargs) -> "BaseDetector":
