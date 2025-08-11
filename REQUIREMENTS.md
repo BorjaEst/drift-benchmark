@@ -394,29 +394,32 @@ This module defines the data flow through the benchmark system orchestrated by B
 
 This document contains all core requirements needed to implement a working drift detection benchmarking framework that standardizes method+variant definitions to enable fair comparison of library implementations with authentic drift scenarios.
 
-### ✅ **Core Capabilities Provided:**
+### Core Capabilities
 
-- **Working benchmarking framework** with detector registration and execution
-- **Library comparison capability** to evaluate different implementations of the same method+variant
-- **Configuration management** with TOML loading and validation
-- **Authentic data handling** with intelligent categorization of synthetic vs. real datasets
-- **Advanced filtering system** supporting both sample-range and feature-based filtering
-- **Value discovery utilities** for identifying meaningful thresholds in real datasets
-- **Sequential detector execution** with error isolation
-- **Result storage** with JSON export and timestamped directories
-- **Centralized logging** system for debugging and monitoring
-- **Type-safe models** using Pydantic v2 for data validation
-- **Registry system** for methods, variants, and library implementations
-- **Performance comparison** between different library implementations
-- **Data authenticity preservation** ensuring real datasets remain unmodified
+- **📋 Standardized Registry**: Curated `methods.toml` defining mathematical methods and their algorithmic variants
+- **🔌 Unified Interface**: Consistent `BaseDetector` API for integrating any drift detection library
+- **📊 Flexible Data Handling**: Support for pandas DataFrames and automatic conversion to library-specific formats
+- **📈 Comprehensive Evaluation**: Performance metrics including accuracy, precision, recall, and execution time
+- **🧪 Statistical Rigor**: Quantitative measurements and power analysis for scientifically valid comparisons
+- **🗂️ Multiple Data Types**: Support for continuous, categorical, and mixed data types
+- **⚙️ Configurable Benchmarks**: TOML-based configuration for reproducible experiments
 
-### 🎯 **Enhanced Dataset Handling:**
+### Supported Drift Types
 
-- **Synthetic Dataset Support**: Full parameter modification capabilities for `make_*` functions to generate artificial drift scenarios
-- **Real Dataset Preservation**: Feature-based filtering only for real datasets (UCI and CSV files) to maintain data authenticity while creating realistic drift scenarios  
-- **UCI Repository Integration**: Comprehensive support for UCI ML Repository datasets via ucimlrepo with complete metadata preservation for scientific traceability
-- **Intelligent Drift Creation**: Leveraging natural correlations in real datasets (e.g., BMI vs. diabetes risk) for authentic drift detection challenges
-- **Comprehensive Validation**: Automatic detection and prevention of inappropriate modifications to real datasets
-- **Scientific Rigor**: Quantitative drift measurement replacing qualitative descriptors, statistical validation integration, and comprehensive dataset profiling following Gonçalves Jr. et al. (2014) evaluation standards
+- **Covariate Drift**: Changes in input feature distributions
+- **Concept Drift**: Changes in the relationship between features and target
+- **Prior Drift**: Changes in target variable distribution
+
+### Data Format Support
+
+- **Scenario Files**: TOML-based scenario definitions with ground-truth drift information
+- **Multiple Data Sources**: Support for synthetic datasets, CSV files, and UCI ML Repository integration
+- **Univariate & Multivariate**: Support for single and multiple feature scenarios
+- **Advanced Filtering**: Configurable reference/test data filtering through scenario definitions
+- **Ground Truth Integration**: Specify drift periods and types for evaluation metrics
+- **Dataset Categorization**: Intelligent handling of synthetic vs. real datasets (UCI and CSV files)
+- **UCI Repository Access**: Direct integration with ucimlrepo for accessing over 500 diverse real-world datasets
+
+### Implementation Foundation
 
 This implementation provides a robust foundation that enables researchers to compare how different libraries implement the same mathematical methods using both controlled artificial scenarios and authentic real-world drift patterns from diverse sources including the UCI ML Repository, making it easier to choose the best library for their specific use case while maintaining scientific rigor as established by Gonçalves Jr. et al. (2014) and contemporary drift detection evaluation standards.
