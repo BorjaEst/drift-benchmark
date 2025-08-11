@@ -3,23 +3,30 @@
 Benchmark execution and analysis pipeline for drift-benchmark framework.
 
 This script executes benchmark configurations, collects results, and generates
-comprehensive analysis plots and reports using the figures module.
+comprehensive analysis plots and reports using the modernized figures module
+with research-quality visualizations.
 
 Usage:
     python run_benchmarks_analysis.py [--config CONFIG_PATH] [--output OUTPUT_DIR] [--plots-only RESULTS_DIR]
 
 Examples:
-    # Run specific configuration
-    python run_benchmarks_analysis.py --config configurations/comparative_studies/library_comparison.toml
+    # Run specific configuration with research-quality figures
+    python run_benchmarks_analysis.py --config configurations/comparative_studies/library_comparison.toml --research-quality
 
-    # Run with custom output directory
-    python run_benchmarks_analysis.py --config configurations/by_method_type/statistical_tests_comprehensive.toml --output results/statistical_analysis
+    # Run with custom output directory and focus on performance analysis
+    python run_benchmarks_analysis.py --config configurations/by_method_type/statistical_tests_comprehensive.toml --output results/statistical_analysis --focus performance
 
-    # Generate plots from existing results
-    python run_benchmarks_analysis.py --plots-only results/20250811_143022
+    # Generate research-quality plots from existing results
+    python run_benchmarks_analysis.py --plots-only results/20250811_143022 --research-quality --formats pdf png
 
-    # Run comprehensive analysis (multiple configurations)
-    python run_benchmarks_analysis.py --comprehensive
+    # Run comprehensive analysis with modular system
+    python run_benchmarks_analysis.py --comprehensive --research-quality
+
+    # Focus on specific analysis type for targeted research
+    python run_benchmarks_analysis.py --config configurations/library_comparison.toml --focus adapter --formats pdf
+
+    # Use legacy visualization system only
+    python run_benchmarks_analysis.py --config configurations/ultimate.toml --legacy-only
 """
 
 import argparse
@@ -54,11 +61,15 @@ except ImportError:
     from rich.table import Table
     from rich.text import Text
 
-# Import figures module
+# Import figures module - new modular system
 try:
     sys.path.insert(0, str(PROJECT_ROOT))
+    # New research-quality interface
+    # Legacy compatibility functions
     from figures import (
         create_comprehensive_report,
+        create_focused_analysis_figure,
+        create_research_quality_figures,
         plot_detection_rate_comparison,
         plot_execution_time_comparison,
         plot_library_performance_heatmap,
@@ -66,6 +77,22 @@ try:
         plot_scenario_complexity_analysis,
         save_all_plots,
     )
+
+    # Check if modular system is available
+    try:
+        from figures.modules import (
+            create_adapter_comparison_figure,
+            create_execution_mode_figure,
+            create_method_family_figure,
+            create_performance_comparison_figure,
+            create_scenario_analysis_figure,
+        )
+
+        MODULAR_SYSTEM_AVAILABLE = True
+    except ImportError:
+        MODULAR_SYSTEM_AVAILABLE = False
+        # Console will be initialized later
+
 except ImportError as e:
     print(f"Error importing figures module: {e}")
     print("Please ensure the figures module is properly implemented")
@@ -73,6 +100,10 @@ except ImportError as e:
 
 # Initialize console for rich output
 console = Console()
+
+# Check modular system availability and warn if needed
+if "MODULAR_SYSTEM_AVAILABLE" in globals() and not MODULAR_SYSTEM_AVAILABLE:
+    console.print("[yellow]Warning: Modular visualization system not available, using legacy functions[/yellow]")
 
 
 class BenchmarkResult:
@@ -343,13 +374,17 @@ def display_results_summary(results: BenchmarkResult) -> None:
         console.print(library_table)
 
 
-def generate_comprehensive_analysis(results: BenchmarkResult, output_dir: Path) -> Dict[str, Path]:
+def generate_comprehensive_analysis(
+    results: BenchmarkResult, output_dir: Path, use_research_quality: bool = True, focus: Optional[str] = None
+) -> Dict[str, Path]:
     """
-    Generate comprehensive analysis plots and reports.
+    Generate comprehensive analysis plots and reports using the new modular system.
 
     Args:
         results: BenchmarkResult object
         output_dir: Directory to save analysis outputs
+        use_research_quality: Whether to use the new research-quality figures (default: True)
+        focus: Optional focus for specific analysis type ('performance', 'scenario', etc.)
 
     Returns:
         Dictionary mapping analysis types to output paths
@@ -357,24 +392,59 @@ def generate_comprehensive_analysis(results: BenchmarkResult, output_dir: Path) 
     console.print("[blue]Generating comprehensive analysis...[/blue]")
 
     analysis_dir = output_dir / "analysis"
+    research_dir = output_dir / "research_figures"
     analysis_dir.mkdir(parents=True, exist_ok=True)
+    research_dir.mkdir(parents=True, exist_ok=True)
+
+    plot_paths = {}
 
     try:
-        # Generate comprehensive report
-        plot_paths = create_comprehensive_report(results, analysis_dir)
+        if use_research_quality and MODULAR_SYSTEM_AVAILABLE:
+            console.print("[green]Using research-quality modular visualization system[/green]")
+
+            if focus:
+                # Generate focused analysis
+                console.print(f"[blue]Generating focused analysis: {focus}[/blue]")
+                focused_path = research_dir / f"{focus}_analysis.pdf"
+
+                fig = create_focused_analysis_figure(results=results, analysis_type=focus, focus="comprehensive", save_path=focused_path)
+
+                if focused_path.exists():
+                    plot_paths[f"{focus}_focused"] = focused_path
+                    console.print(f"[green]✓ Focused analysis saved:[/green] {focused_path}")
+            else:
+                # Generate all research-quality figures
+                console.print("[blue]Generating all research-quality figures...[/blue]")
+
+                saved_figures = create_research_quality_figures(results=results, output_dir=research_dir, formats=["png", "pdf"])
+
+                plot_paths.update(saved_figures)
+
+                console.print(f"[green]✓ Research-quality figures saved to:[/green] {research_dir}")
+
+        # Always generate legacy figures for backward compatibility
+        console.print("[blue]Generating legacy compatibility figures...[/blue]")
+        legacy_plots = create_comprehensive_report(results, analysis_dir)
+
+        # Add legacy plots with prefix to avoid conflicts
+        for name, path in legacy_plots.items():
+            plot_paths[f"legacy_{name}"] = path
 
         # Display generated plots
         if plot_paths:
-            plots_table = Table(title="Generated Plots", show_header=True, header_style="bold green")
+            plots_table = Table(title="Generated Analysis Files", show_header=True, header_style="bold green")
             plots_table.add_column("Analysis Type", style="cyan")
             plots_table.add_column("File Path", style="yellow")
+            plots_table.add_column("Format", style="magenta")
 
             for plot_name, path in plot_paths.items():
-                plots_table.add_row(plot_name.replace("_", " ").title(), str(path))
+                format_type = "Research-Quality" if not plot_name.startswith("legacy_") else "Legacy"
+                clean_name = plot_name.replace("legacy_", "").replace("_", " ").title()
+                plots_table.add_row(clean_name, str(path.relative_to(output_dir)), format_type)
 
             console.print(plots_table)
 
-            console.print(f"[green]✓ Analysis complete! Results saved to:[/green] {analysis_dir}")
+            console.print(f"[green]✓ Analysis complete! Results saved to:[/green] {output_dir}")
         else:
             console.print("[yellow]Warning: No plots were generated[/yellow]")
 
@@ -383,7 +453,15 @@ def generate_comprehensive_analysis(results: BenchmarkResult, output_dir: Path) 
     except Exception as e:
         console.print(f"[red]Error generating analysis:[/red] {e}")
         console.print(f"[red]Traceback:[/red] {traceback.format_exc()}")
-        return {}
+
+        # Fallback to legacy system
+        console.print("[yellow]Falling back to legacy visualization system...[/yellow]")
+        try:
+            legacy_plots = create_comprehensive_report(results, analysis_dir)
+            return legacy_plots
+        except Exception as fallback_error:
+            console.print(f"[red]Legacy fallback also failed:[/red] {fallback_error}")
+            return {}
 
 
 def run_comprehensive_benchmark(output_dir: Optional[Path] = None) -> List[BenchmarkResult]:
@@ -398,10 +476,11 @@ def run_comprehensive_benchmark(output_dir: Optional[Path] = None) -> List[Bench
     """
     configurations_dir = PROJECT_ROOT / "configurations"
 
-    # Key configurations for comprehensive analysis
+    # Key configurations for comprehensive analysis - updated to match actual config files
     key_configs = [
         "comparative_studies/library_comparison.toml",
         "by_method_type/statistical_tests_comprehensive.toml",
+        "by_method_type/distance_based_comprehensive.toml",
         "by_execution_mode/batch_comprehensive.toml",
     ]
 
@@ -432,6 +511,15 @@ def run_comprehensive_benchmark(output_dir: Optional[Path] = None) -> List[Bench
 
             else:
                 console.print(f"[yellow]Warning: Configuration not found:[/yellow] {config_path}")
+                console.print(f"[dim]Available configs in {configurations_dir}:[/dim]")
+
+                # Show available configurations for debugging
+                if configurations_dir.exists():
+                    for subdir in configurations_dir.iterdir():
+                        if subdir.is_dir():
+                            console.print(f"  [dim]{subdir.name}/[/dim]")
+                            for config_file in subdir.glob("*.toml"):
+                                console.print(f"    [dim]{config_file.name}[/dim]")
 
             progress.update(main_task, advance=1)
 
@@ -441,14 +529,15 @@ def run_comprehensive_benchmark(output_dir: Optional[Path] = None) -> List[Bench
 def main():
     """Main entry point for the benchmark execution script."""
     parser = argparse.ArgumentParser(
-        description="Execute drift detection benchmarks and generate analysis plots",
+        description="Execute drift detection benchmarks and generate research-quality analysis plots",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --config configurations/library_comparison.toml
-  %(prog)s --config configurations/statistical_tests_comprehensive.toml --output results/stats
-  %(prog)s --plots-only results/20250811_143022
-  %(prog)s --comprehensive
+  %(prog)s --config configurations/library_comparison.toml --research-quality
+  %(prog)s --config configurations/statistical_tests_comprehensive.toml --output results/stats --focus performance
+  %(prog)s --plots-only results/20250811_143022 --research-quality --formats pdf png
+  %(prog)s --comprehensive --research-quality
+  %(prog)s --config configurations/ultimate.toml --legacy-only --formats pdf
         """,
     )
 
@@ -465,6 +554,18 @@ Examples:
     )
 
     parser.add_argument("--no-plots", action="store_true", help="Skip plot generation (benchmark execution only)")
+
+    parser.add_argument("--research-quality", action="store_true", help="Use research-quality modular visualization system (default: True)")
+
+    parser.add_argument("--legacy-only", action="store_true", help="Use only legacy visualization functions")
+
+    parser.add_argument(
+        "--focus",
+        choices=["performance", "scenario", "execution_mode", "method_family", "adapter"],
+        help="Focus on specific analysis type (requires modular system)",
+    )
+
+    parser.add_argument("--include-legacy", action="store_true", help="Include legacy plots alongside research-quality figures")
 
     args = parser.parse_args()
 
@@ -484,9 +585,11 @@ Examples:
             results = load_benchmark_results(args.plots_only)
             console.print("[green]✓ Results loaded successfully[/green]")
 
-            # Generate plots
+            # Generate plots with new system
             output_dir = args.output or args.plots_only
-            plot_paths = generate_comprehensive_analysis(results, output_dir)
+            use_research_quality = not args.legacy_only and (args.research_quality or MODULAR_SYSTEM_AVAILABLE)
+
+            plot_paths = generate_comprehensive_analysis(results, output_dir, use_research_quality=use_research_quality, focus=args.focus)
 
             return 0 if plot_paths else 1
 
@@ -502,9 +605,11 @@ Examples:
                 return 1
 
             # Generate analysis for each result set
+            use_research_quality = not args.legacy_only and (args.research_quality or MODULAR_SYSTEM_AVAILABLE)
+
             for i, results in enumerate(results_list):
                 analysis_dir = output_dir / f"analysis_{i+1}"
-                generate_comprehensive_analysis(results, analysis_dir)
+                generate_comprehensive_analysis(results, analysis_dir, use_research_quality=use_research_quality, focus=args.focus)
 
             console.print(f"[green]✓ Comprehensive analysis complete![/green]")
             console.print(f"[green]Results saved to:[/green] {output_dir}")
@@ -523,12 +628,18 @@ Examples:
             # Generate analysis plots (unless disabled)
             if not args.no_plots:
                 output_dir = args.output or Path(results.output_directory)
-                plot_paths = generate_comprehensive_analysis(results, output_dir)
+                use_research_quality = not args.legacy_only and (args.research_quality or MODULAR_SYSTEM_AVAILABLE)
+
+                plot_paths = generate_comprehensive_analysis(
+                    results, output_dir, use_research_quality=use_research_quality, focus=args.focus
+                )
 
                 # Save in multiple formats if requested
-                if len(args.formats) > 1:
+                if len(args.formats) > 1 and plot_paths:
                     console.print(f"[blue]Saving plots in additional formats: {args.formats}[/blue]")
-                    save_all_plots(results, output_dir / "analysis", args.formats)
+                    # For research-quality figures, formats are handled in create_research_quality_figures
+                    if args.legacy_only or not use_research_quality:
+                        save_all_plots(results, output_dir / "analysis", args.formats)
 
             return 0
 
