@@ -1,9 +1,9 @@
-# Invalid scenario for file path error testing  
-description   = "Invalid scenario for file path testing"
+# Invalid scenario for validation error testing  
+description   = "Invalid scenario for validation testing"
 source_type   = "file"
-source_name   = "nonexistent_file.csv"
+source_name   = "some_file.csv"
 target_column = "target"
-drift_types   = ["covariate"] # Valid drift type
+drift_types   = ["invalid_drift_type"] # Invalid drift type to trigger validation error
 
 [ref_filter]
     sample_range = [0, 100]

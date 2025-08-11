@@ -399,9 +399,11 @@ def sample_scenario_definition():
         }
         default_data.update(kwargs)
 
-        # Write to TOML file in scenarios directory
-        scenarios_dir = Path("scenarios")
-        scenarios_dir.mkdir(exist_ok=True)
+        # Write to TOML file in test assets scenarios directory (configured via environment)
+        from drift_benchmark.settings import settings
+
+        scenarios_dir = settings.scenarios_dir
+        scenarios_dir.mkdir(parents=True, exist_ok=True)
         scenario_file = scenarios_dir / f"{scenario_id}.toml"
 
         with open(scenario_file, "w") as f:
@@ -1047,9 +1049,11 @@ def sample_scenario_definition():
             {k: v for k, v in kwargs.items() if k not in ["enhanced_metadata", "domain", "total_instances", "feature_descriptions"]}
         )
 
-        # Write to TOML file
-        scenarios_dir = Path("scenarios")
-        scenarios_dir.mkdir(exist_ok=True)
+        # Write to TOML file in test assets scenarios directory (configured via environment)
+        from drift_benchmark.settings import settings
+
+        scenarios_dir = settings.scenarios_dir
+        scenarios_dir.mkdir(parents=True, exist_ok=True)
         scenario_file = scenarios_dir / f"{scenario_id}.toml"
 
         with open(scenario_file, "w") as f:
