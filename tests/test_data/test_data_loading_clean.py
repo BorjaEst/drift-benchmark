@@ -38,7 +38,6 @@ class TestScenarioLoadingInterface:
         """Test that load_scenario accepts scenario_id parameter."""
         try:
             import inspect
-
             from drift_benchmark.data import load_scenario
 
             sig = inspect.signature(load_scenario)
@@ -46,16 +45,16 @@ class TestScenarioLoadingInterface:
         except ImportError as e:
             pytest.fail(f"Failed to inspect load_scenario signature: {e}")
 
-    def test_should_return_scenario_result_type_when_called(self):
-        """Test that load_scenario returns proper ScenarioResult object using static test assets."""
-        # Arrange - use static test asset instead of dynamic creation
-        scenario_id = "file_covariate_basic"
+    def test_should_return_scenario_result_type_when_called(self, sample_scenario_definition):
+        """Test that load_scenario returns proper ScenarioResult object."""
+        # Arrange - create a basic scenario file
+        sample_scenario_definition("basic_test_scenario")
 
         try:
             from drift_benchmark.data import load_scenario
             from drift_benchmark.models.results import ScenarioResult
 
-            result = load_scenario(scenario_id)
+            result = load_scenario("basic_test_scenario")
             assert isinstance(result, ScenarioResult), "load_scenario must return ScenarioResult instance"
         except ImportError as e:
             pytest.fail(f"Failed to import components for return type test: {e}")
@@ -64,16 +63,16 @@ class TestScenarioLoadingInterface:
 class TestCSVFormatSupport:
     """Test REQ-DAT-002: CSV Format Support requirements."""
 
-    def test_should_support_csv_format_when_loaded(self):
+    def test_should_support_csv_format_when_loaded(self, sample_csv_file, sample_scenario_definition):
         """Test CSV format support using pandas.read_csv() with default parameters."""
-        # Arrange - use static test asset
-        scenario_id = "file_covariate_basic"
+        # Arrange
+        sample_scenario_definition(scenario_id="csv_test_scenario", source_type="file", source_name=str(sample_csv_file))
 
         # Act
         try:
             from drift_benchmark.data import load_scenario
 
-            result = load_scenario(scenario_id)
+            result = load_scenario("csv_test_scenario")
         except ImportError as e:
             pytest.fail(f"Failed to import load_scenario for csv test: {e}")
 
@@ -89,17 +88,17 @@ class TestCSVFormatSupport:
 class TestPathValidation:
     """Test REQ-DAT-003: Path Validation requirements."""
 
-    def test_should_validate_file_path_when_loading(self):
-        """Test file existence validation with descriptive error messages using static invalid scenario."""
-        # Arrange - use static invalid test asset
-        scenario_id = "invalid_scenario_testing"
+    def test_should_validate_file_path_when_loading(self, sample_scenario_definition):
+        """Test file existence validation with descriptive error messages."""
+        # Arrange - scenario with non-existent file
+        sample_scenario_definition(scenario_id="nonexistent_scenario", source_type="file", source_name="nonexistent_file.csv")
 
         # Act & Assert
         try:
             from drift_benchmark.data import load_scenario
 
             with pytest.raises(DataLoadingError) as exc_info:
-                load_scenario(scenario_id)
+                load_scenario("nonexistent_scenario")
 
             error_message = str(exc_info.value).lower()
             assert "nonexistent_file.csv" in error_message or "not found" in error_message, "Error should be descriptive about missing file"
@@ -111,16 +110,16 @@ class TestPathValidation:
 class TestDataFrameOutput:
     """Test REQ-DAT-005: DataFrame Output requirements."""
 
-    def test_should_return_dataframes_when_loaded(self):
-        """Test that all loaded datasets return proper DataFrame objects using static test assets."""
-        # Arrange - use static test asset
-        scenario_id = "file_covariate_basic"
+    def test_should_return_dataframes_when_loaded(self, sample_csv_file, sample_scenario_definition):
+        """Test that all loaded datasets return proper DataFrame objects."""
+        # Arrange
+        sample_scenario_definition(scenario_id="dataframe_test", source_type="file", source_name=str(sample_csv_file))
 
         # Act
         try:
             from drift_benchmark.data import load_scenario
 
-            result = load_scenario(scenario_id)
+            result = load_scenario("dataframe_test")
         except ImportError as e:
             pytest.fail(f"Failed to import load_scenario for DataFrame test: {e}")
 

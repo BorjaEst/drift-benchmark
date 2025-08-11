@@ -1,11 +1,6 @@
-category,type
+category_1,category_2
 A,X
 B,Y
-A,Z
-C,X
-B,Y
-A,X
 C,Z
-B,Y
 A,X
-C,Z
+B,Y

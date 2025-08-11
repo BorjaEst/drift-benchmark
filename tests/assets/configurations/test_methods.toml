@@ -1,31 +1,31 @@
-[methods.ks_test]
+[methods.kolmogorov_smirnov]
     name            = "Kolmogorov-Smirnov Test"
-    description     = "Statistical test for distribution differences"
+    description     = "Two-sample test for equality of continuous distributions"
+    drift_types     = ["covariate"]
     family          = "statistical-test"
     data_dimension  = "univariate"
     data_types      = ["continuous"]
-    drift_types     = ["covariate"]
     requires_labels = false
-    references      = ["https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test"]
+    references      = ["https://doi.org/10.2307/2281868"]
 
-    [methods.ks_test.variants.scipy]
-        name            = "SciPy Variant"
+    [methods.kolmogorov_smirnov.variants.batch]
+        name            = "Batch Processing"
         execution_mode  = "batch"
         hyperparameters = ["threshold"]
-        references      = ["SciPy implementation"]
+        references      = ["Standard KS implementation"]
 
-[methods.drift_detector]
-    name            = "Basic Drift Detector"
-    description     = "Simple change detection algorithm"
-    family          = "change-detection"
+[methods.chi_square]
+    name            = "Chi-Square Test"
+    description     = "Test for independence in categorical data"
+    drift_types     = ["covariate"]
+    family          = "statistical-test"
     data_dimension  = "multivariate"
-    data_types      = ["continuous", "categorical"]
-    drift_types     = ["covariate", "concept"]
+    data_types      = ["categorical"]
     requires_labels = false
-    references      = ["Custom implementation"]
+    references      = ["Standard chi-square test"]
 
-    [methods.drift_detector.variants.custom]
-        name            = "Custom Variant"
+    [methods.chi_square.variants.batch]
+        name            = "Batch Processing"
         execution_mode  = "batch"
-        hyperparameters = ["threshold", "window_size"]
-        references      = ["Internal implementation"]
+        hyperparameters = ["significance_level"]
+        references      = ["Standard chi-square implementation"]

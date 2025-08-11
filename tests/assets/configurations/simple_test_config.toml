@@ -2,6 +2,6 @@
     id = "test_scenario"
 
 [[detectors]]
-    method_id  = "test_method"
-    variant_id = "test_impl"
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "batch"
     library_id = "custom"

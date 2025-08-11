@@ -10,11 +10,11 @@ from typing import Any, Optional
 from drift_benchmark.adapters import BaseDetector, register_detector
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="evidently")
-class MockEvidentlyKSDetector(BaseDetector):
-    """Mock Evidently KS detector for benchmark testing."""
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="asset_1")
+class MockAsset1KSDetector(BaseDetector):
+    """Mock Asset 1 KS detector for benchmark testing."""
 
-    def __init__(self, method_id: str, variant_id: str, library_id: str = "evidently", **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: str = "asset_1", **kwargs):
         self._method_id = method_id
         self._variant_id = variant_id
         self._library_id = library_id
@@ -59,11 +59,11 @@ class MockEvidentlyKSDetector(BaseDetector):
         return self._score
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="alibi-detect")
-class MockAlibiKSDetector(BaseDetector):
-    """Mock Alibi-Detect KS detector for benchmark testing."""
+@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_batch", library_id="asset_2")
+class MockAsset2KSDetector(BaseDetector):
+    """Mock Asset 2 KS detector for benchmark testing."""
 
-    def __init__(self, method_id: str, variant_id: str, library_id: str = "alibi-detect", **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: str = "asset_2", **kwargs):
         self._method_id = method_id
         self._variant_id = variant_id
         self._library_id = library_id
@@ -108,11 +108,11 @@ class MockAlibiKSDetector(BaseDetector):
         return self._score
 
 
-@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="scipy")
-class MockScipyDetector(BaseDetector):
-    """Mock SciPy detector for benchmark testing."""
+@register_detector(method_id="cramer_von_mises", variant_id="cvm_batch", library_id="asset_3")
+class MockAsset3CVMDetector(BaseDetector):
+    """Mock Asset 3 detector for benchmark testing."""
 
-    def __init__(self, method_id: str, variant_id: str, library_id: str = "scipy", **kwargs):
+    def __init__(self, method_id: str, variant_id: str, library_id: str = "asset_3", **kwargs):
         self._method_id = method_id
         self._variant_id = variant_id
         self._library_id = library_id

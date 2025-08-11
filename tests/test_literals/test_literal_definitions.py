@@ -113,7 +113,7 @@ def test_should_define_method_family_literals_when_imported():
 
 
 def test_should_define_scenario_source_type_literals_when_imported():
-    """Test REQ-LIT-011: Must define ScenarioSourceType literal with values: "sklearn", "file" """
+    """Test REQ-LIT-011: Must define ScenarioSourceType literal with values: "synthetic", "file", "uci" """
     # Arrange & Act
     try:
         from drift_benchmark.literals import ScenarioSourceType
@@ -123,7 +123,7 @@ def test_should_define_scenario_source_type_literals_when_imported():
         pytest.fail(f"Failed to import ScenarioSourceType from literals module: {e}")
 
     # Assert
-    expected_values = {"sklearn", "file", "uci"}
+    expected_values = {"synthetic", "file", "uci"}
     actual_values = set(source_values)
 
     assert actual_values == expected_values, (

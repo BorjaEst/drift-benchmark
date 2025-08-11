@@ -1,0 +1,25 @@
+# Edge case: Overlapping sample ranges for boundary testing
+description   = "Scenario with overlapping sample ranges for boundary condition testing"
+source_type   = "file"
+source_name   = "tests/assets/datasets/comprehensive_mixed.csv"
+target_column = "target"
+drift_types   = ["covariate"]
+
+[ref_filter]
+    sample_range    = [0, 6]
+    feature_filters = [{ column = "feature_1", condition = ">=", value = 1.0 }]
+
+[test_filter]
+    sample_range    = [4, 9]
+    feature_filters = [{ column = "feature_1", condition = "<=", value = 8.0 }]
+
+[ground_truth]
+    drift_periods        = [[4, 9]]
+    drift_intensity      = "moderate"
+    expected_effect_size = 0.35
+
+[statistical_validation]
+    expected_effect_size = 0.35
+    minimum_power        = 0.7
+    significance_level   = 0.05
+    cohens_d             = 0.4

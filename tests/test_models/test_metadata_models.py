@@ -117,12 +117,14 @@ class TestDatasetMetadataModel:
             pytest.skip("DatasetMetadata not implemented yet")
 
         # Act & Assert - negative samples should fail
-        with pytest.raises(ValueError):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             DatasetMetadata(
                 name="test_dataset", data_type="continuous", dimension="multivariate", n_samples_ref=-100, n_samples_test=50, n_features=5
             )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             DatasetMetadata(
                 name="test_dataset",
                 data_type="continuous",
@@ -326,7 +328,7 @@ class TestScenarioDefinitionModel:
         # Act - based on README scenario example
         definition = ScenarioDefinition(
             description="Covariate drift scenario with known ground truth",
-            source_type="sklearn",
+            source_type="synthetic",
             source_name="make_classification",
             target_column="target",
             ref_filter={"sample_range": [0, 500]},
@@ -335,7 +337,7 @@ class TestScenarioDefinitionModel:
 
         # Assert
         assert definition.description == "Covariate drift scenario with known ground truth"
-        assert definition.source_type == "sklearn"
+        assert definition.source_type == "synthetic"
         assert definition.source_name == "make_classification"
         assert definition.target_column == "target"
         assert definition.ref_filter == {"sample_range": [0, 500]}
@@ -352,7 +354,7 @@ class TestScenarioDefinitionModel:
         # Act - unsupervised scenario
         definition = ScenarioDefinition(
             description="Unsupervised covariate drift scenario",
-            source_type="sklearn",
+            source_type="synthetic",
             source_name="make_blobs",
             target_column=None,  # No target for unsupervised
             ref_filter={"sample_range": [0, 500]},
@@ -371,7 +373,7 @@ class TestScenarioDefinitionModel:
             pytest.skip("ScenarioDefinition not implemented yet")
 
         # Act & Assert - valid source types
-        valid_source_types = ["sklearn", "file"]
+        valid_source_types = ["synthetic", "file"]
         for source_type in valid_source_types:
             definition = ScenarioDefinition(
                 description="Test scenario",
@@ -407,7 +409,7 @@ class TestScenarioDefinitionModel:
 
         definition = ScenarioDefinition(
             description="Complex filter scenario",
-            source_type="sklearn",
+            source_type="synthetic",
             source_name="make_classification",
             target_column="target",
             ref_filter={"sample_range": [0, 100]},
@@ -567,7 +569,7 @@ class TestMetadataModelsIntegration:
 
         definition = ScenarioDefinition(
             description="Integration test scenario",
-            source_type="sklearn",
+            source_type="synthetic",
             source_name="make_classification",
             target_column="target",
             ref_filter={"sample_range": [0, 1000]},

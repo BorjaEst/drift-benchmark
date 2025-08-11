@@ -1,0 +1,51 @@
+# REQ-DAT-026: Complete TOML schema validation
+# Comprehensive scenario with all supported fields
+description   = "Complete schema validation scenario with all required and optional fields"
+source_type   = "synthetic"
+source_name   = "regression"
+target_column = "target"
+drift_types   = ["covariate"]
+
+[ref_filter]
+    n_samples       = 50
+    random_state    = 42
+    feature_filters = [{ column = "feature_1", condition = ">=", value = -2.0 }]
+
+[test_filter]
+    n_samples       = 50
+    random_state    = 24
+    noise_factor    = 1.5
+    feature_filters = [{ column = "feature_1", condition = "<=", value = 2.0 }]
+
+[ground_truth]
+    drift_periods        = [[50, 99]]
+    drift_intensity      = "moderate"
+    expected_effect_size = 0.45
+    kl_divergence        = 0.38
+    cohens_d             = 0.52
+
+[statistical_validation]
+    expected_effect_size = 0.45
+    minimum_power        = 0.8
+    significance_level   = 0.05
+    cohens_d             = 0.52
+    baseline_scenario    = "synthetic_covariate_basic"
+
+[enhanced_metadata]
+    total_instances = 100
+    feature_descriptions = [
+        "feature_1: Primary synthetic regression feature",
+        "feature_2: Secondary synthetic regression feature",
+    ]
+    missing_data_indicators = ["none"]
+    data_quality_score = 1.0
+    data_authenticity = "synthetic"
+    scientific_traceability = true
+
+# REQ-STA-001 to REQ-STA-003: Statistical validation requirements
+[experimental_design]
+    control_group_size   = 50
+    treatment_group_size = 50
+    randomization_method = "fixed_seed"
+    blinding_level       = "none"
+    replication_count    = 1

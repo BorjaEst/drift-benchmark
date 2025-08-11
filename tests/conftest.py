@@ -265,7 +265,7 @@ def sample_scenario_result_data():
 
     definition = {
         "description": "Sample covariate drift scenario",
-        "source_type": "sklearn",
+        "source_type": "synthetic",
         "source_name": "make_classification",
         "target_column": "target",
         "drift_types": ["covariate"],
@@ -293,7 +293,7 @@ def sample_scenario_definition_data():
     """Provide sample ScenarioDefinition data for testing"""
     return {
         "description": "Covariate drift scenario with known ground truth",
-        "source_type": "sklearn",
+        "source_type": "synthetic",
         "source_name": "make_classification",
         "target_column": "target",
         "drift_types": ["covariate"],
@@ -944,7 +944,38 @@ def paulo_goncalves_evaluation_framework():
 
 @pytest.fixture
 def sample_scenario_definition():
-    """Enhanced version of sample_scenario_definition with TDD support."""
+    """
+    DEPRECATED: Enhanced dynamic scenario creation fixture.
+
+    This fixture violates TDD Test Assets & Fixtures pattern by dynamically creating
+    scenarios in the main scenarios directory during test execution.
+
+    RECOMMENDED: Use static test assets in tests/assets/scenarios/ instead.
+
+    Available static scenarios:
+    - synthetic_covariate_basic: Synthetic source type scenario
+    - file_covariate_basic: File-based CSV scenario with feature filtering
+    - uci_wine_covariate_basic: UCI wine quality dataset with metadata
+    - multi_drift_enhanced_filtering: Multi-drift scenario with enhanced filtering
+    - uci_iris_value_discovery: UCI iris dataset for value discovery testing
+    - complete_schema_validation: Complete TOML schema validation scenario
+    - edge_case_empty_filters: Edge case with empty filters
+    - edge_case_overlapping_ranges: Edge case with overlapping sample ranges
+    - invalid_scenario_testing: Invalid scenario for error handling testing
+
+    Example migration:
+    OLD: sample_scenario_definition("test_scenario", source_type="file")
+    NEW: scenario_id = "file_covariate_basic"  # Use existing static asset
+    """
+    import warnings
+
+    warnings.warn(
+        "Dynamic scenario creation is deprecated. Use static test assets in tests/assets/scenarios/ instead. "
+        "Available scenarios include: synthetic_covariate_basic, file_covariate_basic, uci_wine_covariate_basic, "
+        "multi_drift_enhanced_filtering, uci_iris_value_discovery, complete_schema_validation, and edge case scenarios.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     # Keep existing functionality but enhance with TDD capabilities
     created_files = []
 
@@ -977,9 +1008,9 @@ def sample_scenario_definition():
             default_ref_filter = {"sample_range": [0, 49]}
             default_test_filter = {"sample_range": [50, 99]}
         else:
-            # Use original logic as fallback
-            default_ref_filter = {"sample_range": [0, 4]}
-            default_test_filter = {"sample_range": [5, 9]}
+            # Use smaller ranges for temp files with limited data (5 rows: 0-4)
+            default_ref_filter = {"sample_range": [0, 2]}
+            default_test_filter = {"sample_range": [3, 4]}
 
         default_data = {
             "description": kwargs.get("description", "Enhanced test scenario definition with TDD support"),

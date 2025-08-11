@@ -28,11 +28,11 @@ def test_should_provide_load_methods_function_when_imported(mock_methods_toml_fi
 
     # Assert
     assert isinstance(methods, dict), "load_methods() must return dictionary"
-    assert "ks_test" in methods, "loaded methods must include ks_test from test file"
-    assert "drift_detector" in methods, "loaded methods must include drift_detector from test file"
+    assert "kolmogorov_smirnov" in methods, "loaded methods must include kolmogorov_smirnov from test file"
+    assert "chi_square" in methods, "loaded methods must include chi_square from test file"
 
     # Assert method structure
-    ks_test_method = methods["ks_test"]
+    ks_test_method = methods["kolmogorov_smirnov"]
     assert isinstance(ks_test_method, dict), "each method must be a dictionary"
     assert "name" in ks_test_method, "method must have name field"
     assert "variants" in ks_test_method, "method must have variants field"
@@ -115,7 +115,7 @@ def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
             mock_settings.methods_registry_path = mock_methods_toml_file
 
             # Test existing method
-            ks_test_method = get_method("ks_test")
+            ks_test_method = get_method("kolmogorov_smirnov")
 
     except ImportError as e:
         pytest.fail(f"Failed to import get_method from detectors module: {e}")
@@ -135,7 +135,7 @@ def test_should_provide_get_method_function_when_called(mock_methods_toml_file):
             mock_settings.methods_registry_path = mock_methods_toml_file
 
             with pytest.raises(MethodNotFoundError):
-                get_method("non_existent_method")
+                get_method("nonexistent_method")
 
     except ImportError as e:
         pytest.fail(f"Failed to import required modules for error test: {e}")
@@ -151,14 +151,14 @@ def test_should_provide_get_variant_function_when_called(mock_methods_toml_file)
             mock_settings.methods_registry_path = mock_methods_toml_file
 
             # Test existing variant
-            scipy_impl = get_variant("ks_test", "scipy")
+            scipy_impl = get_variant("kolmogorov_smirnov", "batch")
 
     except ImportError as e:
         pytest.fail(f"Failed to import get_variant from detectors module: {e}")
 
     # Assert - returns correct variant info
     assert isinstance(scipy_impl, dict), "get_variant() must return dictionary"
-    assert scipy_impl["name"] == "SciPy Variant"
+    assert scipy_impl["name"] == "Batch Processing"
     assert scipy_impl["execution_mode"] == "batch"
 
     # Assert - raises error for non-existent variant
@@ -170,10 +170,10 @@ def test_should_provide_get_variant_function_when_called(mock_methods_toml_file)
             mock_settings.methods_registry_path = mock_methods_toml_file
 
             with pytest.raises(VariantNotFoundError):
-                get_variant("ks_test", "non_existent_impl")
+                get_variant("kolmogorov_smirnov", "non_existent_impl")
 
             with pytest.raises(VariantNotFoundError):
-                get_variant("non_existent_method", "scipy")
+                get_variant("non_existent_method", "batch")
 
     except ImportError as e:
         pytest.fail(f"Failed to import required modules for variant error test: {e}")
@@ -194,8 +194,8 @@ def test_should_provide_list_methods_function_when_called(mock_methods_toml_file
 
     # Assert
     assert isinstance(method_ids, list), "list_methods() must return list"
-    assert "ks_test" in method_ids, "list_methods() must include ks_test"
-    assert "drift_detector" in method_ids, "list_methods() must include drift_detector"
+    assert "kolmogorov_smirnov" in method_ids, "list_methods() must include kolmogorov_smirnov"
+    assert "chi_square" in method_ids, "list_methods() must include chi_square"
     assert len(method_ids) == 2, "list_methods() should return 2 methods from test file"
 
     # Assert all elements are strings
@@ -279,15 +279,15 @@ def test_should_follow_methods_toml_schema_when_loaded(mock_methods_toml_file):
             assert "references" in impl_data, f"Variant {method_id}.{impl_id} must have references"
 
     # Assert REQ-DET-012: Schema example validation
-    # Check that ks_test method follows expected schema
-    ks_test = methods["ks_test"]
+    # Check that kolmogorov_smirnov method follows expected schema
+    ks_test = methods["kolmogorov_smirnov"]
     assert ks_test["name"] == "Kolmogorov-Smirnov Test"
     assert ks_test["drift_types"] == ["covariate"]
     assert ks_test["family"] == "statistical-test"
     assert ks_test["data_dimension"] == "univariate"
-    assert "scipy" in ks_test["variants"]
-    scipy_impl = ks_test["variants"]["scipy"]
-    assert scipy_impl["name"] == "SciPy Variant"
+    assert "batch" in ks_test["variants"]
+    scipy_impl = ks_test["variants"]["batch"]
+    assert scipy_impl["name"] == "Batch Processing"
     assert scipy_impl["execution_mode"] == "batch"
     assert scipy_impl["hyperparameters"] == ["threshold"]
 

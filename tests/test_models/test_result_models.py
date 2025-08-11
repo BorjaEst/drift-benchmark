@@ -274,7 +274,7 @@ class TestScenarioResultModel:
 
         definition = ScenarioDefinition(
             description="Test scenario",
-            source_type="sklearn",
+            source_type="synthetic",
             source_name="make_classification",
             target_column="target",
             ref_filter={"sample_range": [0, 100]},
@@ -327,7 +327,7 @@ class TestScenarioResultModel:
 
         definition = ScenarioDefinition(
             description="Unlabeled scenario",
-            source_type="sklearn",
+            source_type="synthetic",
             source_name="make_blobs",
             target_column=None,
             ref_filter={"sample_range": [0, 10]},
@@ -408,7 +408,7 @@ class TestResultModelsIntegration:
 
         definition = ScenarioDefinition(
             description="Integration test scenario",
-            source_type="sklearn",
+            source_type="synthetic",
             source_name="make_blobs",
             target_column=None,
             ref_filter={"sample_range": [0, 10]},

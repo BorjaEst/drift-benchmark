@@ -1,28 +1,12 @@
-description = "Basic test configuration for TDD testing"
-
 [[scenarios]]
-    id          = "test_scenario"
-    description = "Simple test scenario"
-
-[[scenarios]]
-    id          = "covariate_drift_example"
-    description = "Covariate drift scenario"
-
-[[scenarios]]
-    id          = "concept_drift_example"
-    description = "Concept drift scenario"
+    id = "test_scenario"
 
 [[detectors]]
-    method_id  = "ks_test"
-    variant_id = "default"
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "batch"
+    library_id = "custom"
+
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "batch"
     library_id = "scipy"
-
-[[detectors]]
-    method_id  = "chi2_test"
-    variant_id = "default"
-    library_id = "scipy"
-
-[[detectors]]
-    method_id  = "drift_detector"
-    variant_id = "custom"
-    library_id = "alibi-detect"

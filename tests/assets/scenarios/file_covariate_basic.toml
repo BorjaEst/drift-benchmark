@@ -1,0 +1,28 @@
+# REQ-DAT-008: File-based source type scenario  
+# REQ-DAT-026: Complete TOML schema validation
+description   = "CSV file covariate drift scenario with feature filtering"
+source_type   = "file"
+source_name   = "tests/assets/datasets/comprehensive_mixed.csv"
+target_column = "target"
+drift_types   = ["covariate"]
+
+[ref_filter]
+    sample_range    = [0, 4]
+    feature_filters = [{ column = "feature_1", condition = ">=", value = 0.0 }]
+
+[test_filter]
+    sample_range    = [5, 9]
+    feature_filters = [{ column = "feature_1", condition = "<=", value = 10.0 }]
+
+[ground_truth]
+    drift_periods        = [[5, 9]]
+    drift_intensity      = "moderate"
+    expected_effect_size = 0.35
+    kl_divergence        = 0.42
+
+# REQ-DAT-028: Statistical validation sections
+[statistical_validation]
+    expected_effect_size = 0.35
+    minimum_power        = 0.8
+    significance_level   = 0.05
+    cohens_d             = 0.55

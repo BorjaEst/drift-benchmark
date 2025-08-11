@@ -1,0 +1,19 @@
+# Invalid scenario for error handling testing
+description   = "Invalid scenario for error handling and validation testing"
+source_type   = "file"
+source_name   = "nonexistent_file.csv"
+target_column = "missing_target"
+drift_types   = ["invalid_drift_type"]
+
+[ref_filter]
+    sample_range    = [0, 100] # Out of bounds for typical test files
+    feature_filters = [{ column = "nonexistent_column", condition = "invalid_condition", value = "invalid_value" }]
+
+[test_filter]
+    sample_range    = [200, 300] # Out of bounds
+    feature_filters = [{ column = "another_missing_column", condition = "==", value = 999999 }]
+
+[ground_truth]
+    drift_periods        = [[200, 300]]
+    drift_intensity      = "invalid_intensity"
+    expected_effect_size = -1.0 # Invalid negative effect size

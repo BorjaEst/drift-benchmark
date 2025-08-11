@@ -15,6 +15,6 @@
     library_id = "alibi-detect"
 
 [[detectors]]
-    method_id  = "cramer_von_mises"
+    method_id  = "kolmogorov_smirnov"
     variant_id = "batch"
     library_id = "scipy"
