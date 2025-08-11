@@ -1,0 +1,120 @@
+# Statistical Tests Comprehensive Configuration
+# Compare all available statistical test implementations across libraries
+# Focus on classical statistical hypothesis testing methods
+
+# Diverse scenarios for statistical test evaluation
+[[scenarios]]
+    id = "synthetic/covariate_drift_strong"
+
+[[scenarios]]
+    id = "synthetic/covariate_drift_weak"
+
+[[scenarios]]
+    id = "uci/wine_quality_alcohol"
+
+[[scenarios]]
+    id = "uci/iris_petal_length"
+
+[[scenarios]]
+    id = "uci/adult_income_age"
+
+[[scenarios]]
+    id = "baselines/no_drift_synthetic"
+
+[[scenarios]]
+    id = "baselines/no_drift_uci"
+
+# === KOLMOGOROV-SMIRNOV TEST IMPLEMENTATIONS ===
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id   = "kolmogorov_smirnov"
+    variant_id  = "ks_online"
+    library_id  = "alibi-detect"
+    threshold   = 0.05
+    window_size = 100
+
+# === CRAMER-VON MISES TEST IMPLEMENTATIONS ===
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+# === CHI-SQUARE TEST IMPLEMENTATIONS ===
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+# === ANDERSON-DARLING TEST ===
+[[detectors]]
+    method_id  = "anderson_darling"
+    variant_id = "ad_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === MANN-WHITNEY U TEST ===
+[[detectors]]
+    method_id  = "mann_whitney"
+    variant_id = "mw_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === T-TEST ===
+[[detectors]]
+    method_id  = "t_test"
+    variant_id = "ttest_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === WELCH'S T-TEST ===
+[[detectors]]
+    method_id  = "welch_t_test"
+    variant_id = "welch_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === EPPS-SINGLETON TEST ===
+[[detectors]]
+    method_id  = "epps_singleton"
+    variant_id = "epps_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === KUIPER TEST ===
+[[detectors]]
+    method_id  = "kuiper"
+    variant_id = "kuiper_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === BAUMGARTNER WEISS SCHINDLER TEST ===
+[[detectors]]
+    method_id  = "baumgartner_weiss_schindler"
+    variant_id = "bws_batch"
+    library_id = "evidently"
+    threshold  = 0.05

@@ -1,0 +1,162 @@
+# Library Implementation Comparison Study
+# Direct comparison of how different libraries implement the same methods
+# Focus on identical method+variant across multiple libraries
+
+# Representative scenarios for fair library comparison
+[[scenarios]]
+    id = "synthetic/covariate_drift_strong"
+
+[[scenarios]]
+    id = "synthetic/covariate_drift_weak"
+
+[[scenarios]]
+    id = "synthetic/concept_drift_gradual"
+
+[[scenarios]]
+    id = "uci/wine_quality_alcohol"
+
+[[scenarios]]
+    id = "uci/iris_petal_length"
+
+[[scenarios]]
+    id = "baselines/no_drift_synthetic"
+
+[[scenarios]]
+    id = "baselines/no_drift_uci"
+
+# === KOLMOGOROV-SMIRNOV TEST COMPARISON ===
+# Batch implementations
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "kolmogorov_smirnov"
+    variant_id = "ks_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+# Online implementations
+[[detectors]]
+    method_id   = "kolmogorov_smirnov"
+    variant_id  = "ks_online"
+    library_id  = "alibi-detect"
+    threshold   = 0.05
+    window_size = 100
+
+# === CRAMER-VON MISES TEST COMPARISON ===
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "cramer_von_mises"
+    variant_id = "cvm_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id   = "cramer_von_mises"
+    variant_id  = "cvm_online"
+    library_id  = "alibi-detect"
+    threshold   = 0.05
+    window_size = 100
+
+# === CHI-SQUARE TEST COMPARISON ===
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "chi_square"
+    variant_id = "chi_batch"
+    library_id = "alibi-detect"
+    threshold  = 0.05
+
+# === JENSEN-SHANNON DIVERGENCE COMPARISON ===
+[[detectors]]
+    method_id  = "jensen_shannon_divergence"
+    variant_id = "js_evidently"
+    library_id = "evidently"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "jensen_shannon_divergence"
+    variant_id = "js_batch"
+    library_id = "scipy"
+    threshold  = 0.1
+
+# === KULLBACK-LEIBLER DIVERGENCE COMPARISON ===
+[[detectors]]
+    method_id  = "kullback_leibler_divergence"
+    variant_id = "kl_evidently"
+    library_id = "evidently"
+    threshold  = 0.1
+
+[[detectors]]
+    method_id  = "kullback_leibler_divergence"
+    variant_id = "kl_batch"
+    library_id = "scipy"
+    threshold  = 0.1
+
+# === ALL FEATURES DRIFT COMPARISON ===
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_evidently"
+    library_id = "evidently"
+    threshold  = 0.05
+    stattest   = "ks"
+
+[[detectors]]
+    method_id  = "all_features_drift"
+    variant_id = "all_features_batch"
+    library_id = "scipy"
+    threshold  = 0.05
+    stattest   = "ks"
+
+# === ADDITIONAL EVIDENTLY METHODS (NO DIRECT COMPETITORS) ===
+[[detectors]]
+    method_id  = "anderson_darling"
+    variant_id = "ad_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "mann_whitney"
+    variant_id = "mw_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "wasserstein_distance"
+    variant_id = "wasserstein_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+# === RIVER UNIQUE STREAMING METHODS (NO DIRECT COMPETITORS) ===
+[[detectors]]
+    method_id  = "adaptive_windowing"
+    variant_id = "adwin_standard"
+    library_id = "river"
+    delta      = 0.002
+
+[[detectors]]
+    method_id   = "kswin"
+    variant_id  = "kswin_standard"
+    library_id  = "river"
+    alpha       = 0.005
+    window_size = 100
+
+[[detectors]]
+    method_id  = "page_hinkley"
+    variant_id = "ph_standard"
+    library_id = "river"
+    delta      = 0.005
+    lambda     = 50.0
+    alpha      = 0.9999
