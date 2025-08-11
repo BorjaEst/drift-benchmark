@@ -18,13 +18,10 @@ scenarios/
 │   ├── concept_drift_gradual.toml # Gradual concept drift with synthetic data
 │   ├── covariate_drift_strong.toml # Strong covariate drift with synthetic data
 │   └── covariate_drift_weak.toml  # Weak covariate drift with synthetic data
-├── uci/                          # UCI repository scenarios
-│   ├── adult_income_age.toml      # Adult dataset with age-based drift
-│   ├── iris_petal_length.toml     # Iris dataset with petal length drift
-│   └── wine_quality_alcohol.toml  # Wine quality with alcohol-based drift
-└── custom/                       # Custom dataset scenarios
-    ├── customer_churn.toml        # Customer churn with concept drift
-    └── sensor_data_drift.toml     # Sensor data with temporal drift
+└── uci/                          # UCI repository scenarios
+    ├── adult_income_age.toml      # Adult dataset with age-based drift
+    ├── iris_petal_length.toml     # Iris dataset with petal length drift
+    └── wine_quality_alcohol.toml  # Wine quality with alcohol-based drift
 ```
 
 ## 📊 Scenario Categories
@@ -94,29 +91,6 @@ Scenarios using real-world datasets from the UCI Machine Learning Repository wit
 - **Intensity**: Moderate
 - **Domain**: Census and demographic data
 - **Use Case**: Socioeconomic drift patterns across age groups
-
-### 📄 Custom File Scenarios (`custom/`)
-
-Scenarios using custom CSV datasets with domain-specific drift patterns.
-
-#### Available Custom Scenarios
-
-**`customer_churn.toml`**
-
-- **Drift Type**: Concept drift
-- **Data Source**: Customer churn CSV file
-- **Drift Pattern**: High-value vs low-value customer churn behaviors
-- **Features**: 17 features including tenure, charges, services
-- **Intensity**: Moderate (Effect size: 0.55)
-- **Use Case**: Business analytics drift in customer behavior patterns
-
-**`sensor_data_drift.toml`**
-
-- **Drift Type**: Temporal drift
-- **Data Source**: Sensor measurements CSV file
-- **Drift Pattern**: Environmental condition changes over time
-- **Features**: Multi-sensor time series data
-- **Use Case**: Industrial IoT drift detection scenarios
 
 ### 📈 Baseline Scenarios (`baselines/`)
 
