@@ -1,5 +1,7 @@
-# Ultimate Comprehensive Benchmark
-# Maximum coverage evaluation across all scenarios, methods, and libraries
+# Ultimate Comprehensive Benc[[scenarios]]
+id = "uci/adult_income_age"
+
+# === EVIDENTLY BATCH METHODS - COMPREHENSIVE ===imum coverage evaluation across all scenarios, methods, and libraries
 # Complete comparison study with all available detectors
 
 # === ALL AVAILABLE SCENARIOS ===
@@ -32,10 +34,8 @@
 
 # Custom domain-specific scenarios
 [[scenarios]]
-    id = "custom/customer_churn"
 
 [[scenarios]]
-    id = "custom/sensor_data_drift"
 
 # === EVIDENTLY - COMPREHENSIVE STATISTICAL TESTS ===
 [[detectors]]

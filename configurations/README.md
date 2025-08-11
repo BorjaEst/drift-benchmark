@@ -64,14 +64,6 @@ Configurations optimized for specific data characteristics:
 - **Scenarios**: 4 UCI scenarios (wine quality, iris, adult income, no drift baseline)
 - **Use Case**: Real-world performance assessment
 
-#### **`custom_comprehensive.toml`**
-
-- **Purpose**: Domain-specific practical scenarios
-- **Advantage**: Real-world application patterns (customer behavior, sensor data)
-- **Coverage**: Mixed batch and streaming approaches
-- **Scenarios**: 2 custom scenarios (customer churn, sensor data drift)
-- **Use Case**: Industry-specific drift detection development
-
 ### 3. **By Execution Mode** (`by_execution_mode/`)
 
 Configurations focused on processing paradigms:
@@ -158,9 +150,6 @@ python -m drift_benchmark configurations/by_data_type/synthetic_comprehensive.to
 
 # For real-world validation
 python -m drift_benchmark configurations/by_data_type/uci_comprehensive.toml
-
-# For domain-specific applications
-python -m drift_benchmark configurations/by_data_type/custom_comprehensive.toml
 ```
 
 #### 3. **Compare Processing Approaches**
@@ -195,7 +184,6 @@ python -m drift_benchmark configurations/comparative_studies/ultimate_comprehens
 | **Streaming** | ~14 | 4 | River, Alibi-Detect | Fast |
 | **Synthetic Data** | ~25 | 4 | All Libraries | Medium |
 | **UCI Data** | ~22 | 4 | Evidently, Alibi-Detect | Medium |
-| **Custom Data** | ~25 | 2 | All Libraries | Fast |
 | **Batch Processing** | ~22 | 9 | Evidently, Alibi-Detect | Long |
 | **Online Processing** | ~15 | 4 | River, Alibi-Detect | Medium |
 | **Library Comparison** | ~23 | 7 | All Libraries | Long |
@@ -242,11 +230,6 @@ python -m drift_benchmark configurations/comparative_studies/ultimate_comprehens
 - `uci/adult_income_age` - Demographic shift simulation
 - `baselines/no_drift_uci` - Real-world no-drift baseline
 
-### **Custom Domain Scenarios** (2 scenarios)
-
-- `custom/customer_churn` - Business analytics drift patterns
-- `custom/sensor_data_drift` - Time-series sensor drift simulation
-
 ## ⚙️ Configuration Format
 
 All configurations use standardized TOML format:
@@ -277,7 +260,7 @@ threshold = 0.05                    # Detection threshold
 
 - Use `by_execution_mode/batch_comprehensive.toml` for offline systems
 - Use `by_execution_mode/online_comprehensive.toml` for real-time systems
-- Use `by_data_type/custom_comprehensive.toml` for domain-specific applications
+- Use `by_data_type/uci_comprehensive.toml` for domain-specific applications
 
 ### **For Academic Studies**
 

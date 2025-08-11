@@ -22,9 +22,6 @@
     id = "uci/adult_income_age"
 
 [[scenarios]]
-    id = "custom/customer_churn"
-
-[[scenarios]]
     id = "baselines/no_drift_synthetic"
 
 [[scenarios]]

@@ -19,12 +19,6 @@
     id = "uci/adult_income_age"
 
 [[scenarios]]
-    id = "custom/customer_churn"
-
-[[scenarios]]
-    id = "custom/sensor_data_drift"
-
-[[scenarios]]
     id = "baselines/no_drift_synthetic"
 
 # === JENSEN-SHANNON DIVERGENCE ===

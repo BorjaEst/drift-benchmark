@@ -10,10 +10,8 @@
     id = "synthetic/covariate_drift_strong"
 
 [[scenarios]]
-    id = "custom/sensor_data_drift"
 
 [[scenarios]]
-    id = "custom/customer_churn"
 
 # === RIVER ADAPTIVE METHODS ===
 [[detectors]]
