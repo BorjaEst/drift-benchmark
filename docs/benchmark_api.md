@@ -113,6 +113,132 @@ for detector_result in results.detector_results:
     print("---")
 ```
 
+#### Accessing Configuration Information
+
+After creating a `BenchmarkRunner`, you can access the loaded configuration and understand what scenarios and detectors are configured for execution.
+
+##### `runner.config` - Access Configuration Before Running
+
+```python
+from drift_benchmark import BenchmarkRunner
+
+# Load configuration and run benchmark
+runner = BenchmarkRunner.from_config("benchmark_config.toml")
+
+# Access the loaded configuration before running
+config = runner.config
+print(f"Configuration loaded with {len(config.scenarios)} scenarios and {len(config.detectors)} detectors")
+
+# Inspect scenarios
+print("\nConfigured Scenarios:")
+for scenario in config.scenarios:
+    print(f"  - Scenario ID: {scenario.id}")
+
+# Inspect detectors  
+print("\nConfigured Detectors:")
+for detector in config.detectors:
+    print(f"  - Method: {detector.method_id}")
+    print(f"    Variant: {detector.variant_id}")
+    print(f"    Library: {detector.library_id}")
+    if detector.hyperparameters:
+        print(f"    Hyperparameters: {detector.hyperparameters}")
+    print()
+
+# Run benchmark
+results = runner.run()
+```
+
+##### `results.config` - Access Configuration from Results
+
+```python
+# After benchmark execution, configuration is also available in results
+results = runner.run()
+
+# Access configuration used for the benchmark
+used_config = results.config
+print(f"Benchmark executed with {len(used_config.scenarios)} scenarios")
+print(f"and {len(used_config.detectors)} detectors")
+
+# Compare configured vs actual execution
+executed_detectors = len(results.detector_results)
+configured_detectors = len(used_config.detectors) * len(used_config.scenarios)
+print(f"Expected detector runs: {configured_detectors}")
+print(f"Actual detector results: {executed_detectors}")
+
+# Access specific configuration details
+for i, scenario_config in enumerate(used_config.scenarios):
+    scenario_results = [r for r in results.detector_results if r.scenario_name == scenario_config.id]
+    print(f"Scenario '{scenario_config.id}': {len(scenario_results)} detector results")
+```
+
+##### Configuration Introspection and Validation
+
+```python
+from drift_benchmark.models import BenchmarkConfig
+
+# Load and inspect configuration programmatically
+runner = BenchmarkRunner.from_config("benchmark_config.toml")
+config = runner.config
+
+# Validate configuration structure
+assert isinstance(config, BenchmarkConfig), "Config should be BenchmarkConfig instance"
+assert len(config.scenarios) > 0, "Must have at least one scenario"
+assert len(config.detectors) > 0, "Must have at least one detector" 
+
+# Group detectors by method for comparison analysis
+from collections import defaultdict
+detectors_by_method = defaultdict(list)
+
+for detector in config.detectors:
+    method_key = f"{detector.method_id}_{detector.variant_id}"
+    detectors_by_method[method_key].append(detector.library_id)
+
+print("Library Comparison Groups:")
+for method_variant, libraries in detectors_by_method.items():
+    print(f"  {method_variant}: {', '.join(libraries)}")
+
+# Check for duplicate detector configurations
+detector_ids = []
+for detector in config.detectors:
+    detector_id = f"{detector.method_id}_{detector.variant_id}_{detector.library_id}"
+    if detector_id in detector_ids:
+        print(f"Warning: Duplicate detector configuration: {detector_id}")
+    detector_ids.append(detector_id)
+```
+
+##### Export Configuration for Documentation
+
+```python
+# Export configuration details for documentation or analysis
+def export_config_summary(config):
+    """Export a summary of the benchmark configuration"""
+    
+    summary = {
+        "total_scenarios": len(config.scenarios),
+        "total_detectors": len(config.detectors),
+        "expected_results": len(config.scenarios) * len(config.detectors),
+        "scenarios": [s.id for s in config.scenarios],
+        "detectors": [
+            {
+                "method_id": d.method_id,
+                "variant_id": d.variant_id, 
+                "library_id": d.library_id,
+                "hyperparameters": d.hyperparameters or {}
+            }
+            for d in config.detectors
+        ]
+    }
+    return summary
+
+# Usage
+runner = BenchmarkRunner.from_config("benchmark_config.toml")
+config_summary = export_config_summary(runner.config)
+
+import json
+print("Configuration Summary:")
+print(json.dumps(config_summary, indent=2))
+```
+
 ### Benchmark (Lower-Level API)
 
 Direct benchmarking interface for programmatic use without configuration files.
