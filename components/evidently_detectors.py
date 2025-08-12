@@ -394,15 +394,15 @@ class EvidentlyAllFeaturesDriftDetector(BaseEvidentlyDetector):
 
         for column in self._reference_data.columns:
             # Create test suite for this specific column
-            test_kwargs = {"column": column}
+            test_kwargs = {}
             if self.threshold is not None:
                 test_kwargs["threshold"] = self.threshold
             if self.stattest is not None:
                 test_kwargs["stattest"] = self.stattest
 
             try:
-                # Create test suite for this column - use TestColumnDrift
-                column_test_suite = TestSuite(tests=[TestColumnDrift(**test_kwargs)])
+                # Create test suite for this column - use TestColumnDrift with positional column argument
+                column_test_suite = TestSuite(tests=[TestColumnDrift(column, **test_kwargs)])
 
                 # Run the test suite
                 column_test_suite.run(reference_data=self._reference_data, current_data=current_data)
