@@ -59,12 +59,12 @@
     library_id = "alibi-detect"
     threshold  = 0.05
 
-[[detectors]]
-    method_id   = "cramer_von_mises"
-    variant_id  = "cvm_online"
-    library_id  = "alibi-detect"
-    threshold   = 0.05
-    window_size = 100
+    # [[detectors]]
+    #     method_id   = "cramer_von_mises"
+    #     variant_id  = "cvm_online"
+    #     library_id  = "alibi-detect"
+    #     threshold   = 0.05
+    #     window_size = 100
 
 # === CHI-SQUARE TEST COMPARISON ===
 [[detectors]]
@@ -86,11 +86,6 @@
     library_id = "evidently"
     threshold  = 0.1
 
-[[detectors]]
-    method_id  = "jensen_shannon_divergence"
-    variant_id = "js_batch"
-    library_id = "scipy"
-    threshold  = 0.1
 
 # === KULLBACK-LEIBLER DIVERGENCE COMPARISON ===
 [[detectors]]
@@ -99,11 +94,6 @@
     library_id = "evidently"
     threshold  = 0.1
 
-[[detectors]]
-    method_id  = "kullback_leibler_divergence"
-    variant_id = "kl_batch"
-    library_id = "scipy"
-    threshold  = 0.1
 
 # === ALL FEATURES DRIFT COMPARISON ===
 [[detectors]]
@@ -113,12 +103,6 @@
     threshold  = 0.05
     stattest   = "ks"
 
-[[detectors]]
-    method_id  = "all_features_drift"
-    variant_id = "all_features_batch"
-    library_id = "scipy"
-    threshold  = 0.05
-    stattest   = "ks"
 
 # === ADDITIONAL EVIDENTLY METHODS (NO DIRECT COMPETITORS) ===
 [[detectors]]
@@ -136,6 +120,18 @@
 [[detectors]]
     method_id  = "wasserstein_distance"
     variant_id = "wasserstein_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "epps_singleton"
+    variant_id = "epps_batch"
+    library_id = "evidently"
+    threshold  = 0.05
+
+[[detectors]]
+    method_id  = "t_test"
+    variant_id = "ttest_batch"
     library_id = "evidently"
     threshold  = 0.05
 

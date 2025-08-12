@@ -133,38 +133,12 @@
     delta      = 0.002
 
 [[detectors]]
-    method_id     = "drift_detection_method"
-    variant_id    = "ddm_standard"
-    library_id    = "river"
-    warning_level = 2.0
-    drift_level   = 3.0
-
-[[detectors]]
-    method_id     = "early_drift_detection_method"
-    variant_id    = "eddm_standard"
-    library_id    = "river"
-    warning_level = 0.95
-    drift_level   = 0.90
-
-[[detectors]]
     method_id  = "page_hinkley"
     variant_id = "ph_standard"
     library_id = "river"
     delta      = 0.005
     lambda     = 50.0
     alpha      = 0.9999
-
-[[detectors]]
-    method_id  = "hoeffding_drift_detection_test_a"
-    variant_id = "hddm_a_standard"
-    library_id = "river"
-    delta      = 0.002
-
-[[detectors]]
-    method_id  = "hoeffding_drift_detection_test_w"
-    variant_id = "hddm_w_standard"
-    library_id = "river"
-    delta      = 0.002
 
 [[detectors]]
     method_id   = "kswin"
