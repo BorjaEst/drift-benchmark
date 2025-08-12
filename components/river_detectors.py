@@ -1,13 +1,64 @@
 """
-River streaming drift detectors.
+River streaming drift detectors for concept drift detection in streaming data.
 
-This module implements drift detectors using the River library for online/streaming
-drift detection. River specializes in concept drift detection for streaming data
-with adaptive algorithms designed for continuous learning scenarios.
+This module provides implementations of various drift detectors using the River library,
+which specializes in online machine learning and streaming data analysis. River detectors
+are designed for continuous learning scenarios where data arrives sequentially and
+concept drift may occur gradually or abruptly.
+
+Key Features:
+    - Streaming data processing with adaptive algorithms
+    - Multivariate drift detection with per-feature analysis
+    - Memory-efficient online algorithms suitable for continuous monitoring
+    - Support for various drift detection methodologies
+
+Available Detectors:
+    - ADWIN (Adaptive Windowing): Variable-length window with statistical change detection
+    - Page-Hinkley: Sequential analysis for detecting mean changes in Gaussian signals
+    - KSWIN: Kolmogorov-Smirnov test with sliding window for distribution changes
+
+Legacy Detectors (deprecated in River ~=0.22.0):
+    - DDM (Drift Detection Method): No longer available
+    - EDDM (Early Drift Detection Method): No longer available
+    - HDDM_A/HDDM_W (Hoeffding Drift Detection): No longer available
+
+Architecture:
+    All detectors inherit from RiverStreamingDetector which provides:
+    - Streaming data simulation from batch data
+    - Multivariate data handling with per-feature detection
+    - Common preprocessing and result aggregation logic
+
+Usage Pattern:
+    1. Initialize detector with method-specific parameters
+    2. Fit on reference/training data to establish baseline
+    3. Detect drift by processing test data as streaming samples
+    4. Aggregate results across multiple features for final decision
+
+Implementation Notes:
+    - Uses River ~=0.22.0 API (some older detectors deprecated)
+    - Converts pandas DataFrames to numpy arrays for processing
+    - Handles missing values through mean imputation
+    - Returns drift probability as proportion of features detecting drift
+    - Maintains drift history for detailed analysis and debugging
+
+Performance Considerations:
+    - Designed for online processing with O(1) per-sample complexity
+    - Memory usage grows with window size (detector-dependent)
+    - Per-feature processing may increase computation for high-dimensional data
 
 References:
-- River Documentation: https://riverml.xyz/
-- River Drift Detection: https://riverml.xyz/0.21.0/api/drift/
+    - River Documentation: https://riverml.xyz/
+    - River Drift Detection API: https://riverml.xyz/latest/api/drift/
+    - Bifet & Gavaldà (2007): Learning from Time-Changing Data with Adaptive Windowing
+    - Page (1954): Continuous Inspection Schemes
+    - Raab et al. (2020): Reactive Soft Prototype Computing for Concept Drift Streams
+
+Example:
+    >>> from drift_benchmark.adapters.registry import get_detector
+    >>> detector = get_detector("river", "adaptive_windowing", "adwin_standard")
+    >>> detector.fit(reference_data)
+    >>> drift_detected = detector.detect(test_data)
+    >>> confidence_score = detector.score()  # Proportion of features with drift
 """
 
 from typing import Any, Dict, Iterator, List, Optional
@@ -199,13 +250,14 @@ class RiverADWINDetector(RiverStreamingDetector):
         return self._process_multivariate_stream(preprocessed_data, phase="detect")
 
 
-@register_detector(method_id="drift_detection_method", variant_id="ddm_standard", library_id="river")
+# DDM is no longer available in River ~=0.22.0
+# @register_detector(method_id="drift_detection_method", variant_id="ddm_standard", library_id="river")
 class RiverDDMDetector(RiverStreamingDetector):
     """
     DDM (Drift Detection Method) from River.
 
-    DDM monitors the error rate of a classifier and detects drift when the
-    error rate increases significantly above expected levels.
+    NOTE: DDM is no longer available in River ~=0.22.0.
+    This class is kept for reference but will not function.
 
     References:
     - Gama et al. (2004): Learning with Drift Detection
@@ -216,121 +268,57 @@ class RiverDDMDetector(RiverStreamingDetector):
         self.warning_level = kwargs.get("warning_level", 2.0)
         self.drift_level = kwargs.get("drift_level", 3.0)
 
-        logger.info(f"Initialized {self.__class__.__name__} with warning_level={self.warning_level}, drift_level={self.drift_level}")
+        logger.warning(f"{self.__class__.__name__} is not available in River ~=0.22.0")
 
     def fit(self, preprocessed_data: Any, **kwargs) -> "RiverDDMDetector":
-        """
-        Initialize DDM detectors - DDM doesn't require training on reference data.
-
-        Args:
-            preprocessed_data: Preprocessed reference data (numpy array)
-            **kwargs: Additional fitting parameters
-
-        Returns:
-            Self for method chaining
-        """
-        try:
-            from river import drift
-        except ImportError:
-            raise ImportError("River library is required for DDM detector. Install with: pip install river")
-
-        if len(preprocessed_data.shape) == 1:
-            preprocessed_data = preprocessed_data.reshape(-1, 1)
-
-        # Initialize one DDM detector per feature
-        n_features = preprocessed_data.shape[1]
-        for feature_idx in range(n_features):
-            self._detectors[feature_idx] = drift.DDM(warning_level=self.warning_level, drift_level=self.drift_level)
-
-        logger.info(f"DDM initialized for {n_features} features")
-        return self
+        """DDM is no longer available in current River versions."""
+        raise ImportError("DDM detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
 
     def detect(self, preprocessed_data: Any, **kwargs) -> bool:
-        """
-        Detect drift by monitoring simulated error rates.
-
-        Args:
-            preprocessed_data: Preprocessed test data (numpy array)
-            **kwargs: Additional detection parameters
-
-        Returns:
-            Boolean indicating whether drift was detected
-        """
-        if not self._detectors:
-            raise RuntimeError("Detector must be fitted before detection")
-
-        # For demonstration, convert data values to simulated binary errors
-        # In practice, this would use actual classification errors
-        return self._process_multivariate_stream(preprocessed_data, phase="detect")
+        """DDM is no longer available in current River versions."""
+        raise ImportError("DDM detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
 
 
-@register_detector(method_id="early_drift_detection_method", variant_id="eddm_standard", library_id="river")
+# EDDM is no longer available in River ~=0.22.0
+# @register_detector(method_id="early_drift_detection_method", variant_id="eddm_standard", library_id="river")
 class RiverEDDMDetector(RiverStreamingDetector):
     """
     EDDM (Early Drift Detection Method) from River.
 
+    NOTE: EDDM is no longer available in River ~=0.22.0.
+    This class is kept for reference but will not function.
+
     EDDM is an improvement over DDM that detects drift earlier by monitoring
-    the distance between classification errors rather than just the error rate.
+    the distance between classification errors.
 
     References:
-    - Baena-García et al. (2006): Early drift detection method
+    - Baena-García et al. (2006): Early Drift Detection Method
     """
 
     def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         super().__init__(method_id, variant_id, library_id, **kwargs)
-        self.alpha = kwargs.get("alpha", 0.95)  # Confidence level for warning
-        self.beta = kwargs.get("beta", 0.9)  # Confidence level for drift
+        self.alpha = kwargs.get("alpha", 0.95)
+        self.beta = kwargs.get("beta", 0.9)
 
-        logger.info(f"Initialized {self.__class__.__name__} with alpha={self.alpha}, beta={self.beta}")
+        logger.warning(f"{self.__class__.__name__} is not available in River ~=0.22.0")
 
     def fit(self, preprocessed_data: Any, **kwargs) -> "RiverEDDMDetector":
-        """
-        Initialize EDDM detectors.
-
-        Args:
-            preprocessed_data: Preprocessed reference data (numpy array)
-            **kwargs: Additional fitting parameters
-
-        Returns:
-            Self for method chaining
-        """
-        try:
-            from river import drift
-        except ImportError:
-            raise ImportError("River library is required for EDDM detector. Install with: pip install river")
-
-        if len(preprocessed_data.shape) == 1:
-            preprocessed_data = preprocessed_data.reshape(-1, 1)
-
-        # Initialize one EDDM detector per feature
-        n_features = preprocessed_data.shape[1]
-        for feature_idx in range(n_features):
-            self._detectors[feature_idx] = drift.EDDM(alpha=self.alpha, beta=self.beta)
-
-        logger.info(f"EDDM initialized for {n_features} features")
-        return self
+        """EDDM is no longer available in current River versions."""
+        raise ImportError("EDDM detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
 
     def detect(self, preprocessed_data: Any, **kwargs) -> bool:
-        """
-        Detect drift using EDDM algorithm.
-
-        Args:
-            preprocessed_data: Preprocessed test data (numpy array)
-            **kwargs: Additional detection parameters
-
-        Returns:
-            Boolean indicating whether drift was detected
-        """
-        if not self._detectors:
-            raise RuntimeError("Detector must be fitted before detection")
-
-        return self._process_multivariate_stream(preprocessed_data, phase="detect")
+        """EDDM is no longer available in current River versions."""
+        raise ImportError("EDDM detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
 
 
-@register_detector(method_id="hoeffding_drift_detection_test_a", variant_id="hddm_a_standard", library_id="river")
+# HDDM_A is no longer available in River ~=0.22.0
+# @register_detector(method_id="hoeffding_drift_detection_test_a", variant_id="hddm_a_standard", library_id="river")
 class RiverHDDMaDetector(RiverStreamingDetector):
     """
     HDDM_A (Hoeffding Drift Detection Method - Averages) from River.
+
+    NOTE: HDDM_A is no longer available in River ~=0.22.0.
+    This class is kept for reference but will not function.
 
     HDDM_A uses Hoeffding bounds to detect changes in the mean of a stream.
 
@@ -343,9 +331,15 @@ class RiverHDDMaDetector(RiverStreamingDetector):
         self.drift_confidence = kwargs.get("drift_confidence", 0.001)
         self.warning_confidence = kwargs.get("warning_confidence", 0.005)
 
-        logger.info(
-            f"Initialized {self.__class__.__name__} with drift_confidence={self.drift_confidence}, warning_confidence={self.warning_confidence}"
-        )
+        logger.warning(f"{self.__class__.__name__} is not available in River ~=0.22.0")
+
+    def fit(self, preprocessed_data: Any, **kwargs) -> "RiverHDDMaDetector":
+        """HDDM_A is no longer available in current River versions."""
+        raise ImportError("HDDM_A detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
+
+    def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+        """HDDM_A is no longer available in current River versions."""
+        raise ImportError("HDDM_A detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
 
     def fit(self, preprocessed_data: Any, **kwargs) -> "RiverHDDMaDetector":
         """
@@ -397,10 +391,14 @@ class RiverHDDMaDetector(RiverStreamingDetector):
         return self._process_multivariate_stream(preprocessed_data, phase="detect")
 
 
-@register_detector(method_id="hoeffding_drift_detection_test_w", variant_id="hddm_w_standard", library_id="river")
+# HDDM_W is no longer available in River ~=0.22.0
+# @register_detector(method_id="hoeffding_drift_detection_test_w", variant_id="hddm_w_standard", library_id="river")
 class RiverHDDMwDetector(RiverStreamingDetector):
     """
     HDDM_W (Hoeffding Drift Detection Method - Weighted) from River.
+
+    NOTE: HDDM_W is no longer available in River ~=0.22.0.
+    This class is kept for reference but will not function.
 
     HDDM_W uses weighted averages with Hoeffding bounds to detect changes
     that give more importance to recent data.
@@ -415,9 +413,15 @@ class RiverHDDMwDetector(RiverStreamingDetector):
         self.warning_confidence = kwargs.get("warning_confidence", 0.005)
         self.lambda_ = kwargs.get("lambda_", 0.050)  # Decay parameter
 
-        logger.info(
-            f"Initialized {self.__class__.__name__} with drift_confidence={self.drift_confidence}, warning_confidence={self.warning_confidence}, lambda_={self.lambda_}"
-        )
+        logger.warning(f"{self.__class__.__name__} is not available in River ~=0.22.0")
+
+    def fit(self, preprocessed_data: Any, **kwargs) -> "RiverHDDMwDetector":
+        """HDDM_W is no longer available in current River versions."""
+        raise ImportError("HDDM_W detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
+
+    def detect(self, preprocessed_data: Any, **kwargs) -> bool:
+        """HDDM_W is no longer available in current River versions."""
+        raise ImportError("HDDM_W detector is no longer available in River ~=0.22.0. Consider using ADWIN or KSWIN instead.")
 
     def fit(self, preprocessed_data: Any, **kwargs) -> "RiverHDDMwDetector":
         """
