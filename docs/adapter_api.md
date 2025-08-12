@@ -769,7 +769,7 @@ def test_benchmark_integration(tmp_path):
 ### Evidently Integration
 
 ```python
-@register_detector("all_features_drift", "all_features_evidently", "evidently")
+@register_detector("all_features_drift", "evidently", "evidently")
 class EvidentlyAllFeaturesDetector(BaseDetector):
     def __init__(self, method_id: str, variant_id: str, library_id: str, **kwargs):
         super().__init__(method_id, variant_id, library_id, **kwargs)

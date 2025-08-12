@@ -83,21 +83,6 @@
     library_id = "evidently"
     threshold  = 0.05
 
-# === EVIDENTLY MULTIVARIATE METHODS ===
-[[detectors]]
-    method_id  = "all_features_drift"
-    variant_id = "all_features_evidently"
-    library_id = "evidently"
-    threshold  = 0.05
-    stattest   = "ks"
-
-[[detectors]]
-    method_id  = "all_features_drift"
-    variant_id = "all_features_evidently"
-    library_id = "evidently"
-    threshold  = 0.05
-    stattest   = "chisquare"
-
 # === ALIBI-DETECT STATISTICAL TESTS ===
 [[detectors]]
     method_id  = "kolmogorov_smirnov"

@@ -692,7 +692,7 @@ drift_level = 0.90
 ```toml
 [[detectors]]
 method_id = "all_features_drift"
-variant_id = "all_features_evidently"
+variant_id = "evidently"
 library_id = "evidently"
 threshold = 0.05
 stattest = "ks"  # Statistical test for each feature

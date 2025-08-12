@@ -122,28 +122,28 @@
 # === EVIDENTLY MULTIVARIATE BATCH METHODS ===
 [[detectors]]
     method_id  = "all_features_drift"
-    variant_id = "all_features_evidently"
+    variant_id = "evidently"
     library_id = "evidently"
     threshold  = 0.05
     stattest   = "ks"
 
 [[detectors]]
     method_id  = "all_features_drift"
-    variant_id = "all_features_evidently"
+    variant_id = "evidently"
     library_id = "evidently"
     threshold  = 0.05
     stattest   = "chisquare"
 
 [[detectors]]
     method_id  = "all_features_drift"
-    variant_id = "all_features_evidently"
+    variant_id = "evidently"
     library_id = "evidently"
     threshold  = 0.05
     stattest   = "jensenshannon"
 
 [[detectors]]
     method_id  = "all_features_drift"
-    variant_id = "all_features_evidently"
+    variant_id = "evidently"
     library_id = "evidently"
     threshold  = 0.05
     stattest   = "anderson"

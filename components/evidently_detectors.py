@@ -350,7 +350,7 @@ class EvidentlyKullbackLeiblerDetector(BaseEvidentlyDetector):
         self.stattest = "kl_div"  # Evidently's KL divergence identifier
 
 
-@register_detector(method_id="all_features_drift", variant_id="all_features_evidently", library_id="evidently")
+@register_detector(method_id="all_features_drift", variant_id="evidently", library_id="evidently")
 class EvidentlyAllFeaturesDriftDetector(BaseEvidentlyDetector):
     """
     Evidently implementation for comprehensive drift detection across all features.
