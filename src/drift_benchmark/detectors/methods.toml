@@ -233,13 +233,7 @@
     requires_labels = false
     references      = []
 
-    [methods.all_features_drift.variants.all_features_batch]
-        name            = "Batch All Features Drift"
-        execution_mode  = "batch"
-        hyperparameters = ["threshold", "stattest"]
-        references      = []
-
-    [methods.all_features_drift.variants.all_features_evidently]
+    [methods.all_features_drift.variants.evidently]
         name            = "Evidently All Features Drift"
         execution_mode  = "batch"
         hyperparameters = ["threshold", "stattest"]
