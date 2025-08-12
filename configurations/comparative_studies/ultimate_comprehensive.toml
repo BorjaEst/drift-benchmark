@@ -119,21 +119,6 @@
     library_id = "alibi-detect"
     threshold  = 0.05
 
-# === ALIBI-DETECT - ONLINE METHODS ===
-[[detectors]]
-    method_id   = "kolmogorov_smirnov"
-    variant_id  = "ks_online"
-    library_id  = "alibi-detect"
-    threshold   = 0.05
-    window_size = 100
-
-    # [[detectors]]
-    #     method_id   = "cramer_von_mises"
-    #     variant_id  = "cvm_online"
-    #     library_id  = "alibi-detect"
-    #     threshold   = 0.05
-    #     window_size = 100
-
 # === RIVER - ADAPTIVE METHODS ===
 [[detectors]]
     method_id  = "adaptive_windowing"

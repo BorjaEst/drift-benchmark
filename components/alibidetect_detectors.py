@@ -4,30 +4,35 @@ Alibi-Detect drift detectors implementation.
 This module implements drift detectors using the Alibi-Detect library for
 comprehensive drift detection with various statistical tests and kernel methods.
 
-REFACTORED to match drift-benchmark Adapter API v0.1.0:
-- Updated constructor to use method_id + variant_id + library_id structure
-- Fixed preprocess() method to use phase="train"/"detect" parameter
-- Added proper type hints with LibraryId
-- Enhanced error handling and validation
-- Added comprehensive docstrings
-- Mapped variant IDs to actual methods.toml entries
+UPDATED for Alibi-Detect 0.12.0 compatibility:
+- Fixed array conversion issues for multi-element numpy arrays
+- Removed registration of unavailable detectors (KSDriftOnline not available)
+- Only registers detectors that are both available and defined in methods.toml
+- Fixed parameter handling for online detectors
 
-IMPORTANT: Method and Variant ID Constraints
-============================================
+IMPORTANT: Detector Registration Policy
+======================================
 
-All detector registrations MUST use method_id and variant_id combinations that are
-explicitly defined in src/drift_benchmark/detectors/methods.toml. You cannot create
-custom method/variant combinations.
+Only detectors that meet ALL of the following criteria are registered:
+1. The underlying Alibi-Detect class is available in the current version
+2. The method_id and variant_id are defined in src/drift_benchmark/detectors/methods.toml
+3. The detector implementation works correctly with the current Alibi-Detect API
 
-Registered Alibi-Detect detectors (valid per methods.toml):
+Currently Registered Alibi-Detect detectors (compatible with 0.12.0):
 - kolmogorov_smirnov + ks_batch: Uses alibi_detect.cd.KSDrift
-- kolmogorov_smirnov + ks_online: Uses alibi_detect.cd.KSDriftOnline
 - cramer_von_mises + cvm_batch: Uses alibi_detect.cd.CVMDrift
+- cramer_von_mises + cvm_online: Uses alibi_detect.cd.CVMDriftOnline
 - chi_square + chi_batch: Uses alibi_detect.cd.ChiSquareDrift
 
-Note: Several advanced Alibi-Detect methods (MMD, LSDD, Classifier-based) are not
-registered because they do not have corresponding entries in methods.toml. These
-detector classes remain available but are commented out from registration.
+Unregistered Detectors (available in code but not registered):
+- kolmogorov_smirnov + ks_online: KSDriftOnline not available in 0.12.0
+- Various MMD and LSDD detectors: Not defined in methods.toml
+- Classifier-based detectors: Not defined in methods.toml
+
+Version Compatibility:
+- Alibi-Detect 0.12.0: ✅ Fully supported
+- NumPy: Compatible with both 1.x and 2.x (with warnings for 2.x)
+- Requires tensorflow, keras, and other ML backends
 
 Note: Alibi-Detect requires numpy arrays as input format.
 All detectors support multiple backends: tensorflow, pytorch, sklearn
@@ -443,7 +448,7 @@ class AlibiDetectCVMOnlineDetector(BaseAlibiDetectDetector):
     def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         """Initialize online CVM detector with windowing parameters."""
         # Set default parameters for online detection
-        kwargs.setdefault("ert", 150)  # Expected run time
+        kwargs.setdefault("ert", 150.0)  # Expected run time (float required)
         kwargs.setdefault("window_sizes", [100])  # List of window sizes for online detection
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
@@ -452,16 +457,22 @@ class AlibiDetectCVMOnlineDetector(BaseAlibiDetectDetector):
         try:
             from alibi_detect.cd import CVMDriftOnline
 
+            # Ensure required parameters are provided and filter out unsupported ones
+            ert = self.detector_kwargs.get("ert", 150.0)
+            window_sizes = self.detector_kwargs.get("window_sizes", [100])
+
             # Filter out any unsupported parameters
-            kwargs_filtered = {k: v for k, v in self.detector_kwargs.items() if k not in ["window_size"]}
+            accepted_params = {k: v for k, v in self.detector_kwargs.items() if k not in ["ert", "window_sizes", "window_size"]}
 
             self._detector = CVMDriftOnline(
                 x_ref=preprocessed_data,
+                ert=ert,
+                window_sizes=window_sizes,
                 preprocess_fn=self.preprocess_fn,
-                **kwargs_filtered,
+                **accepted_params,
             )
             self._fitted = True
-            logger.debug(f"Online CVM detector fitted with data shape: {preprocessed_data.shape}")
+            logger.debug(f"Online CVM detector fitted with data shape: {preprocessed_data.shape}, window_sizes: {window_sizes}")
 
             return self
 
@@ -709,9 +720,15 @@ class AlibiDetectClassifierDetector(BaseAlibiDetectDetector):
 # =============================================================================
 
 
-@register_detector(method_id="kolmogorov_smirnov", variant_id="ks_online", library_id="alibi-detect")
+# KSDriftOnline is not available in Alibi-Detect 0.12.0 - detector not registered
+# @register_detector(method_id="kolmogorov_smirnov", variant_id="ks_online", library_id="alibi-detect")
 class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
-    """Alibi-Detect implementation of online Kolmogorov-Smirnov detection."""
+    """
+    Alibi-Detect implementation of online Kolmogorov-Smirnov detection.
+
+    NOTE: This detector is not registered because KSDriftOnline is not available
+    in Alibi-Detect 0.12.0. The class exists for completeness but cannot be used.
+    """
 
     def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
         """Initialize online KS detector with windowing parameters."""
@@ -778,7 +795,7 @@ class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
             raise
 
 
-# MMD online detectors removed - no corresponding method in methods.toml
+# MMD online detectors - no corresponding method in methods.toml, so not registered
 # @register_detector(method_id="maximum_mean_discrepancy", variant_id="mmd_online", library_id="alibi-detect")
 class AlibiDetectMMDOnlineDetector(BaseAlibiDetectDetector):
     """Alibi-Detect implementation of online MMD detection."""
