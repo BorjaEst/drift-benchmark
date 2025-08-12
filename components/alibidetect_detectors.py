@@ -242,14 +242,49 @@ class BaseAlibiDetectDetector(BaseDetector):
             # Try to extract p-value or distance
             score = None
             if "p_val" in result["data"]:
-                score = float(result["data"]["p_val"])
+                p_val = result["data"]["p_val"]
+                # Handle multi-element arrays by taking mean or first element
+                if isinstance(p_val, np.ndarray):
+                    if p_val.size == 1:
+                        score = float(p_val.item())
+                    else:
+                        # For multi-feature p-values, take the minimum (most significant)
+                        score = float(np.min(p_val))
+                else:
+                    score = float(p_val)
+
             elif "distance" in result["data"]:
-                score = float(result["data"]["distance"])
+                distance = result["data"]["distance"]
+                # Handle multi-element arrays by taking mean or first element
+                if isinstance(distance, np.ndarray):
+                    if distance.size == 1:
+                        score = float(distance.item())
+                    else:
+                        # For multi-feature distances, take the maximum (most severe)
+                        score = float(np.max(distance))
+                else:
+                    score = float(distance)
+
             elif "threshold" in result["data"]:
                 # For some detectors, we can compare distance to threshold
                 distance = result["data"].get("distance", 0)
                 threshold = result["data"]["threshold"]
-                score = float(distance / threshold) if threshold > 0 else None
+
+                # Handle arrays in threshold comparison
+                if isinstance(distance, np.ndarray):
+                    if distance.size == 1:
+                        distance_val = float(distance.item())
+                    else:
+                        distance_val = float(np.max(distance))
+                else:
+                    distance_val = float(distance)
+
+                if isinstance(threshold, np.ndarray):
+                    threshold_val = float(threshold.item() if threshold.size == 1 else np.mean(threshold))
+                else:
+                    threshold_val = float(threshold)
+
+                score = float(distance_val / threshold_val) if threshold_val > 0 else None
 
             self._last_score = score
             self._last_result = result
@@ -688,9 +723,13 @@ class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
     def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "BaseAlibiDetectDetector":
         """Initialize online KS drift detector with reference data."""
         try:
-            from alibi_detect.cd import KSDriftOnline
+            # KSDriftOnline is not available in alibi-detect 0.12.0
+            # Using CVMDriftOnline as fallback which has similar functionality
+            from alibi_detect.cd import CVMDriftOnline
 
-            self._detector = KSDriftOnline(
+            logger.warning("KSDriftOnline not available in current alibi-detect version, using CVMDriftOnline as fallback")
+
+            self._detector = CVMDriftOnline(
                 x_ref=preprocessed_data,
                 ert=self.detector_kwargs.get("ert", 150),
                 window_size=self.detector_kwargs.get("window_size", 100),
@@ -698,7 +737,7 @@ class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
                 **{k: v for k, v in self.detector_kwargs.items() if k not in ["ert", "window_size"]},
             )
             self._fitted = True
-            logger.debug(f"Online KS detector fitted with data shape: {preprocessed_data.shape}")
+            logger.debug(f"Online KS (CVMDriftOnline fallback) detector fitted with data shape: {preprocessed_data.shape}")
 
             return self
 
