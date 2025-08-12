@@ -400,6 +400,73 @@ class AlibiDetectChiSquareDetector(BaseAlibiDetectDetector):
             raise
 
 
+# Crashes the benchmark
+# @register_detector(method_id="cramer_von_mises", variant_id="cvm_online", library_id="alibi-detect")
+class AlibiDetectCVMOnlineDetector(BaseAlibiDetectDetector):
+    """Alibi-Detect implementation of online Cramér-von Mises detection."""
+
+    def __init__(self, method_id: str, variant_id: str, library_id: LibraryId, **kwargs):
+        """Initialize online CVM detector with windowing parameters."""
+        # Set default parameters for online detection
+        kwargs.setdefault("ert", 150)  # Expected run time
+        kwargs.setdefault("window_sizes", [100])  # List of window sizes for online detection
+        super().__init__(method_id, variant_id, library_id, **kwargs)
+
+    def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "BaseAlibiDetectDetector":
+        """Initialize online CVM drift detector with reference data."""
+        try:
+            from alibi_detect.cd import CVMDriftOnline
+
+            # Filter out any unsupported parameters
+            kwargs_filtered = {k: v for k, v in self.detector_kwargs.items() if k not in ["window_size"]}
+
+            self._detector = CVMDriftOnline(
+                x_ref=preprocessed_data,
+                preprocess_fn=self.preprocess_fn,
+                **kwargs_filtered,
+            )
+            self._fitted = True
+            logger.debug(f"Online CVM detector fitted with data shape: {preprocessed_data.shape}")
+
+            return self
+
+        except ImportError as e:
+            raise ImportError(f"Alibi-Detect not available: {e}") from e
+        except Exception as e:
+            logger.error(f"Online CVM detector fitting failed: {e}")
+            raise
+
+    def detect(self, preprocessed_data: np.ndarray, **kwargs) -> bool:
+        """
+        Perform online CVM drift detection.
+
+        Note: For online detectors, this typically processes single instances.
+        For batch processing, we'll process each instance and return final result.
+        """
+        if not self._fitted or self._detector is None:
+            raise RuntimeError("Detector must be fitted before detection")
+
+        try:
+            # For batch data in online detector, process sequentially
+            drift_detected = False
+
+            for i in range(len(preprocessed_data)):
+                instance = preprocessed_data[i : i + 1]  # Keep 2D shape
+                result = self._detector.predict(instance)
+
+                current_drift, _ = self._extract_result(result)
+                if current_drift:
+                    drift_detected = True
+                    break  # Early stopping on first drift detection
+
+            logger.debug(f"Online CVM detection result: drift={drift_detected}, score={self._last_score}")
+            return drift_detected
+
+        except Exception as e:
+            logger.error(f"Online CVM detection failed: {e}")
+            raise
+
+
 # =============================================================================
 # KERNEL-BASED DETECTORS
 # NOTE: These detectors are commented out because their methods are not yet
@@ -615,7 +682,7 @@ class AlibiDetectKSOnlineDetector(BaseAlibiDetectDetector):
         """Initialize online KS detector with windowing parameters."""
         # Set default parameters for online detection
         kwargs.setdefault("ert", 150)  # Expected run time
-        kwargs.setdefault("window_size", 100)
+        # Note: window_size parameter removed in newer Alibi-Detect versions
         super().__init__(method_id, variant_id, library_id, **kwargs)
 
     def fit(self, preprocessed_data: np.ndarray, **kwargs) -> "BaseAlibiDetectDetector":
